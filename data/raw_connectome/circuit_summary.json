@@ -1,0 +1,8 @@
+{
+  "dataset": "FlyWire_FAFB_Optomotor_Plus_CX",
+  "num_nodes": 12934,
+  "num_edges": 32392,
+  "total_synapses": 686087,
+  "optic_nodes": 12852,
+  "cx_nodes": 82
+}

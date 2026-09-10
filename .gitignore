@@ -1,0 +1,12 @@
+﻿__pycache__/
+*.py[cod]
+.venv/
+venv/
+data/reduced_models/*.npy
+data/raw_connectome/*.parquet
+data/raw_connectome/*.csv
+!data/reduced_models/models_grid_manifest.json
+!data/reduced_models/matrix_benchmark_report.json
+!data/raw_connectome/circuit_summary.json
+.vscode/
+.idea/

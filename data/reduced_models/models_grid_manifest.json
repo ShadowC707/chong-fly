@@ -1,0 +1,204 @@
+{
+  "source_nodes": 12934,
+  "source_edges": 32392,
+  "models": [
+    {
+      "k": 16,
+      "shape": [
+        16,
+        16
+      ],
+      "size_mb": 0.0009765625,
+      "platform": "MCU (ESP32 / Cortex-M4)",
+      "filename": "w_macro_k16.npy",
+      "metrics": {
+        "mem_mb": 0.0009765625,
+        "sparsity_pct": 3.90625,
+        "spectral_rho": 33.595943450927734,
+        "step_us": 3.936199995223433,
+        "mops": 130.07469148450548,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 32,
+      "shape": [
+        32,
+        32
+      ],
+      "size_mb": 0.00390625,
+      "platform": "MCU (ESP32 / Cortex-M4)",
+      "filename": "w_macro_k32.npy",
+      "metrics": {
+        "mem_mb": 0.00390625,
+        "sparsity_pct": 19.3359375,
+        "spectral_rho": 33.68810272216797,
+        "step_us": 4.381400009151548,
+        "mops": 467.43050068979943,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 64,
+      "shape": [
+        64,
+        64
+      ],
+      "size_mb": 0.015625,
+      "platform": "SBC (RPi Zero / CM3)",
+      "filename": "w_macro_k64.npy",
+      "metrics": {
+        "mem_mb": 0.015625,
+        "sparsity_pct": 53.02734375,
+        "spectral_rho": 33.46924591064453,
+        "step_us": 4.251200007274747,
+        "mops": 1926.9853184939946,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 128,
+      "shape": [
+        128,
+        128
+      ],
+      "size_mb": 0.0625,
+      "platform": "SBC (RPi Zero / CM3)",
+      "filename": "w_macro_k128.npy",
+      "metrics": {
+        "mem_mb": 0.0625,
+        "sparsity_pct": 83.453369140625,
+        "spectral_rho": 34.085086822509766,
+        "step_us": 6.141999998362735,
+        "mops": 5335.070011190967,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 256,
+      "shape": [
+        256,
+        256
+      ],
+      "size_mb": 0.25,
+      "platform": "Edge Embedded (Jetson Nano)",
+      "filename": "w_macro_k256.npy",
+      "metrics": {
+        "mem_mb": 0.25,
+        "sparsity_pct": 94.8883056640625,
+        "spectral_rho": 35.625221252441406,
+        "step_us": 8.37179999507498,
+        "mops": 15656.37020438949,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 512,
+      "shape": [
+        512,
+        512
+      ],
+      "size_mb": 1.0,
+      "platform": "Edge Embedded (Jetson Nano)",
+      "filename": "w_macro_k512.npy",
+      "metrics": {
+        "mem_mb": 1.0,
+        "sparsity_pct": 98.2757568359375,
+        "spectral_rho": 44.1200065612793,
+        "step_us": 21.296199993230402,
+        "mops": 24618.852197418306,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 1024,
+      "shape": [
+        1024,
+        1024
+      ],
+      "size_mb": 4.0,
+      "platform": "High-Perf Edge (VOXL 2)",
+      "filename": "w_macro_k1024.npy",
+      "metrics": {
+        "mem_mb": 4.0,
+        "sparsity_pct": 99.47824478149414,
+        "spectral_rho": 43.99026870727539,
+        "step_us": 217.38879999611527,
+        "mops": 9647.010333731434,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 2048,
+      "shape": [
+        2048,
+        2048
+      ],
+      "size_mb": 16.0,
+      "platform": "High-Perf Edge (VOXL 2 / GPU)",
+      "filename": "w_macro_k2048.npy",
+      "metrics": {
+        "mem_mb": 16.0,
+        "sparsity_pct": 99.33347702026367,
+        "spectral_rho": 42.495357513427734,
+        "step_us": 1141.6473999997834,
+        "mops": 7347.809840412716,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 4096,
+      "shape": [
+        4096,
+        4096
+      ],
+      "size_mb": 64.0,
+      "platform": "High-Perf Edge (VOXL 2 / GPU)",
+      "filename": "w_macro_k4096.npy",
+      "metrics": {
+        "mem_mb": 64.0,
+        "sparsity_pct": 99.81675148010254,
+        "spectral_rho": 41.22652053833008,
+        "step_us": 4754.624599998351,
+        "mops": 7057.220037941931,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 8192,
+      "shape": [
+        8192,
+        8192
+      ],
+      "size_mb": 256.0,
+      "platform": "Workstation GPU (3050 Ti)",
+      "filename": "w_macro_k8192.npy",
+      "metrics": {
+        "mem_mb": 256.0,
+        "sparsity_pct": 99.9525249004364,
+        "spectral_rho": 66.9804916381836,
+        "step_us": 18072.076999989804,
+        "mops": 7426.801468368894,
+        "stable_linear": true
+      }
+    },
+    {
+      "k": 12934,
+      "shape": [
+        12934,
+        12934
+      ],
+      "size_mb": 638.1544342041016,
+      "platform": "1:1 Full Connectome (Server)",
+      "filename": "w_macro_k12934.npy",
+      "metrics": {
+        "mem_mb": 638.1544342041016,
+        "sparsity_pct": 99.98063702652443,
+        "spectral_rho": 173.4696807861328,
+        "step_us": 46384.76259999152,
+        "mops": 7213.073717446625,
+        "stable_linear": true
+      }
+    }
+  ]
+}
