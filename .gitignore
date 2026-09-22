@@ -12,15 +12,11 @@ env/
 .env
 
 # ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
-# Spectral reducer — dense .npy (17 KB – 639 MB)
-data/reduced_models/w_spectral_*.npy
-# Centrality reducer — dense .npy
-data/reduced_models/w_centrality_*.npy
-# Cluster-map arrays — one per model, ~51 KB each but numerous
-data/reduced_models/cmap_*.npy
+# Ignore all dense .npy matrices and cluster maps in reduced_models/
+data/reduced_models/*.npy
 
-# Keep small sparse CSR matrices (.npz) — they are kilobytes
-# data/reduced_models/w_magnitude_*.npz   ← tracked (kept small)
+# Keep small sparse CSR matrices (.npz) — they are kilobytes and tracked
+# data/reduced_models/w_magnitude_*.npz   ← tracked
 
 # ── Raw connectome bulk data ───────────────────────────────────────────────────
 data/raw_connectome/*.parquet
@@ -32,10 +28,20 @@ data/raw_connectome/*.csv
 !data/reduced_models/meta_*.json
 !data/raw_connectome/circuit_summary.json
 
-# ── IDE / OS noise ────────────────────────────────────────────────────────────
+# ── Checkpoints & Training Artefacts ──────────────────────────────────────────
+*.pt
+*.pth
+checkpoints/
+runs/
+wandb/
+
+# ── IDE / OS / Test noise ─────────────────────────────────────────────────────
 .vscode/
 .idea/
+.pytest_cache/
 *.swp
 *.swo
+*~
 .DS_Store
 Thumbs.db
+

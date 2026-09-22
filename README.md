@@ -138,7 +138,9 @@ chong-fly/
 │   │                            #   generator; --no-cx / --include-cx CLI flags
 │   ├── graph_reducer.py         # BaseReducer + SpectralReducer + CentralityReducer
 │   │                            #   + MagnitudePruner; ReducedModel dataclass w/ save/load
-│   └── models.py                # Biological CfC neural core (planned)
+│   ├── models.py                # BiologicalCfCCell (ODE-free CfC) + BiologicalCfCNetwork
+│   │                            #   + build_network_from_meta(); W_macro fixed/masked/free modes
+│   ├── test_cfc_dynamics.py     # Pre-evolutionary dynamical validation (33/33 ✓)
 ├── data/
 │   ├── raw_connectome/          # Extracted topology, metadata, and cell class registries
 │   │   ├── raw_nodes.csv
@@ -154,8 +156,122 @@ chong-fly/
 ├── firmware/                    # Embedded real-time execution kernels (C/C++ & MicroPython)
 │   ├── esp32_main/
 │   └── cm3_daemon/
-├── simulation/                  # SITL bridge, avionics filters, PMW3901 emulator
+├── simulation/                  # Sensor→PWM translation & SITL infrastructure
+│   ├── policy.py                # ChongFlyMSPPolicy: SensorInputLayer + CfC +
+│   │                            #   DNProjectionHead + PWMOutputLayer [1000–2000 µs]
+│   └── test_policy.py           # Policy validation suite (44/44 ✓)
 └── training/                    # Two-Phase Bilevel Evolutionary Optimization (CMA-ES / CfC)
+```
+
+---
+
+## 🧠 Biological CfC Neural Core
+
+[`bio_pipeline/models.py`](bio_pipeline/models.py) implements the **Closed-Form Continuous-time** (CfC) recurrent cell derived from the Liquid Time-constant (LTC) ODE, with no numerical ODE solver required.
+
+### Closed-Form Update (no Runge-Kutta)
+
+The full LTC dynamics reduce to a single analytical step:
+
+$$x(t{+}\Delta t) = \underbrace{\sigma\!\bigl[-(f + \tfrac{1}{\tau})\,\Delta t\bigr]}_{\text{time-aware decay gate}} \cdot x(t) \;+\; \bigl(1 - \sigma[\ldots]\bigr) \cdot A \cdot \tanh(f)$$
+
+where $f = \text{MLP}([x;\,u]) + W_{\text{macro}}\cdot x + W_{\text{in}}\cdot u + b$ combines the non-linear backbone, the biological recurrent matrix $W_{\text{macro}}$, and the sensory projection.
+
+- $\tau = \text{softplus}(\tau_{\text{raw}}) > 0$ — per-neuron membrane time constants (always positive)
+- $A$ — learnable asymptotic attractor amplitude
+- Default $\Delta t = 4\,\text{ms}$ → **250 Hz** closed-loop rate
+
+### W_macro Topology Control (three modes)
+
+| Mode | Behaviour | Use Case |
+| :--- | :--- | :--- |
+| `fixed` | Frozen buffer — zero gradient, maximum inference speed | Hardware deployment, ablation |
+| `masked` | Trainable + backward hook zeros gradients outside the pruning mask; `apply_topology_mask()` hard-zeros after every `optimizer.step()` | Training with biological wiring constraints |
+| `free` | Fully trainable — no structural prior | Baseline comparison |
+
+### Usage
+
+```python
+from bio_pipeline.models import BiologicalCfCCell, build_network_from_meta
+
+# One-call factory from a ReducedModel meta file
+net = build_network_from_meta(
+    meta_path       = "data/reduced_models/meta_spectral_k64.json",
+    input_size      = 66,          # 2 flow + 64 ToF
+    output_dim      = 4,
+    mode            = "masked",    # enforce pruned topology
+    backbone_units  = 64,
+    backbone_layers = 2,
+    dt              = 0.004,       # 250 Hz
+)
+
+# Single step (250 Hz flight loop)
+h_new = net.cell(sensor_tensor, hx, dt=0.004)
+
+# After optimizer.step() — re-enforce sparsity
+net.post_step()
+```
+
+---
+
+## 🎮 ChongFlyMSPPolicy — Sensor → RC PWM
+
+[`simulation/policy.py`](simulation/policy.py) is the full sensor-to-actuator translation layer that maps raw sensor data to standard RC PWM microsecond commands.
+
+### Pipeline
+
+```
+SensorInputLayer          66 inputs: [FlowX, FlowY] + [ToF_00 … ToF_63]
+      ↓                   learnable per-channel gain & bias
+BiologicalCfCCell         recurrent CfC core (W_macro biological topology)
+      ↓
+DNProjectionHead          sparse readout — only descending neuron clusters active
+      ↓
+PWMOutputLayer            affine transform to RC PWM microseconds
+```
+
+### Affine PWM Transform
+
+| Channel | Activation | Formula | Range |
+| :---: | :---: | :---: | :---: |
+| Throttle | `sigmoid` | $1000 + \sigma(x)\times 1000$ | 1000–2000 µs |
+| Roll | `tanh` | $1500 + \tanh(x)\times 500$ | 1000–2000 µs |
+| Pitch | `tanh` | $1500 + \tanh(x)\times 500$ | 1000–2000 µs |
+| Yaw | `tanh` | $1500 + \tanh(x)\times 500$ | 1000–2000 µs |
+
+Neutral (uninitialised network): throttle ≈ 1500 µs (50 %), attitude channels ≈ 1500 µs.
+
+### DNProjectionHead — Biologically Constrained Readout
+
+Motor commands are projected exclusively from the descending-neuron (DN) cluster indices stored in `motor_index_map`. All other hidden units are masked to zero in the output projection — mirroring the biological pathway from DN populations to thoracic motor circuits.
+
+```
+throttle  ← cluster [50]
+yaw       ← clusters [42, 50]
+pitch/roll← cluster [50]
+```
+
+### Flight-Loop API
+
+```python
+from simulation.policy import ChongFlyMSPPolicy
+import numpy as np
+
+policy = ChongFlyMSPPolicy.from_meta(
+    "data/reduced_models/meta_spectral_k64.json",
+    mode="masked", dt=0.004,
+)
+
+policy.reset_state()       # call at episode / flight start
+
+# 250 Hz loop
+while flying:
+    pwm = policy.step_np(
+        flow_xy = pmw3901.read(),           # (2,)  ∈ [-1, 1]
+        tof_8x8 = vl53l5cx.read_frame(),    # (64,) ∈ [0, 1]
+    )
+    # pwm → [throttle_µs, roll_µs, pitch_µs, yaw_µs]
+    msp.send_rc(pwm)
 ```
 
 ---
@@ -206,6 +322,18 @@ print(model.motor_index_map)           # {'throttle': [50], 'yaw': [42,50], 'pit
 # Load magnitude-pruned sparse model (p=90)
 sparse_model = ReducedModel.load("data/reduced_models/meta_magnitude_p90_k12942.json")
 # sparse_model.W is a scipy.sparse.csr_matrix with 3,305 NNZ
+```
+
+### 5. Validate Biological CfC Dynamics
+Runs 33 dynamical tests validating analytical non-ODE integration, gradient propagation, and topological synaptic masking:
+```bash
+python bio_pipeline/test_cfc_dynamics.py
+```
+
+### 6. Run Policy Pipeline & PWM Verification
+Runs 44 validation tests across the full sensor-to-actuator pipeline (66 sensor inputs, DN sparse readout, and [1000, 2000] µs RC PWM output):
+```bash
+python simulation/test_policy.py
 ```
 
 ---
