@@ -1,0 +1,78 @@
+{
+  "reducer": "spectral",
+  "k": 2048,
+  "sparse": false,
+  "w_file": "w_spectral_k2048.npy",
+  "cmap_file": "cmap_spectral_k2048.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      55,
+      170,
+      267,
+      288,
+      418,
+      538,
+      699,
+      761,
+      831,
+      926,
+      975,
+      979,
+      1068,
+      1180,
+      1182,
+      1203,
+      1369,
+      1414,
+      1499,
+      1535,
+      1605,
+      1626,
+      1693,
+      1694,
+      1755,
+      1827
+    ],
+    "lc_looming": [
+      670,
+      770,
+      1006,
+      1259
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      1036,
+      1057,
+      1074,
+      1090
+    ],
+    "yaw": [
+      359,
+      877,
+      1263,
+      1666
+    ],
+    "pitch_roll": [
+      875,
+      938,
+      1038,
+      1082,
+      1097,
+      1128,
+      1157,
+      1207
+    ]
+  },
+  "metrics": {
+    "mem_mb": 16.0,
+    "nnz": 28175,
+    "sparsity_pct": 99.32825565338135,
+    "spectral_rho": 44.04047393798828,
+    "step_us": 1588.9856300054817,
+    "mops": 5279.2220656967565,
+    "stable_linear": true,
+    "reduce_sec": 0.953
+  },
+  "platform_hint": "High-Perf Edge (VOXL 2)"
+}

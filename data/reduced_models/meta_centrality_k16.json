@@ -1,0 +1,67 @@
+{
+  "reducer": "centrality",
+  "k": 16,
+  "sparse": false,
+  "w_file": "w_centrality_k16.npy",
+  "cmap_file": "cmap_centrality_k16.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "lc_looming": [
+      7,
+      8,
+      10
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      10,
+      11,
+      12,
+      13
+    ],
+    "yaw": [
+      5,
+      10,
+      11,
+      14
+    ],
+    "pitch_roll": [
+      0,
+      1,
+      2,
+      3,
+      12,
+      13,
+      14,
+      15
+    ]
+  },
+  "metrics": {
+    "mem_mb": 0.0009765625,
+    "nnz": 256,
+    "sparsity_pct": 0.0,
+    "spectral_rho": 34.052059173583984,
+    "step_us": 4.2433019989402965,
+    "mops": 120.66074960676016,
+    "stable_linear": true,
+    "reduce_sec": 0.049
+  },
+  "platform_hint": "MCU (ESP32 / Cortex-M4)"
+}

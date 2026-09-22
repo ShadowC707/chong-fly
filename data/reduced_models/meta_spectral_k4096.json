@@ -1,0 +1,78 @@
+{
+  "reducer": "spectral",
+  "k": 4096,
+  "sparse": false,
+  "w_file": "w_spectral_k4096.npy",
+  "cmap_file": "cmap_spectral_k4096.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      111,
+      342,
+      534,
+      576,
+      836,
+      1077,
+      1399,
+      1524,
+      1664,
+      1853,
+      1951,
+      1959,
+      2136,
+      2361,
+      2365,
+      2408,
+      2739,
+      2830,
+      2999,
+      3072,
+      3212,
+      3254,
+      3388,
+      3390,
+      3512,
+      3656
+    ],
+    "lc_looming": [
+      1341,
+      1540,
+      2014,
+      2519
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      2073,
+      2115,
+      2149,
+      2180
+    ],
+    "yaw": [
+      718,
+      1754,
+      2528,
+      3333
+    ],
+    "pitch_roll": [
+      1750,
+      1878,
+      2077,
+      2166,
+      2194,
+      2258,
+      2314,
+      2416
+    ]
+  },
+  "metrics": {
+    "mem_mb": 64.0,
+    "nnz": 30855,
+    "sparsity_pct": 99.81608986854553,
+    "spectral_rho": 29.74247932434082,
+    "step_us": 7024.875399998564,
+    "mops": 4776.516320845613,
+    "stable_linear": true,
+    "reduce_sec": 4.044
+  },
+  "platform_hint": "Workstation GPU (RTX 3050 Ti)"
+}

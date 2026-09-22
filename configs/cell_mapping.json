@@ -1,0 +1,111 @@
+{
+  "_comment": "Biological cell-type mapping config for Chong-Fly connectome extractor.",
+
+  "include_central_complex": true,
+
+  "exclusion": {
+    "_comment": "Cell super-classes to drop before any further processing. Matches against the 'super_class' or 'cell_class' column returned by CAVE, or the synthetic 'layer' tag in fallback mode.",
+    "super_classes": [
+      "mushroom_body",
+      "neuroendocrine",
+      "courtship",
+      "lamina_monopolar"
+    ],
+    "cell_types_exact": [
+      "L1", "L2", "L3", "L4", "L5",
+      "Am",
+      "APL",
+      "DM1", "DM2", "DM3", "DM4", "DM5", "DM6",
+      "DA1", "DA2", "DA3", "DA4", "DC1", "DC2", "DC3",
+      "DP1m", "DP1l",
+      "VA1d", "VA1v", "VA2", "VA3", "VA4", "VA5", "VA6", "VA7l", "VA7m",
+      "VL1", "VL2a", "VL2p",
+      "V",
+      "KCab", "KCab-p", "KCabn", "KCg-m", "KCg-s",
+      "APL_MB",
+      "MBON01", "MBON02", "MBON03", "MBON04", "MBON05",
+      "MBON06", "MBON07", "MBON08", "MBON09", "MBON10",
+      "DAL", "DAN", "OAN",
+      "fru-M", "fru-F",
+      "dsx-M", "dsx-F",
+      "P1a", "pC1", "pC2l", "pC2m"
+    ]
+  },
+
+  "optic_lobe": {
+    "_comment": "Columnar filters and Elementary Motion Detectors in Medulla / Lobula Plate.",
+    "medulla_columnar": ["Mi1", "Mi4", "Mi9"],
+    "transmedullary_off": ["Tm1", "Tm2", "Tm3", "Tm4", "Tm9"],
+    "emd_on": ["T4a", "T4b", "T4c", "T4d"],
+    "emd_off": ["T5a", "T5b", "T5c", "T5d"],
+    "interneurons_commissure": ["CH", "dCH", "vCH", "LPi1-2", "LPi2-1", "LPi3-4", "LPi4-3"]
+  },
+
+  "sensor_groups": {
+    "_comment": "Mapping from physical sensor channels to biological LPTC / LC populations.",
+    "optic_flow": {
+      "_comment": "FlowX (horizontal) and FlowY (vertical) optical-flow channels → Large-Field Tangential Cells (LPTC).",
+      "sensor_channels": ["FlowX", "FlowY"],
+      "cell_types": ["HSN", "HSE", "HSS", "VS1", "VS2", "VS3", "VS4", "VS5", "VS6", "VS7", "VS8", "VS9", "VS10"]
+    },
+    "tof_depth": {
+      "_comment": "ToF 8×8 (64-pixel) proximity grid → Lobula columnar LC4 (looming threat) and LPLC2 (looming escape).",
+      "sensor_channels": ["ToF_8x8"],
+      "pixel_count": 64,
+      "cell_types": ["LC4", "LPLC2"]
+    }
+  },
+
+  "motor_groups": {
+    "_comment": "Descending Neuron (DN) populations mapped to flight actuator channels.",
+    "throttle": {
+      "_comment": "Bilateral thrust / altitude. DNp09 = primary dorsal thrust command; DNp01 = secondary power modulation.",
+      "cell_types": ["DNp09", "DNp01"],
+      "sign": "bilateral"
+    },
+    "yaw": {
+      "_comment": "Differential left-right activation of DNa01 / DNa02 encodes yaw torque.",
+      "cell_types": ["DNa01", "DNa02"],
+      "sign": "differential_LR"
+    },
+    "pitch_roll": {
+      "_comment": "Combined pitch and roll stabilization via ventral/dorsal descending pathways.",
+      "cell_types": ["DNp02", "DNp04", "DNp11", "DNa11"],
+      "sign": "bilateral"
+    }
+  },
+
+  "central_complex": {
+    "_comment": "CX navigation core. Only included when include_central_complex == true.",
+    "ellipsoid_body": {
+      "compass": ["E-PG"],
+      "phase_shifters": ["P-EN"]
+    },
+    "protocerebral_bridge": {
+      "lateral_inhibition": ["Delta7"]
+    },
+    "fan_shaped_body": {
+      "goal_vector": ["P-FN"],
+      "premotor_steering": ["P-FL"]
+    }
+  },
+
+  "synthetic_wiring": {
+    "_comment": "Synapse weight ranges (uniform random) used by the synthetic fallback generator.",
+    "columnar_mi_to_t4": [12, 28],
+    "columnar_tm_to_t5": [12, 28],
+    "t4_t5_to_lptc": [15, 40],
+    "lpi_to_hs": 25,
+    "hs_to_lpi": 20,
+    "hs_to_ch": 35,
+    "hs_to_dn": 40,
+    "vs_to_dn": 30,
+    "ch_commissure": 45,
+    "cx_epg_to_pen": 35,
+    "cx_pen_to_epg": 30,
+    "cx_d7_to_epg": 25,
+    "cx_epg_to_pfn": 40,
+    "cx_pfn_to_pfl": 40,
+    "cx_pfl_to_dna": 50
+  }
+}

@@ -1,12 +1,41 @@
-﻿__pycache__/
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ───────────────────────────────────────────────────────
 .venv/
 venv/
-data/reduced_models/*.npy
+env/
+.env
+
+# ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
+# Spectral reducer — dense .npy (17 KB – 639 MB)
+data/reduced_models/w_spectral_*.npy
+# Centrality reducer — dense .npy
+data/reduced_models/w_centrality_*.npy
+# Cluster-map arrays — one per model, ~51 KB each but numerous
+data/reduced_models/cmap_*.npy
+
+# Keep small sparse CSR matrices (.npz) — they are kilobytes
+# data/reduced_models/w_magnitude_*.npz   ← tracked (kept small)
+
+# ── Raw connectome bulk data ───────────────────────────────────────────────────
 data/raw_connectome/*.parquet
 data/raw_connectome/*.csv
+
+# ── Explicitly keep lightweight JSON artefacts ────────────────────────────────
 !data/reduced_models/models_grid_manifest.json
 !data/reduced_models/matrix_benchmark_report.json
+!data/reduced_models/meta_*.json
 !data/raw_connectome/circuit_summary.json
+
+# ── IDE / OS noise ────────────────────────────────────────────────────────────
 .vscode/
 .idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
