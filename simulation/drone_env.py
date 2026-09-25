@@ -717,3 +717,189 @@ class DroneSimulationEnv:
         flow_xy = obs[0:2]
         tof_8x8 = obs[2:66]
         return flow_xy, tof_8x8
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Interactive CLI Flight Runner & Real-Time Telemetry HUD
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _make_bar(value: float, width: int = 12) -> str:
+    """Renders a simple ASCII gauge bar for values in [0.0, 1.0]."""
+    filled = int(round(np.clip(value, 0.0, 1.0) * width))
+    return "█" * filled + "░" * (width - filled)
+
+
+def run_flight_simulation(
+    meta_path: str = "data/reduced_models/meta_spectral_k64.json",
+    duration_s: float = 2.0,
+    target_altitude: float = 1.0,
+    realtime: bool = False,
+    hud_interval_s: float = 0.1,
+    solver_type: str = "CfC",
+    pruning_sparsity: Optional[float] = None,
+    ablate_cx: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """
+    Executes an interactive closed-loop flight simulation with ChongFlyMSPPolicy.
+    """
+    import time
+    from simulation.policy import ChongFlyMSPPolicy
+
+    print("\n" + "=" * 80)
+    print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT SITL FLIGHT SIMULATION")
+    print("=" * 80)
+    print(f"  • Model Meta:       {meta_path}")
+    print(f"  • Solver Type:      {solver_type}")
+    print(f"  • Sparsity Prune:   {pruning_sparsity if pruning_sparsity is not None else 'Default'}")
+    print(f"  • Ablate CX:        {ablate_cx if ablate_cx is not None else 'Default'}")
+    print(f"  • Flight Duration:  {duration_s:.1f} s ({int(duration_s / 0.004)} steps @ 250 Hz)")
+    print(f"  • Target Altitude:  {target_altitude:.2f} m")
+    print(f"  • Mode:             {'Real-Time Playback' if realtime else 'Maximum Speed (Fast)'}")
+    print("=" * 80 + "\n")
+
+    # 1. Initialize Policy and Environment
+    policy = ChongFlyMSPPolicy.from_meta(
+        meta_path=meta_path,
+        mode="fixed",
+        dt=0.004,
+        solver_type=solver_type,
+        pruning_sparsity=pruning_sparsity,
+        ablate_cx=ablate_cx,
+    )
+    policy.reset_state()
+
+    env = DroneSimulationEnv(dt=0.004, target_altitude=target_altitude)
+    obs = env.reset(seed=42)
+
+    total_steps = int(duration_s / env.dt)
+    steps_survived = 0
+    alt_errors = []
+    tilt_errors = []
+    pwms = []
+
+    last_hud_time = -1.0
+    start_wall_time = time.time()
+
+    # 2. Flight Loop (250 Hz)
+    for step in range(total_steps):
+        t_sim = step * env.dt
+
+        # A. Sensory Readout
+        flow_xy, tof_8x8 = env.get_chong_fly_obs()
+
+        # B. Biological Policy Step
+        pwm = policy.step_np(flow_xy, tof_8x8)
+        pwms.append(pwm)
+
+        # C. Environment & Betaflight Step
+        obs, reward, done, info = env.step(pwm)
+        steps_survived += 1
+
+        pos = info["position"]
+        vel = info["velocity"]
+        euler = info["euler_rad"]
+        omega = info["omega_rads"]
+        motors = info["motor_commands"]
+        power_w = info["power_w"]
+
+        alt_errors.append(abs(float(pos[2]) - target_altitude))
+        tilt_errors.append(math.sqrt(float(euler[0]**2 + euler[1]**2)))
+
+        # D. Real-Time Telemetry HUD Display
+        if (t_sim - last_hud_time) >= hud_interval_s or step == 0 or done:
+            last_hud_time = t_sim
+            roll_deg = math.degrees(euler[0])
+            pitch_deg = math.degrees(euler[1])
+            yaw_deg = math.degrees(euler[2])
+
+            tof_mat = tof_8x8.reshape(8, 8)
+            center_tof = float(np.mean(tof_mat[3:5, 3:5]))
+
+            print(f"\r┌─[ T = {t_sim:5.3f}s | Step {step:4d}/{total_steps} | Power: {power_w:5.1f}W | Energy: {env.total_energy_j:6.2f}J ]" + "─" * 25 + "┐")
+            print(f"│ POS:  X={pos[0]:+6.2f}m  Y={pos[1]:+6.2f}m  Z={pos[2]:5.2f}m (Target: {target_altitude:4.2f}m)  │ VEL: Vx={vel[0]:+5.2f} Vy={vel[1]:+5.2f} Vz={vel[2]:+5.2f} m/s │")
+            print(f"│ ATT:  Roll={roll_deg:+5.1f}° Pitch={pitch_deg:+5.1f}° Yaw={yaw_deg:+5.1f}°     │ GYRO: p={omega[0]:+5.2f}  q={omega[1]:+5.2f}  r={omega[2]:+5.2f} rad/s │")
+            print(f"│ MOTORS (Betaflight Quad-X):                                              │")
+            print(f"│   M4 (FL): [{_make_bar(motors[3])}] {motors[3]*100:4.1f}%     M2 (FR): [{_make_bar(motors[1])}] {motors[1]*100:4.1f}%       │")
+            print(f"│   M3 (RL): [{_make_bar(motors[2])}] {motors[2]*100:4.1f}%     M1 (RR): [{_make_bar(motors[0])}] {motors[0]*100:4.1f}%       │")
+            print(f"│ SENSORS: Optical Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | ToF Center Dist: {center_tof*3.5:4.2f}m  │")
+            print(f"└" + "─" * 74 + "┘")
+
+        if realtime:
+            # Sleep remainder of dt
+            elapsed = time.time() - start_wall_time
+            sleep_time = (step + 1) * env.dt - elapsed
+            if sleep_time > 0.0005:
+                time.sleep(sleep_time)
+
+        if done:
+            print(f"\n⚠️  DRONE COLLISION / FLIGHT TERMINATION at T = {t_sim:.3f} s!")
+            break
+
+    wall_duration = time.time() - start_wall_time
+    fps = steps_survived / max(1e-6, wall_duration)
+
+    # 3. Final Performance Summary
+    mean_alt_err = float(np.mean(alt_errors)) if alt_errors else 0.0
+    mean_tilt_err = math.degrees(float(np.mean(tilt_errors))) if tilt_errors else 0.0
+    pwm_arr = np.array(pwms)
+    pwm_jitter = float(np.mean(np.abs(np.diff(pwm_arr, axis=0)))) if len(pwm_arr) > 1 else 0.0
+
+    print("\n" + "=" * 80)
+    print("   📊 FLIGHT TELEMETRY SUMMARY & EVALUATION REPORT")
+    print("=" * 80)
+    print(f"  • Flight Outcome:         {'✅ FLIGHT COMPLETED (STABLE)' if not done else '❌ CRASHED'}")
+    print(f"  • Survival Duration:      {steps_survived * env.dt:.3f} s / {duration_s:.3f} s ({steps_survived / total_steps * 100:.1f} %)")
+    print(f"  • Simulation Speed:       {fps:.1f} steps/s ({fps * env.dt:.1f}x real-time)")
+    print(f"  • Mean Altitude Error:    {mean_alt_err:.4f} m")
+    print(f"  • Mean Attitude Tilt:     {mean_tilt_err:.2f}°")
+    print(f"  • Mean PWM Jitter:        {pwm_jitter:.2f} µs/step")
+    print(f"  • Total Energy Consumed:  {env.total_energy_j:.2f} Joules")
+    print(f"  • Average Power Demand:   {env.total_energy_j / max(1e-6, steps_survived * env.dt):.2f} Watts")
+    print("=" * 80 + "\n")
+
+    return {
+        "survived": not done,
+        "steps_survived": steps_survived,
+        "flight_time_s": steps_survived * env.dt,
+        "energy_j": env.total_energy_j,
+        "mean_alt_error": mean_alt_err,
+        "mean_tilt_error_deg": mean_tilt_err,
+        "pwm_jitter": pwm_jitter,
+    }
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Chong-Fly 6-DOF Drone Betaflight SITL Simulation")
+    parser.add_argument("--model", type=str, default="data/reduced_models/meta_spectral_k64.json",
+                        help="Path to reduced model meta JSON (default: meta_spectral_k64.json)")
+    parser.add_argument("--duration", type=float, default=2.0,
+                        help="Flight duration in seconds (default: 2.0s = 500 steps)")
+    parser.add_argument("--alt", type=float, default=1.0,
+                        help="Target hover altitude in meters (default: 1.0m)")
+    parser.add_argument("--realtime", action="store_true",
+                        help="Run at 1x real-time playback speed (default: fast)")
+    parser.add_argument("--solver", type=str, choices=["CfC", "Euler_dt_0.02"], default="CfC",
+                        help="Neural ODE solver: CfC (closed-form, 250Hz) or Euler_dt_0.02 (default: CfC)")
+    parser.add_argument("--sparsity", type=float, default=None,
+                        help="Dynamic weight magnitude pruning sparsity [0.50, 0.95]")
+    parser.add_argument("--ablate-cx", action="store_true", default=None,
+                        help="Ablate Central Complex (reflex-only mode)")
+
+    args = parser.parse_args()
+
+    run_flight_simulation(
+        meta_path=args.model,
+        duration_s=args.duration,
+        target_altitude=args.alt,
+        realtime=args.realtime,
+        solver_type=args.solver,
+        pruning_sparsity=args.sparsity,
+        ablate_cx=args.ablate_cx,
+    )
+
+
+if __name__ == "__main__":
+    main()
+
