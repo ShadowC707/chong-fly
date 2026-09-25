@@ -68,12 +68,12 @@
     "mem_mb": 638.9441070556641,
     "nnz": 13964,
     "sparsity_pct": 99.9916630528353,
-    "spectral_rho": 150.36465454101562,
-    "step_us": 56245.165959997394,
-    "mops": 5955.90256126636,
+    "spectral_rho": 1.0587773323059082,
+    "step_us": 53000.50398800522,
+    "mops": 6320.519670450931,
     "stable_linear": true,
     "prune_pct": 60,
-    "reduce_sec": 34.49
+    "reduce_sec": 30.69
   },
   "platform_hint": "Pruned-60%-sparse (direct N=12942)"
 }

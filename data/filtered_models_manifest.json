@@ -1,0 +1,68 @@
+{
+  "manifest_name": "Chong-Fly Pareto Filtered Models Manifest",
+  "criteria": {
+    "objective_1": "survival_time_s (maximize)",
+    "objective_2": "energy_cost_j (minimize)"
+  },
+  "created_at": "2026-09-25T15:15:52.369717+00:00",
+  "total_evaluated_models": 15,
+  "pareto_models_count": 2,
+  "models": [
+    {
+      "model_id": "pareto_0_k32_s58_cfc_nocx",
+      "trial_number": 5,
+      "k_clusters": 32,
+      "pruning_sparsity": 0.5831845049864872,
+      "solver_type": "CfC",
+      "ablate_cx": true,
+      "objectives": {
+        "survival_time_s": 0.4,
+        "energy_cost_j": 4.992
+      },
+      "files": {
+        "meta_file": "meta_spectral_k32_nocx.json",
+        "w_file": "w_spectral_k32_nocx.npy",
+        "cmap_file": "cmap_spectral_k32_nocx.npy"
+      },
+      "metrics": {
+        "survival_ratio": 1.0,
+        "steps_survived": 100,
+        "mean_altitude_error": 0.0228,
+        "mean_tilt_error": 0.0036,
+        "mean_pwm_jitter": 0.5842,
+        "mean_power_w": 12.48,
+        "sparsity_pct": 58.32,
+        "spectral_rho": 0.9413,
+        "platform_hint": "MCU (ESP32 / Cortex-M4) (Ablated CX)"
+      }
+    },
+    {
+      "model_id": "pareto_1_k64_s94_euler_dt_0.02_nocx",
+      "trial_number": 14,
+      "k_clusters": 64,
+      "pruning_sparsity": 0.9487572867792058,
+      "solver_type": "Euler_dt_0.02",
+      "ablate_cx": true,
+      "objectives": {
+        "survival_time_s": 2.0,
+        "energy_cost_j": 29.3138
+      },
+      "files": {
+        "meta_file": "meta_spectral_k64_nocx.json",
+        "w_file": "w_spectral_k64_nocx.npy",
+        "cmap_file": "cmap_spectral_k64_nocx.npy"
+      },
+      "metrics": {
+        "survival_ratio": 1.0,
+        "steps_survived": 100,
+        "mean_altitude_error": 0.041,
+        "mean_tilt_error": 0.0069,
+        "mean_pwm_jitter": 0.0979,
+        "mean_power_w": 14.66,
+        "sparsity_pct": 94.88,
+        "spectral_rho": 0.4151,
+        "platform_hint": "SBC (RPi Zero / CM4) (Ablated CX)"
+      }
+    }
+  ]
+}

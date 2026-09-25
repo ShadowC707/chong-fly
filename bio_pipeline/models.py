@@ -150,6 +150,7 @@ class BiologicalCfCCell(nn.Module):
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
         dt: float = 0.004,
+        solver_type: str = "CfC",
         sensor_indices: Optional[dict] = None,
         motor_indices: Optional[dict] = None,
     ):
@@ -160,7 +161,11 @@ class BiologicalCfCCell(nn.Module):
         self.hidden_size    = hidden_size
         self.input_size     = input_size
         self.mode           = mode
-        self.default_dt     = dt
+        self.solver_type    = solver_type
+        if (solver_type == "Euler_dt_0.02" or solver_type.lower() == "euler_dt_0.02") and dt == 0.004:
+            self.default_dt = 0.02
+        else:
+            self.default_dt = dt
         self.sensor_indices = sensor_indices or {}
         self.motor_indices  = motor_indices or {}
 
@@ -327,8 +332,16 @@ class BiologicalCfCCell(nn.Module):
         A      = self.A.to(input.device)             # (k,)
         h_inf  = A * torch.tanh(f)                   # (batch, k)
 
-        # ── Closed-form state update ──────────────────────────────────────────
-        h_new  = gate * hx + (1.0 - gate) * h_inf   # (batch, k)
+        # ── State update: Euler explicit step vs CfC closed-form ──────────────
+        if self.solver_type == "Euler_dt_0.02" or self.solver_type.lower().startswith("euler"):
+            # Explicit Euler discretization of the continuous-time LTC ODE:
+            # dh/dt = -(f + 1/tau) * hx + h_inf
+            dh_dt = -(f + 1.0 / tau) * hx + h_inf
+            h_new = hx + dt * dh_dt
+        else:
+            # Time-aware decay gate σ(-(f + 1/τ)·Δt) and closed-form LTC update
+            gate  = torch.sigmoid(-(f + 1.0 / tau) * dt)  # (batch, k)
+            h_new = gate * hx + (1.0 - gate) * h_inf      # (batch, k)
 
         return h_new
 
@@ -341,6 +354,8 @@ class BiologicalCfCCell(nn.Module):
         input_size: int,
         mode: str = "masked",
         prune_mask_model=None,         # optional separate MagnitudePruner model for mask
+        pruning_sparsity: Optional[float] = None,
+        solver_type: str = "CfC",
         **kwargs,
     ) -> "BiologicalCfCCell":
         """
@@ -353,6 +368,8 @@ class BiologicalCfCCell(nn.Module):
         mode            : "fixed" | "masked" | "free"
         prune_mask_model: optional ReducedModel from MagnitudePruner — its
                           sparsity pattern is used as the synapse mask.
+        pruning_sparsity: optional float in [0.0, 1.0) for magnitude pruning.
+        solver_type     : 'CfC' | 'Euler_dt_0.02'
         **kwargs        : forwarded to BiologicalCfCCell.__init__
         """
         k = model.k
@@ -360,19 +377,28 @@ class BiologicalCfCCell(nn.Module):
             hidden_size=k,
             input_size=input_size,
             mode=mode,
+            solver_type=solver_type,
             sensor_indices=model.sensor_index_map,
             motor_indices=model.motor_index_map,
             **kwargs,
         )
 
-        # Choose mask source
-        if prune_mask_model is not None:
+        W = model.W
+        # Choose mask / pruning source
+        if pruning_sparsity is not None:
+            W_dense = W.toarray() if sp.issparse(W) else np.array(W, copy=True)
+            k_pct = float(pruning_sparsity) * 100.0
+            threshold = float(np.percentile(np.abs(W_dense), k_pct))
+            mask = (np.abs(W_dense) >= threshold).astype(np.float32)
+            W_pruned = W_dense * mask
+            cell.set_w_macro(W_pruned, mask=mask)
+        elif prune_mask_model is not None:
             mask = prune_mask_model.W   # CSR matrix → boolean mask
+            cell.set_w_macro(W, mask=mask)
         else:
             mask = None                 # inferred from W zeros
+            cell.set_w_macro(W, mask=mask)
 
-        W = model.W
-        cell.set_w_macro(W, mask=mask)
         return cell
 
     # ------------------------------------------------------------------ apply mask (post-step)
@@ -392,7 +418,7 @@ class BiologicalCfCCell(nn.Module):
     def extra_repr(self) -> str:
         nnz = int(self._synapse_mask.sum()) if self._synapse_mask is not None else "?"
         return (f"hidden={self.hidden_size}, input={self.input_size}, "
-                f"mode={self.mode}, synapse_nnz={nnz}, dt={self.default_dt}s")
+                f"mode={self.mode}, solver={self.solver_type}, synapse_nnz={nnz}, dt={self.default_dt}s")
 
 
 # ---------------------------------------------------------------------------
@@ -500,6 +526,9 @@ def build_network_from_meta(
     output_dim: int,
     mode: str = "masked",
     prune_meta_path: Optional[str] = None,
+    pruning_sparsity: Optional[float] = None,
+    solver_type: str = "CfC",
+    ablate_cx: Optional[bool] = None,
     backbone_units: int = 64,
     backbone_layers: int = 2,
     backbone_act: str = "lecun_tanh",
@@ -519,6 +548,9 @@ def build_network_from_meta(
     mode            : "fixed" | "masked" | "free"
     prune_meta_path : optional meta_magnitude_p90_k12942.json — its sparsity
                       pattern is used as synapse mask (overrides W zeros)
+    pruning_sparsity: optional float in [0.0, 1.0) for magnitude pruning
+    solver_type     : 'CfC' | 'Euler_dt_0.02'
+    ablate_cx       : if True, load _nocx version of model if available
     **kwargs        : forwarded to BiologicalCfCCell
 
     Returns
@@ -526,7 +558,13 @@ def build_network_from_meta(
     BiologicalCfCNetwork ready for training
     """
     # Import here to avoid circular dependency at module level
+    import os
     from bio_pipeline.graph_reducer import ReducedModel
+
+    if ablate_cx and "_nocx" not in meta_path:
+        nocx_meta = meta_path.replace(".json", "_nocx.json")
+        if os.path.exists(nocx_meta):
+            meta_path = nocx_meta
 
     model = ReducedModel.load(meta_path)
 
@@ -539,6 +577,8 @@ def build_network_from_meta(
         input_size=input_size,
         mode=mode,
         prune_mask_model=prune_model,
+        pruning_sparsity=pruning_sparsity,
+        solver_type=solver_type,
         backbone_units=backbone_units,
         backbone_layers=backbone_layers,
         backbone_act=backbone_act,

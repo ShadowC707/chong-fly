@@ -68,11 +68,11 @@
     "mem_mb": 256.0,
     "nnz": 31871,
     "sparsity_pct": 99.95250850915909,
-    "spectral_rho": 100.95496368408203,
-    "step_us": 23035.13768200355,
-    "mops": 5826.651867805376,
+    "spectral_rho": 1.3361932039260864,
+    "step_us": 24557.663576000778,
+    "mops": 5465.411136716019,
     "stable_linear": true,
-    "reduce_sec": 13.142
+    "reduce_sec": 14.607
   },
   "platform_hint": "Workstation GPU (RTX 3050 Ti)"
 }

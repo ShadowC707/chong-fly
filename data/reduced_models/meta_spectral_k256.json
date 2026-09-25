@@ -52,11 +52,11 @@
     "mem_mb": 0.25,
     "nnz": 3818,
     "sparsity_pct": 94.1741943359375,
-    "spectral_rho": 42.80071258544922,
-    "step_us": 8.436447998974472,
-    "mops": 15536.396362062922,
+    "spectral_rho": 0.9534110426902771,
+    "step_us": 18.653467999683926,
+    "mops": 7026.682652374398,
     "stable_linear": true,
-    "reduce_sec": 0.415
+    "reduce_sec": 0.666
   },
   "platform_hint": "Edge Embedded (Jetson Nano)"
 }

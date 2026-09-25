@@ -27,6 +27,12 @@ data/raw_connectome/*.csv
 !data/reduced_models/matrix_benchmark_report.json
 !data/reduced_models/meta_*.json
 !data/raw_connectome/circuit_summary.json
+!data/filtered_models_manifest.json
+
+# ── Optuna & Local Databases ──────────────────────────────────────────────────
+*.db
+*.sqlite3
+.optuna/
 
 # ── Checkpoints & Training Artefacts ──────────────────────────────────────────
 *.pt
@@ -39,9 +45,14 @@ wandb/
 .vscode/
 .idea/
 .pytest_cache/
+.coverage
+htmlcov/
+*.log
+scratch/
 *.swp
 *.swo
 *~
 .DS_Store
 Thumbs.db
+
 

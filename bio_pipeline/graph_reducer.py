@@ -337,7 +337,48 @@ class BaseReducer(abc.ABC):
         """Return a ReducedModel of dimension k."""
 
     def __call__(self, k: int) -> ReducedModel:
-        return self.reduce(k)
+        model = self.reduce(k)
+        
+        # --- Spectral Radius Normalization ---
+        # Calculate rho(W) = max|lambda_i| and scale if > 1.0 to prevent explosive chaos
+        W = model.W
+        is_sparse = sp.issparse(W)
+        
+        try:
+            if is_sparse or W.shape[0] > 2048:
+                # Use ARPACK for large or sparse matrices
+                # We want the eigenvalue with largest magnitude
+                import warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    evals = sp.linalg.eigs(W, k=1, which='LM', return_eigenvectors=False)
+                    rho = float(np.max(np.abs(evals)))
+            else:
+                # Exact calculation for smaller dense matrices
+                evals = np.linalg.eigvals(W)
+                rho = float(np.max(np.abs(evals)))
+        except Exception:
+            # Fallback to power iteration if eigs fails to converge
+            W_dense = W.toarray().astype(np.float32) if is_sparse else W.astype(np.float32)
+            dim = W_dense.shape[0]
+            v = np.random.default_rng(42).standard_normal(dim).astype(np.float32)
+            v /= np.linalg.norm(v) + 1e-9
+            rho = 0.0
+            for _ in range(100):
+                v_next = W_dense @ v
+                r = float(np.linalg.norm(v_next))
+                if r < 1e-9:
+                    break
+                v = v_next / r
+                rho = r
+                
+        if rho > 1.0:
+            if is_sparse:
+                model.W = model.W / rho
+            else:
+                model.W = model.W / rho
+                
+        return model
 
     @staticmethod
     def _platform_hint(k: int) -> str:

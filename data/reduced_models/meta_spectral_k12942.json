@@ -68,11 +68,11 @@
     "mem_mb": 638.9441070556641,
     "nnz": 32394,
     "sparsity_pct": 99.9806597632159,
-    "spectral_rho": 155.35720825195312,
-    "step_us": 56617.597523996665,
-    "mops": 5916.724528235561,
+    "spectral_rho": 1.0780532360076904,
+    "step_us": 55979.489311997895,
+    "mops": 5984.169061152949,
     "stable_linear": true,
-    "reduce_sec": 38.782
+    "reduce_sec": 37.037
   },
   "platform_hint": "1:1 Full Connectome (Server)"
 }

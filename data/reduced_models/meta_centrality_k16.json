@@ -57,11 +57,11 @@
     "mem_mb": 0.0009765625,
     "nnz": 256,
     "sparsity_pct": 0.0,
-    "spectral_rho": 34.052059173583984,
-    "step_us": 4.2433019989402965,
-    "mops": 120.66074960676016,
+    "spectral_rho": 1.0,
+    "step_us": 3.9481679996242747,
+    "mops": 129.68039861746618,
     "stable_linear": true,
-    "reduce_sec": 0.049
+    "reduce_sec": 0.045
   },
   "platform_hint": "MCU (ESP32 / Cortex-M4)"
 }

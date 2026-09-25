@@ -68,11 +68,11 @@
     "mem_mb": 16.0,
     "nnz": 28175,
     "sparsity_pct": 99.32825565338135,
-    "spectral_rho": 44.04047393798828,
-    "step_us": 1588.9856300054817,
-    "mops": 5279.2220656967565,
+    "spectral_rho": 0.9999999403953552,
+    "step_us": 3267.258298001252,
+    "mops": 2567.4762246779624,
     "stable_linear": true,
-    "reduce_sec": 0.953
+    "reduce_sec": 21.973
   },
   "platform_hint": "High-Perf Edge (VOXL 2)"
 }

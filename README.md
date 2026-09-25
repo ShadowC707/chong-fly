@@ -160,7 +160,11 @@ chong-fly/
 │   ├── policy.py                # ChongFlyMSPPolicy: SensorInputLayer + CfC +
 │   │                            #   DNProjectionHead + PWMOutputLayer [1000–2000 µs]
 │   └── test_policy.py           # Policy validation suite (44/44 ✓)
-└── training/                    # Two-Phase Bilevel Evolutionary Optimization (CMA-ES / CfC)
+└── training/                    # Optuna Search Space, Multi-Level Funnel & Simulation
+    ├── env.py                   # 6-DOF DroneSimulationEnv & simulate_policy_rollout
+    ├── evaluate.py              # Level 1 math_screening + Level 2 evaluate_simulation_behavior
+    ├── optuna_tuner.py          # Multi-objective Optuna search & Pareto manifest exporter
+    └── test_optuna_search_space.py # Search space & funnel test suite (50/50 ✓)
 ```
 
 ---
@@ -276,6 +280,70 @@ while flying:
 
 ---
 
+## 🎯 Optuna Architecture Search & Multi-Level Pareto Funnel
+
+[`training/optuna_tuner.py`](training/optuna_tuner.py) implements the automated architecture search and multi-objective Pareto optimization pipeline designed to discover energy-efficient, robust biological neural controllers.
+
+### 1. Search Space (Section 4.1)
+
+| Parameter | Type | Domain / Values | Description |
+| :--- | :--- | :--- | :--- |
+| `k_clusters` | Categorical | `[32, 64, 128, 256]` | Spectral reduction cluster count ($W^{\text{macro}} \in \mathbb{R}^{K \times K}$) |
+| `pruning_sparsity` | Float | `[0.50, 0.95]` | Dynamic biological synapse magnitude pruning |
+| `solver_type` | Categorical | `['CfC', 'Euler_dt_0.02']` | Biological closed-form decay gate vs explicit Euler baseline ($\Delta t = 0.02\,\text{s}$) |
+| `ablate_cx` | Categorical | `[True, False]` | Central Complex ablation (EB, PB, FB) testing reflex-only flight |
+
+### 2. Multi-Level Filtering Funnel (Objective Function)
+
+Candidate architectures undergo a two-tier evaluation to maximize compute throughput and discard unstable configurations early:
+
+```
+                  ┌──────────────────────────────┐
+                  │   Sample Trial Parameters    │
+                  └──────────────┬───────────────┘
+                                 │
+                                 ▼
+         ┌────────────────────────────────────────────────┐
+         │ Level 1: Mathematical Screening O(1)/O(NNZ)    │
+         │  • NaN/Inf weight and time constant check      │
+         │  • Sparsity tolerance (|s_actual - s_target|<=5%)│
+         │  • Euler stability check (tau_min >= dt / 10)  │
+         │  • Gershgorin circle spectral bound (rho<=1.5) │
+         └───────────────────────┬────────────────────────┘
+                                 │
+                     ┌───────────┴───────────┐
+                  Pass                      Fail (< 1 ms)
+                     │                         │
+                     ▼                         ▼
+         ┌───────────────────────┐   ┌────────────────────┐
+         │ Level 2: 6-DOF Drone  │   │ raise              │
+         │ Simulation O(N)       │   │ optuna.            │
+         │  • FlowX/Y + 8x8 ToF  │   │ TrialPruned()      │
+         │  • Obstacle avoidance │   └────────────────────┘
+         │  • Altitude & tilt    │
+         │  • Energy integration │
+         └───────────┬───────────┘
+                     │
+                     ▼
+         ┌────────────────────────────────────────────────┐
+         │ Multi-Objective Pareto Frontier Evaluator      │
+         │  1. Maximize: survival_time_s                  │
+         │  2. Minimize: energy_cost_j                    │
+         └────────────────────────────────────────────────┘
+```
+
+- **Level 1 (`math_screening`, $\mathcal{O}(1) / \mathcal{O}(\text{NNZ})$)**: Instant check executing in $< 1\,\text{ms}$. If numerical instability, spectral divergence, or invalid sparsity is detected, the trial calls `raise optuna.TrialPruned()` without touching the physics simulator.
+- **Level 2 (`evaluate_simulation_behavior`, $\mathcal{O}(N)$)**: Deploys the neural policy inside [`training/env.py`](training/env.py) (`DroneSimulationEnv`). Evaluates flight duration $T_{\text{surv}}$, actuator energy consumption $E_{\text{flight}} = \int P(t)\,dt$, altitude error, and PWM jitter.
+
+### 3. Pareto Frontier & Manifest Export
+
+The multi-objective study identifies non-dominated trade-offs between flight endurance and electrical power demand. Pareto-optimal models are exported to:
+📄 **`data/filtered_models_manifest.json`**
+
+Each entry includes exact model filenames, sparsity, solver configuration, spectral radius, survival time, energy cost, and platform hardware targets (e.g. ESP32, Cortex-M4, Jetson Nano).
+
+---
+
 ## ⚡ Quick Start
 
 ### 1. Environment Setup
@@ -289,7 +357,7 @@ source venv/bin/activate
 # Windows:
 .\venv\Scripts\activate
 
-pip install numpy pandas scipy scikit-learn torch numba pyarrow caveclient
+pip install numpy pandas scipy scikit-learn torch numba pyarrow caveclient optuna
 ```
 
 ### 2. Extract Connectome Topology
@@ -334,6 +402,22 @@ python bio_pipeline/test_cfc_dynamics.py
 Runs 44 validation tests across the full sensor-to-actuator pipeline (66 sensor inputs, DN sparse readout, and [1000, 2000] µs RC PWM output):
 ```bash
 python simulation/test_policy.py
+```
+
+### 7. Run Optuna Search Space & Funnel Validation
+Runs 50 validation tests covering the Optuna Search Space (`k_clusters` $\in [32, 64, 128, 256]$, `pruning_sparsity` $\in [0.50, 0.95]$, `solver_type` $\in [\text{'CfC'}, \text{'Euler\_dt\_0.02'}]$, and `ablate_cx` $\in [\text{True}, \text{False}]$), Level 1 math screening pruning, and simulation evaluation:
+```bash
+python training/test_optuna_search_space.py
+```
+
+### 8. Run Optuna Multi-Objective Tuning & Export Pareto Manifest
+Executes multi-objective optimization (survival time vs energy expenditure) across the 2-level filtering funnel and exports the non-dominated Pareto front:
+```bash
+# Run 50 trials and export Pareto manifest
+python training/optuna_tuner.py --n-trials 50 --pareto --export data/filtered_models_manifest.json
+
+# Quick sanity run (5 trials)
+python training/optuna_tuner.py --n-trials 5 --pareto
 ```
 
 ---

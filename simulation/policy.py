@@ -452,6 +452,9 @@ class ChongFlyMSPPolicy(nn.Module):
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
         dt: float = 0.004,
+        solver_type: str = "CfC",
+        pruning_sparsity: Optional[float] = None,
+        ablate_cx: Optional[bool] = None,
         learnable_scale: bool = True,
     ) -> "ChongFlyMSPPolicy":
         """
@@ -463,6 +466,9 @@ class ChongFlyMSPPolicy(nn.Module):
         mode            : "fixed" | "masked" | "free"
         prune_meta_path : optional magnitude-pruner meta for synapse mask
         sensor_dim      : sensory input size (default 66 = 2 flow + 64 ToF)
+        solver_type     : 'CfC' | 'Euler_dt_0.02'
+        pruning_sparsity: optional float in [0.0, 1.0)
+        ablate_cx       : whether Central Complex is ablated (loads _nocx meta if available)
         """
         from bio_pipeline.models import build_network_from_meta
 
@@ -472,6 +478,9 @@ class ChongFlyMSPPolicy(nn.Module):
             output_dim=N_CONTROLS,
             mode=mode,
             prune_meta_path=prune_meta_path,
+            pruning_sparsity=pruning_sparsity,
+            solver_type=solver_type,
+            ablate_cx=ablate_cx,
             backbone_units=backbone_units,
             backbone_layers=backbone_layers,
             backbone_act=backbone_act,

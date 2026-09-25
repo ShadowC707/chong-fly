@@ -49,11 +49,11 @@
     "mem_mb": 0.0625,
     "nnz": 2722,
     "sparsity_pct": 83.38623046875,
-    "spectral_rho": 36.4198112487793,
-    "step_us": 4.9030619993573055,
-    "mops": 6683.170639958304,
+    "spectral_rho": 1.0,
+    "step_us": 5.689533998520346,
+    "mops": 5759.346900558436,
     "stable_linear": true,
-    "reduce_sec": 0.233
+    "reduce_sec": 0.32
   },
   "platform_hint": "SBC (RPi Zero / CM4)"
 }
