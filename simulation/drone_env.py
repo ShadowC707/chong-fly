@@ -98,6 +98,7 @@ class IsaacGymDroneSim:
         self.graphics_device_id = graphics_device_id
         self.asset_root = os.path.join(_ROOT, asset_root)
         self.asset_file = asset_file
+        self.render_every = 5  # Decoupled 50 FPS graphics at 250 Hz physics
 
         if not HAS_ISAACGYM:
             raise RuntimeError(
@@ -134,19 +135,7 @@ class IsaacGymDroneSim:
             self.sim_params,
         )
 
-        if not self.headless:
-            camera_props = gymapi.CameraProperties()
-            camera_props.width = 1280
-            camera_props.height = 720
-            self.viewer = self.gym.create_viewer(self.sim, camera_props)
-            # Position camera looking at the flight arena
-            cam_pos = gymapi.Vec3(2.5, 2.5, 2.0)
-            cam_target = gymapi.Vec3(0.0, 0.0, 1.0)
-            self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
-        else:
-            self.viewer = None
-
-        # Add ground plane
+        # Add ground plane with grid
         plane_params = gymapi.PlaneParams()
         plane_params.normal = gymapi.Vec3(0.0, 0.0, 1.0)
         plane_params.distance = 0.0
@@ -158,6 +147,14 @@ class IsaacGymDroneSim:
         asset_options.angular_damping = 0.002
         asset_options.linear_damping = 0.15
         self.drone_asset = self.gym.load_asset(self.sim, self.asset_root, self.asset_file, asset_options)
+
+        # Procedural obstacle assets matching ToF raycaster arena
+        obs_opts = gymapi.AssetOptions()
+        obs_opts.fix_base_link = True
+        obs_opts.disable_gravity = True
+        box_asset = self.gym.create_box(self.sim, 0.8, 0.4, 2.5, obs_opts)
+        cap1_asset = self.gym.create_capsule(self.sim, 0.3, 3.0, obs_opts)
+        cap2_asset = self.gym.create_capsule(self.sim, 0.25, 3.0, obs_opts)
 
         # Create envs
         spacing = 4.0
@@ -174,18 +171,77 @@ class IsaacGymDroneSim:
             self.envs.append(env_ptr)
             self.actors.append(actor)
 
+            # Arena obstacles (visual & physical in PhysX)
+            self.gym.create_actor(env_ptr, box_asset, gymapi.Transform(gymapi.Vec3(0.0, 2.4, 1.25)), f"box_{i}", i, 0)
+            self.gym.create_actor(env_ptr, cap1_asset, gymapi.Transform(gymapi.Vec3(1.5, 0.0, 1.5)), f"pillar1_{i}", i, 0)
+            self.gym.create_actor(env_ptr, cap2_asset, gymapi.Transform(gymapi.Vec3(-1.5, 1.0, 1.5)), f"pillar2_{i}", i, 0)
+
         self.gym.prepare_sim(self.sim)
 
         # Wrap PyTorch state tensors
         self.root_tensor = self.gym.acquire_actor_root_state_tensor(self.sim)
         self.root_states = gymtorch.wrap_tensor(self.root_tensor)
 
-    def step(self, forces: torch.Tensor, torques: torch.Tensor) -> bool:
+        # 3D Visualizer
+        if not self.headless:
+            camera_props = gymapi.CameraProperties()
+            camera_props.width = 1280
+            camera_props.height = 720
+            self.viewer = self.gym.create_viewer(self.sim, camera_props)
+            # Position camera with clear perspective of drone at hover (1.0m) and arena
+            cam_pos = gymapi.Vec3(1.6, 1.6, 1.5)
+            cam_target = gymapi.Vec3(0.0, 0.0, 1.0)
+            self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+        else:
+            self.viewer = None
+
+    def sync_state(
+        self,
+        pos: np.ndarray,
+        quat: np.ndarray,
+        vel: Optional[np.ndarray] = None,
+        omega: Optional[np.ndarray] = None,
+    ):
+        """
+        Synchronizes 6-DOF physics state into Isaac Gym PhysX actor root state tensor.
+        quat format in QuadcopterDynamics: [qw, qx, qy, qz]
+        quat format in Isaac Gym / PhysX:   [qx, qy, qz, qw]
+        """
+        if self.root_states is not None:
+            self.root_states[0, 0] = float(pos[0])
+            self.root_states[0, 1] = float(pos[1])
+            self.root_states[0, 2] = float(pos[2])
+            # Quat conversion: [qw, qx, qy, qz] -> [qx, qy, qz, qw]
+            self.root_states[0, 3] = float(quat[1])
+            self.root_states[0, 4] = float(quat[2])
+            self.root_states[0, 5] = float(quat[3])
+            self.root_states[0, 6] = float(quat[0])
+            if vel is not None:
+                self.root_states[0, 7] = float(vel[0])
+                self.root_states[0, 8] = float(vel[1])
+                self.root_states[0, 9] = float(vel[2])
+            if omega is not None:
+                self.root_states[0, 10] = float(omega[0])
+                self.root_states[0, 11] = float(omega[1])
+                self.root_states[0, 12] = float(omega[2])
+            self.gym.set_actor_root_state_tensor(self.sim, self.root_tensor)
+
+    def step(self, render: bool = True) -> bool:
         """Advances PhysX simulation by one dt and renders if viewer is active."""
         self.gym.simulate(self.sim)
         self.gym.fetch_results(self.sim, True)
         self.gym.refresh_actor_root_state_tensor(self.sim)
 
+        if self.viewer is not None and render:
+            if self.gym.query_viewer_has_closed(self.viewer):
+                return False
+            self.gym.step_graphics(self.sim)
+            self.gym.draw_viewer(self.viewer, self.sim, True)
+            self.gym.sync_frame_time(self.sim)
+        return True
+
+    def render(self) -> bool:
+        """Renders current frame to viewer."""
         if self.viewer is not None:
             if self.gym.query_viewer_has_closed(self.viewer):
                 return False
@@ -197,8 +253,10 @@ class IsaacGymDroneSim:
     def close(self):
         if hasattr(self, 'viewer') and self.viewer is not None:
             self.gym.destroy_viewer(self.viewer)
+            self.viewer = None
         if hasattr(self, 'sim') and self.sim is not None:
             self.gym.destroy_sim(self.sim)
+            self.sim = None
 
 
 
@@ -433,9 +491,9 @@ class DroneDynamicsParams:
     ixx: float = 1.66e-5
     iyy: float = 1.66e-5
     izz: float = 2.93e-5
-    # Motor parameters
-    thrust_coeff: float = 2.2e-8           # Thrust = k_f * rpm^2
-    torque_coeff: float = 4.0e-10           # Torque = k_m * rpm^2
+    # Motor parameters (calibrated for 50% stick hover at 11,000 RPM, PWM 1500us)
+    thrust_coeff: float = 6.6886e-10       # Thrust = k_f * rpm^2 (total hover thrust = m*g at 50% throttle)
+    torque_coeff: float = 1.2e-11          # Torque = k_m * rpm^2 (k_m / k_f ~ 0.018)
     max_rpm: float = 22000.0                # Max motor RPM
     motor_tau: float = 0.020                # First-order motor time constant [s]
     # Aerodynamic drag coefficients
@@ -715,6 +773,12 @@ class DroneSimulationEnv:
 
         self.physics.reset(pos, seed=seed)
         self.last_action = np.array([self.physics.hover_throttle, 0.0, 0.0, 0.0], dtype=np.float32)
+
+        # Synchronize initial state to Isaac Gym PhysX viewer
+        if self.isaac_sim is not None:
+            self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
+            self.isaac_sim.render()
+
         return self._get_observation()
 
     def step(
@@ -785,6 +849,15 @@ class DroneSimulationEnv:
         self.physics.step(motors)
         self.step_count += 1
 
+        # Synchronize and step Isaac Gym graphics / PhysX
+        user_closed = False
+        if self.isaac_sim is not None:
+            self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
+            # Decoupled 50 FPS graphics rendering (every 5 steps at 250 Hz physics)
+            sim_ok = self.isaac_sim.step(render=(self.step_count % self.isaac_sim.render_every == 0))
+            if not sim_ok:
+                user_closed = True
+
         # Calculate electrical / mechanical energy expenditure (P = sum(T * omega))
         power_w = float(np.sum(motors ** 2) * 25.0)  # ~25W hover power for micro-drone
         self.total_energy_j += power_w * self.dt
@@ -801,7 +874,7 @@ class DroneSimulationEnv:
             abs(euler[0]) > math.radians(65.0) or
             abs(euler[1]) > math.radians(65.0)
         )
-        done = bool(crashed)
+        done = bool(crashed or user_closed)
 
         # Reward: penalize altitude error, attitude tilt, motor jitter, energy
         alt_error = abs(float(pos[2]) - self.target_altitude)
@@ -826,8 +899,15 @@ class DroneSimulationEnv:
             "tilt_error": tilt_error,
             "pid_debug": pid_debug,
             "crashed": crashed,
+            "user_closed": user_closed,
         }
         return obs, reward, done, info
+
+    def close(self):
+        """Releases Isaac Gym simulation and viewer resources."""
+        if self.isaac_sim is not None:
+            self.isaac_sim.close()
+            self.isaac_sim = None
 
     def _get_observation(self) -> np.ndarray:
         """
@@ -912,6 +992,10 @@ def run_flight_simulation(
 
     engine_str = "NVIDIA Isaac Gym (PhysX)" if env.is_isaacgym_active else "Standalone 6-DOF Vectorized (CPU)"
 
+    # Default to real-time playback if visual 3D viewer is active
+    if not headless and not realtime:
+        realtime = True
+
     print("\n" + "=" * 80)
     print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT SITL FLIGHT SIMULATION")
     print("=" * 80)
@@ -936,7 +1020,6 @@ def run_flight_simulation(
     )
     policy.reset_state()
 
-
     total_steps = int(duration_s / env.dt)
     steps_survived = 0
     alt_errors = []
@@ -945,61 +1028,68 @@ def run_flight_simulation(
 
     last_hud_time = -1.0
     start_wall_time = time.time()
+    info = {}
 
     # 2. Flight Loop (250 Hz)
-    for step in range(total_steps):
-        t_sim = step * env.dt
+    try:
+        for step in range(total_steps):
+            t_sim = step * env.dt
 
-        # A. Sensory Readout
-        flow_xy, tof_8x8 = env.get_chong_fly_obs()
+            # A. Sensory Readout
+            flow_xy, tof_8x8 = env.get_chong_fly_obs()
 
-        # B. Biological Policy Step
-        pwm = policy.step_np(flow_xy, tof_8x8)
-        pwms.append(pwm)
+            # B. Biological Policy Step
+            pwm = policy.step_np(flow_xy, tof_8x8)
+            pwms.append(pwm)
 
-        # C. Environment & Betaflight Step
-        obs, reward, done, info = env.step(pwm)
-        steps_survived += 1
+            # C. Environment & Betaflight Step
+            obs, reward, done, info = env.step(pwm)
+            steps_survived += 1
 
-        pos = info["position"]
-        vel = info["velocity"]
-        euler = info["euler_rad"]
-        omega = info["omega_rads"]
-        motors = info["motor_commands"]
-        power_w = info["power_w"]
+            pos = info["position"]
+            vel = info["velocity"]
+            euler = info["euler_rad"]
+            omega = info["omega_rads"]
+            motors = info["motor_commands"]
+            power_w = info["power_w"]
 
-        alt_errors.append(abs(float(pos[2]) - target_altitude))
-        tilt_errors.append(math.sqrt(float(euler[0]**2 + euler[1]**2)))
+            alt_errors.append(abs(float(pos[2]) - target_altitude))
+            tilt_errors.append(math.sqrt(float(euler[0]**2 + euler[1]**2)))
 
-        # D. Real-Time Telemetry HUD Display
-        if (t_sim - last_hud_time) >= hud_interval_s or step == 0 or done:
-            last_hud_time = t_sim
-            roll_deg = math.degrees(euler[0])
-            pitch_deg = math.degrees(euler[1])
-            yaw_deg = math.degrees(euler[2])
+            # D. Real-Time Telemetry HUD Display
+            if (t_sim - last_hud_time) >= hud_interval_s or step == 0 or done:
+                last_hud_time = t_sim
+                roll_deg = math.degrees(euler[0])
+                pitch_deg = math.degrees(euler[1])
+                yaw_deg = math.degrees(euler[2])
 
-            tof_mat = tof_8x8.reshape(8, 8)
-            center_tof = float(np.mean(tof_mat[3:5, 3:5]))
+                tof_mat = tof_8x8.reshape(8, 8)
+                center_tof = float(np.mean(tof_mat[3:5, 3:5]))
 
-            print(f"\r┌─[ T = {t_sim:5.3f}s | Step {step:4d}/{total_steps} | Power: {power_w:5.1f}W | Energy: {env.total_energy_j:6.2f}J ]" + "─" * 25 + "┐")
-            print(f"│ POS:  X={pos[0]:+6.2f}m  Y={pos[1]:+6.2f}m  Z={pos[2]:5.2f}m (Target: {target_altitude:4.2f}m)  │ VEL: Vx={vel[0]:+5.2f} Vy={vel[1]:+5.2f} Vz={vel[2]:+5.2f} m/s │")
-            print(f"│ ATT:  Roll={roll_deg:+5.1f}° Pitch={pitch_deg:+5.1f}° Yaw={yaw_deg:+5.1f}°     │ GYRO: p={omega[0]:+5.2f}  q={omega[1]:+5.2f}  r={omega[2]:+5.2f} rad/s │")
-            print(f"│ MOTORS (Betaflight Quad-X):                                              │")
-            print(f"│   M4 (FL): [{_make_bar(motors[3])}] {motors[3]*100:4.1f}%     M2 (FR): [{_make_bar(motors[1])}] {motors[1]*100:4.1f}%       │")
-            print(f"│   M3 (RL): [{_make_bar(motors[2])}] {motors[2]*100:4.1f}%     M1 (RR): [{_make_bar(motors[0])}] {motors[0]*100:4.1f}%       │")
-            print(f"│ SENSORS: Optical Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | ToF Center Dist: {center_tof*3.5:4.2f}m  │")
-            print(f"└" + "─" * 74 + "┘")
+                print(f"\r┌─[ T = {t_sim:5.3f}s | Step {step:4d}/{total_steps} | Power: {power_w:5.1f}W | Energy: {env.total_energy_j:6.2f}J ]" + "─" * 25 + "┐")
+                print(f"│ POS:  X={pos[0]:+6.2f}m  Y={pos[1]:+6.2f}m  Z={pos[2]:5.2f}m (Target: {target_altitude:4.2f}m)  │ VEL: Vx={vel[0]:+5.2f} Vy={vel[1]:+5.2f} Vz={vel[2]:+5.2f} m/s │")
+                print(f"│ ATT:  Roll={roll_deg:+5.1f}° Pitch={pitch_deg:+5.1f}° Yaw={yaw_deg:+5.1f}°     │ GYRO: p={omega[0]:+5.2f}  q={omega[1]:+5.2f}  r={omega[2]:+5.2f} rad/s │")
+                print(f"│ MOTORS (Betaflight Quad-X):                                              │")
+                print(f"│   M4 (FL): [{_make_bar(motors[3])}] {motors[3]*100:4.1f}%     M2 (FR): [{_make_bar(motors[1])}] {motors[1]*100:4.1f}%       │")
+                print(f"│   M3 (RL): [{_make_bar(motors[2])}] {motors[2]*100:4.1f}%     M1 (RR): [{_make_bar(motors[0])}] {motors[0]*100:4.1f}%       │")
+                print(f"│ SENSORS: Optical Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | ToF Center Dist: {center_tof*3.5:4.2f}m  │")
+                print(f"└" + "─" * 74 + "┘")
 
-        if realtime:
-            # Sleep remainder of dt
-            elapsed = time.time() - start_wall_time
-            sleep_time = (step + 1) * env.dt - elapsed
-            if sleep_time > 0.0005:
-                time.sleep(sleep_time)
+            if realtime:
+                # Sleep remainder of dt to maintain real-time pacing
+                elapsed = time.time() - start_wall_time
+                sleep_time = (step + 1) * env.dt - elapsed
+                if sleep_time > 0.0005:
+                    time.sleep(sleep_time)
 
-        if done:
-            print(f"\n⚠️  DRONE COLLISION / FLIGHT TERMINATION at T = {t_sim:.3f} s!")
-            break
+            if done:
+                if info.get("user_closed", False):
+                    print(f"\n🚪 Isaac Gym 3D Viewer closed by user at T = {t_sim:.3f} s.")
+                elif info.get("crashed", False):
+                    print(f"\n⚠️  DRONE COLLISION / FLIGHT TERMINATION at T = {t_sim:.3f} s!")
+                break
+    except KeyboardInterrupt:
+        print("\n🛑 Simulation paused / interrupted by user.")
 
     wall_duration = time.time() - start_wall_time
     fps = steps_survived / max(1e-6, wall_duration)
@@ -1010,10 +1100,17 @@ def run_flight_simulation(
     pwm_arr = np.array(pwms)
     pwm_jitter = float(np.mean(np.abs(np.diff(pwm_arr, axis=0)))) if len(pwm_arr) > 1 else 0.0
 
+    if info.get("user_closed", False):
+        outcome_str = "🚪 VIEWER CLOSED"
+    elif not info.get("crashed", False):
+        outcome_str = "✅ FLIGHT COMPLETED (STABLE)"
+    else:
+        outcome_str = "❌ CRASHED"
+
     print("\n" + "=" * 80)
     print("   📊 FLIGHT TELEMETRY SUMMARY & EVALUATION REPORT")
     print("=" * 80)
-    print(f"  • Flight Outcome:         {'✅ FLIGHT COMPLETED (STABLE)' if not done else '❌ CRASHED'}")
+    print(f"  • Flight Outcome:         {outcome_str}")
     print(f"  • Survival Duration:      {steps_survived * env.dt:.3f} s / {duration_s:.3f} s ({steps_survived / total_steps * 100:.1f} %)")
     print(f"  • Simulation Speed:       {fps:.1f} steps/s ({fps * env.dt:.1f}x real-time)")
     print(f"  • Mean Altitude Error:    {mean_alt_err:.4f} m")
@@ -1023,8 +1120,21 @@ def run_flight_simulation(
     print(f"  • Average Power Demand:   {env.total_energy_j / max(1e-6, steps_survived * env.dt):.2f} Watts")
     print("=" * 80 + "\n")
 
+    # 4. Keep 3D viewer open if active so user can inspect scene
+    if env.isaac_sim is not None and env.isaac_sim.viewer is not None and not info.get("user_closed", False):
+        print("💡 [Isaac Gym 3D Viewer]: Flight simulation complete! The window will stay open for inspection.")
+        print("   (Close the viewer window with 'X' or press Ctrl+C in terminal to exit)\n")
+        try:
+            while not env.isaac_sim.gym.query_viewer_has_closed(env.isaac_sim.viewer):
+                env.isaac_sim.render()
+                time.sleep(0.02)
+        except KeyboardInterrupt:
+            pass
+
+    env.close()
+
     return {
-        "survived": not done,
+        "survived": not info.get("crashed", False) and not info.get("user_closed", False),
         "steps_survived": steps_survived,
         "flight_time_s": steps_survived * env.dt,
         "energy_j": env.total_energy_j,
@@ -1045,7 +1155,9 @@ def main():
     parser.add_argument("--alt", type=float, default=1.0,
                         help="Target hover altitude in meters (default: 1.0m)")
     parser.add_argument("--realtime", action="store_true",
-                        help="Run at 1x real-time playback speed (default: fast)")
+                        help="Run at 1x real-time playback speed (default: auto for viewer)")
+    parser.add_argument("--fast", action="store_true",
+                        help="Run at maximum speed without real-time delay")
     parser.add_argument("--solver", type=str, choices=["CfC", "Euler_dt_0.02"], default="CfC",
                         help="Neural ODE solver: CfC (closed-form, 250Hz) or Euler_dt_0.02 (default: CfC)")
     parser.add_argument("--sparsity", type=float, default=None,
@@ -1059,11 +1171,13 @@ def main():
 
     args = parser.parse_args()
 
+    realtime = False if args.fast else (True if args.realtime else not args.headless)
+
     run_flight_simulation(
         meta_path=args.model,
         duration_s=args.duration,
         target_altitude=args.alt,
-        realtime=args.realtime,
+        realtime=realtime,
         solver_type=args.solver,
         pruning_sparsity=args.sparsity,
         ablate_cx=args.ablate_cx,
