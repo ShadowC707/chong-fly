@@ -38,6 +38,14 @@ from __future__ import annotations
 
 import os
 import sys
+
+# IMPORTANT: NVIDIA Isaac Gym must be imported BEFORE torch to prevent CUDA symbol clashes
+try:
+    from isaacgym import gymapi, gymtorch
+    HAS_ISAACGYM = True
+except ImportError:
+    HAS_ISAACGYM = False
+
 import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -54,13 +62,6 @@ if _ROOT not in sys.path:
 from simulation.avionics_filter import BetaflightCascadedPID, PIDConstants
 from simulation.pmw3901_emulator import PMW3901FlowSensor
 
-
-# Check for Isaac Gym availability
-try:
-    from isaacgym import gymapi, gymtorch
-    HAS_ISAACGYM = True
-except ImportError:
-    HAS_ISAACGYM = False
 
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -7,9 +7,12 @@ __pycache__/
 
 # ── Virtual environments ───────────────────────────────────────────────────────
 .venv/
+.venv*/
+.venv-isaac
 venv/
 env/
 .env
+
 
 # ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
 # Ignore all dense .npy matrices and cluster maps in reduced_models/
