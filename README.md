@@ -156,9 +156,12 @@ chong-fly/
 ├── firmware/                    # Embedded real-time execution kernels (C/C++ & MicroPython)
 │   ├── esp32_main/
 │   └── cm3_daemon/
-├── simulation/                  # Sensor→PWM translation & SITL infrastructure
-│   ├── policy.py                # ChongFlyMSPPolicy: SensorInputLayer + CfC +
-│   │                            #   DNProjectionHead + PWMOutputLayer [1000–2000 µs]
+├── simulation/                  # Sensor→PWM translation, SITL & Drone Environment
+│   ├── drone_env.py             # 6-DOF DroneSimulationEnv w/ Betaflight Cascaded PID & ToF/Flow Sensors
+│   ├── avionics_filter.py       # BetaflightCascadedPID (Angle P, Rate PID, PT1 filter, Quad-X mixer)
+│   ├── pmw3901_emulator.py      # PMW3901 optical flow sensor (surface velocity & gyro derotation)
+│   ├── policy.py                # ChongFlyMSPPolicy: SensorInputLayer + CfC + DNProjectionHead + PWM
+│   ├── test_drone_env.py        # Environment & avionics validation suite (18/18 ✓)
 │   └── test_policy.py           # Policy validation suite (44/44 ✓)
 └── training/                    # Optuna Search Space, Multi-Level Funnel & Simulation
     ├── env.py                   # 6-DOF DroneSimulationEnv & simulate_policy_rollout
@@ -404,13 +407,19 @@ Runs 44 validation tests across the full sensor-to-actuator pipeline (66 sensor 
 python simulation/test_policy.py
 ```
 
-### 7. Run Optuna Search Space & Funnel Validation
+### 7. Run Drone Simulation & Avionics Validation
+Runs 18 validation tests for the 6-DOF simulation environment, Betaflight cascaded PID (Angle P + Rate PID + Quad-X mixer), 8x8 ToF raycaster, and PMW3901 optical flow sensor:
+```bash
+python simulation/test_drone_env.py
+```
+
+### 8. Run Optuna Search Space & Funnel Validation
 Runs 50 validation tests covering the Optuna Search Space (`k_clusters` $\in [32, 64, 128, 256]$, `pruning_sparsity` $\in [0.50, 0.95]$, `solver_type` $\in [\text{'CfC'}, \text{'Euler\_dt\_0.02'}]$, and `ablate_cx` $\in [\text{True}, \text{False}]$), Level 1 math screening pruning, and simulation evaluation:
 ```bash
 python training/test_optuna_search_space.py
 ```
 
-### 8. Run Optuna Multi-Objective Tuning & Export Pareto Manifest
+### 9. Run Optuna Multi-Objective Tuning & Export Pareto Manifest
 Executes multi-objective optimization (survival time vs energy expenditure) across the 2-level filtering funnel and exports the non-dominated Pareto front:
 ```bash
 # Run 50 trials and export Pareto manifest
