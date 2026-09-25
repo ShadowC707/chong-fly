@@ -1,76 +1,180 @@
 <?xml version="1.0"?>
 <robot name="chong_micro_quad">
-  <!-- Base Link: Chassis & Avionics Core -->
+  <!-- ─────────────────────────────────────────────────────────────────────────
+       Chong-Fly SITL Quadcopter (130g, 15x15cm, 1.2-1.5kg Payload Capacity)
+       Sensors: Downward Laser Altimeter, 8x8 ToF Matrix (45° FOV), Optical Flow
+       ───────────────────────────────────────────────────────────────────────── -->
+
+  <!-- Base Link: Carbon Fiber Chassis & Avionics Core (130g base) -->
   <link name="base_link">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.033"/>
-      <!-- Moments of inertia [kg*m^2] matching Crazyflie 2.1 -->
-      <inertia ixx="1.66e-5" ixy="0.0" ixz="0.0" iyy="1.66e-5" iyz="0.0" izz="2.93e-5"/>
+      <mass value="0.130"/>
+      <!-- Inertia tensor for 130g 15x15cm quadcopter [kg*m^2] -->
+      <inertia ixx="3.5e-4" ixy="0.0" ixz="0.0" iyy="3.5e-4" iyz="0.0" izz="6.7e-4"/>
     </inertial>
+    <!-- Main Center Body Shell -->
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.065 0.065 0.020"/>
+        <box size="0.080 0.080 0.030"/>
       </geometry>
-      <material name="dark_carbon">
-        <color rgba="0.15 0.15 0.15 1.0"/>
+      <material name="matte_black_carbon">
+        <color rgba="0.12 0.12 0.14 1.0"/>
+      </material>
+    </visual>
+    <!-- Top Avionics Shield -->
+    <visual>
+      <origin xyz="0 0 0.016" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.050 0.050 0.006"/>
+      </geometry>
+      <material name="neon_accent">
+        <color rgba="0.15 0.75 0.95 0.9"/>
       </material>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.070 0.070 0.025"/>
+        <box size="0.085 0.085 0.032"/>
       </geometry>
     </collision>
   </link>
 
-  <!-- Visual Cross Arms -->
-  <link name="arm_cross">
+  <!-- Cross Arms Frame (15cm diagonal / 15x15cm span) -->
+  <link name="arm_cross_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.002"/>
-      <inertia ixx="1.0e-7" ixy="0" ixz="0" iyy="1.0e-7" iyz="0" izz="2.0e-7"/>
+      <mass value="0.005"/>
+      <inertia ixx="1.0e-6" ixy="0" ixz="0" iyy="1.0e-6" iyz="0" izz="2.0e-6"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0.785398"/>
       <geometry>
-        <box size="0.092 0.006 0.003"/>
+        <box size="0.150 0.010 0.004"/>
       </geometry>
-      <material name="carbon_blue">
-        <color rgba="0.1 0.3 0.8 0.9"/>
+      <material name="carbon_weave">
+        <color rgba="0.2 0.2 0.22 1.0"/>
       </material>
     </visual>
   </link>
-
-  <joint name="base_to_arms" type="fixed">
+  <joint name="base_to_arm_1" type="fixed">
     <parent link="base_link"/>
-    <child link="arm_cross"/>
+    <child link="arm_cross_1"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
 
-  <!-- ── 4 Rotors in Quad-X Layout (Arm length = 46mm) ────────────────── -->
+  <link name="arm_cross_2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.005"/>
+      <inertia ixx="1.0e-6" ixy="0" ixz="0" iyy="1.0e-6" iyz="0" izz="2.0e-6"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 -0.785398"/>
+      <geometry>
+        <box size="0.150 0.010 0.004"/>
+      </geometry>
+      <material name="carbon_weave">
+        <color rgba="0.2 0.2 0.22 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="base_to_arm_2" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_cross_2"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ── Visual Sensor Payloads ─────────────────────────────────────────── -->
+
+  <!-- 1. Downward Laser Sensor (Altimeter / Single-beam ToF) -->
+  <link name="sensor_laser_down">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.006" length="0.008"/>
+      </geometry>
+      <material name="laser_gold">
+        <color rgba="0.95 0.75 0.10 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="base_to_laser" type="fixed">
+    <parent link="base_link"/>
+    <child link="sensor_laser_down"/>
+    <origin xyz="0.0 0.0 -0.018" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 2. Optical Flow Sensor (PMW3901 Displacement Detector) -->
+  <link name="sensor_optical_flow">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.014 0.014 0.005"/>
+      </geometry>
+      <material name="pcb_green">
+        <color rgba="0.1 0.6 0.2 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="base_to_flow" type="fixed">
+    <parent link="base_link"/>
+    <child link="sensor_optical_flow"/>
+    <origin xyz="-0.020 0.0 -0.017" rpy="0 0 0"/>
+  </joint>
+
+  <!-- 3. Forward 8x8 Depth Matrix (VL53L5CX, 45° FOV) -->
+  <link name="sensor_tof_matrix">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.008 0.020 0.012"/>
+      </geometry>
+      <material name="tof_dark">
+        <color rgba="0.05 0.05 0.08 1.0"/>
+      </material>
+    </visual>
+    <visual>
+      <!-- Optical Aperture / Lens -->
+      <origin xyz="0.0045 0 0" rpy="0 1.570796 0"/>
+      <geometry>
+        <cylinder radius="0.004" length="0.002"/>
+      </geometry>
+      <material name="tof_lens">
+        <color rgba="0.2 0.3 0.9 0.9"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="base_to_tof" type="fixed">
+    <parent link="base_link"/>
+    <child link="sensor_tof_matrix"/>
+    <origin xyz="0.042 0.0 0.005" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ── 4 Rotors in Quad-X Layout (d = 0.053m each axis, 150mm diagonal) ── -->
+
   <!-- M1: Rear Right (CCW) [-d, +d, 0] -->
   <link name="rotor_1">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+      <mass value="0.003"/>
+      <inertia ixx="5e-7" ixy="0" ixz="0" iyy="5e-7" iyz="0" izz="1e-6"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <origin xyz="0 0 0.010" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.023" length="0.002"/>
+        <cylinder radius="0.040" length="0.003"/>
       </geometry>
       <material name="red_prop">
-        <color rgba="0.9 0.1 0.1 0.7"/>
+        <color rgba="0.95 0.15 0.15 0.75"/>
       </material>
     </visual>
   </link>
   <joint name="joint_rotor_1" type="continuous">
     <parent link="base_link"/>
     <child link="rotor_1"/>
-    <origin xyz="-0.0325 0.0325 0.006" rpy="0 0 0"/>
+    <origin xyz="-0.053 0.053 0.008" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
@@ -78,23 +182,23 @@
   <link name="rotor_2">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+      <mass value="0.003"/>
+      <inertia ixx="5e-7" ixy="0" ixz="0" iyy="5e-7" iyz="0" izz="1e-6"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <origin xyz="0 0 0.010" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.023" length="0.002"/>
+        <cylinder radius="0.040" length="0.003"/>
       </geometry>
       <material name="white_prop">
-        <color rgba="0.9 0.9 0.9 0.7"/>
+        <color rgba="0.95 0.95 0.95 0.75"/>
       </material>
     </visual>
   </link>
   <joint name="joint_rotor_2" type="continuous">
     <parent link="base_link"/>
     <child link="rotor_2"/>
-    <origin xyz="0.0325 0.0325 0.006" rpy="0 0 0"/>
+    <origin xyz="0.053 0.053 0.008" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
@@ -102,23 +206,23 @@
   <link name="rotor_3">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+      <mass value="0.003"/>
+      <inertia ixx="5e-7" ixy="0" ixz="0" iyy="5e-7" iyz="0" izz="1e-6"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <origin xyz="0 0 0.010" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.023" length="0.002"/>
+        <cylinder radius="0.040" length="0.003"/>
       </geometry>
       <material name="red_prop">
-        <color rgba="0.9 0.1 0.1 0.7"/>
+        <color rgba="0.95 0.15 0.15 0.75"/>
       </material>
     </visual>
   </link>
   <joint name="joint_rotor_3" type="continuous">
     <parent link="base_link"/>
     <child link="rotor_3"/>
-    <origin xyz="-0.0325 -0.0325 0.006" rpy="0 0 0"/>
+    <origin xyz="-0.053 -0.053 0.008" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
@@ -126,23 +230,23 @@
   <link name="rotor_4">
     <inertial>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+      <mass value="0.003"/>
+      <inertia ixx="5e-7" ixy="0" ixz="0" iyy="5e-7" iyz="0" izz="1e-6"/>
     </inertial>
     <visual>
-      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <origin xyz="0 0 0.010" rpy="0 0 0"/>
       <geometry>
-        <cylinder radius="0.023" length="0.002"/>
+        <cylinder radius="0.040" length="0.003"/>
       </geometry>
       <material name="white_prop">
-        <color rgba="0.9 0.9 0.9 0.7"/>
+        <color rgba="0.95 0.95 0.95 0.75"/>
       </material>
     </visual>
   </link>
   <joint name="joint_rotor_4" type="continuous">
     <parent link="base_link"/>
     <child link="rotor_4"/>
-    <origin xyz="0.0325 -0.0325 0.006" rpy="0 0 0"/>
+    <origin xyz="0.053 -0.053 0.008" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 </robot>

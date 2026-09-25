@@ -1,43 +1,45 @@
 """
 simulation/drone_env.py
 =======================
-High-Fidelity Drone Simulation Environment with Betaflight Flight Controller
-and Sensor Emulation (Isaac Gym & High-Throughput Vectorized Engine).
+High-Fidelity SITL Drone Simulation Environment with Betaflight Flight Controller
+and Multi-Modal Sensor Emulation (NVIDIA Isaac Gym & 6-DOF Vectorized Engine).
 
-Key Features:
--------------
-1. Betaflight Cascaded PID Controller:
-   - Outer loop (Angle Mode): Maps Target Pitch and Target Roll angles to target body rates.
-   - Inner loop (Rate PID): Gyro rate error PID with PT1 low-pass D-term filter and anti-windup.
-   - Standard Quad-X motor mixer: Maps collective thrust + [Roll, Pitch, Yaw] efforts to 4 motors.
-   - First-order motor dynamics: Simulates brushless motor lag (spin-up / spin-down time constant).
+Quadcopter Specifications:
+--------------------------
+1. Physical Frame & Mass:
+   - Base Mass: 130 grams (0.130 kg dry weight)
+   - Dimensions: 15 cm x 15 cm (0.15 m x 0.15 m frame span)
+   - Payload Capacity: 1.2 kg - 1.5 kg (maximum thrust up to 28 N, TWR >= 1.7 at 1.63 kg AUW)
+   - Quad-X Motor Geometry: Moment arm d = 0.053 m (150 mm diagonal wheelbase)
+   - Brushless Motor Dynamics: Max 28,000 RPM, thrust constant k_f = 8.9286e-9 N/RPM^2
 
-2. Neural Network Flight Interface:
-   - The neural network does NOT control individual motor RPMs directly.
-   - The policy commands setpoints:
-       ch[0] Throttle / Collective Thrust [0, 1] (or 1000..2000 µs PWM)
-       ch[1] Target Roll angle [-max_angle, +max_angle] [rad]
-       ch[2] Target Pitch angle [-max_angle, +max_angle] [rad]
-       ch[3] Target Yaw rate [-max_yaw_rate, +max_yaw_rate] [rad/s]
-   - Seamlessly accepts either raw physical setpoints or ChongFlyMSPPolicy PWM output.
+2. Sensor Suite:
+   - Downward Laser Rangefinder:
+       Single-beam ToF distance sensor pointing straight down along body -Z.
+       Measures true AGL (Altitude Above Ground) with raycasting against floor & obstacles.
+   - 8x8 Depth Matrix (VL53L5CX):
+       64 directional rays with 45° Field of View (horizontal & vertical).
+       Normalized depth output [0, 1] for obstacle detection and avoidance.
+   - Optical Displacement & Flow Sensor (PMW3901):
+       Tracks surface flow rates (FlowX, FlowY) and incremental/cumulative displacement [dx, dy].
+       Scaled dynamically by the downward laser altitude reading.
 
-3. Sensor Emulation:
-   - 8x8 ToF Distance Matrix (VL53L5CX):
-       Raycasting against 3D room boundaries, cylindrical pillars, and dynamic looming obstacles.
-       Normalized depth output [0, 1] matching biological LC looming detectors.
-   - Optical Flow Vector (PMW3901):
-       Calculates translational surface velocity relative to ground altitude (FlowX, FlowY).
-       Includes gyro derotation and altitude scaling matching LPTC visual channels.
-
-4. Isaac Gym Compatibility:
-   - Supports native Isaac Gym PhysX simulation pipeline when `isaacgym` is installed.
-   - Provides a standalone vectorized 6-DOF physics engine (PyTorch / NumPy) for CPU/CI/testing.
+3. Avionics & Flight Interface:
+   - Cascaded Betaflight PID (Angle Mode outer loop + Rate PID inner loop)
+   - Accepts high-level setpoints [Thrust, Roll, Pitch, YawRate] or RC PWM [1000..2000 µs]
+   - Fully modular SITL interface (SITLObservation, SITLAction, BaseSITLModel)
+   - Real-time 3D visualization in NVIDIA Isaac Gym with laser beam rendering & HUD
 """
 
 from __future__ import annotations
 
 import os
 import sys
+
+# Ensure Python environment binaries (ninja, etc.) are in PATH for Isaac Gym
+venv_bin = os.path.join(sys.prefix, "bin")
+if venv_bin not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = venv_bin + os.pathsep + os.environ.get("PATH", "")
 
 # IMPORTANT: NVIDIA Isaac Gym must be imported BEFORE torch to prevent CUDA symbol clashes
 try:
@@ -61,7 +63,15 @@ if _ROOT not in sys.path:
 # Import avionics PID and optical flow sensor
 from simulation.avionics_filter import BetaflightCascadedPID, PIDConstants
 from simulation.pmw3901_emulator import PMW3901FlowSensor
-
+from simulation.sitl_interface import (
+    DownwardLaserSensor,
+    LaserHitResult,
+    SITLObservation,
+    SITLAction,
+    BaseSITLModel,
+    ConnectomeModelAdapter,
+    AutonomousLaserNavigatorModel,
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -132,6 +142,14 @@ AVAILABLE_MODELS = [
         "tag": "80% Sparse Graph",
         "meta": "data/reduced_models/meta_magnitude_p80_k12942.json",
         "desc": "80% synaptic weight pruning on raw connectome",
+    },
+    {
+        "id": 9,
+        "key": "9",
+        "name": "Autonomous Laser+8x8",
+        "tag": "All-Sensors Multi-Modal (Laser+ToF+Flow)",
+        "meta": "autonomous_laser_nav",
+        "desc": "Autonomous controller using Downward Laser + 8x8 Depth + Optical Displacement",
     },
 ]
 
@@ -303,11 +321,29 @@ class IsaacGymDroneSim:
         g.subscribe_viewer_keyboard_event(v, gymapi.KEY_V, "cycle_camera")
         g.subscribe_viewer_keyboard_event(v, gymapi.KEY_ESCAPE, "quit")
 
-        # Number keys 1-8 for live model switching
-        for i in range(1, 9):
+        # Dynamic Payload Adjustment hotkeys ('[' to decrease, ']' to increase payload by 0.1 kg)
+        if hasattr(gymapi, "KEY_LEFT_BRACKET"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_LEFT_BRACKET, "payload_down")
+        if hasattr(gymapi, "KEY_RIGHT_BRACKET"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_RIGHT_BRACKET, "payload_up")
+
+        # Number keys 1-9 for live model switching (1-8 biological connectomes, 9 autonomous laser nav)
+        for i in range(1, 10):
             key_attr = f"KEY_{i}"
             if hasattr(gymapi, key_attr):
                 g.subscribe_viewer_keyboard_event(v, getattr(gymapi, key_attr), f"model_{i}")
+
+    def draw_laser_beam(self, origin: np.ndarray, hit_point: np.ndarray):
+        """Draws visual downward laser beam in Isaac Gym 3D visualizer."""
+        if self.viewer is None or not self.envs:
+            return
+        self.gym.clear_lines(self.viewer)
+        verts = np.array([
+            float(origin[0]), float(origin[1]), float(origin[2]),
+            float(hit_point[0]), float(hit_point[1]), float(hit_point[2]),
+        ], dtype=np.float32)
+        colors = np.array([1.0, 0.15, 0.15], dtype=np.float32) # Red laser ray
+        self.gym.add_lines(self.viewer, self.envs[0], 1, verts, colors)
 
     def poll_input(self) -> Tuple[Dict[str, bool], List[str]]:
         """
@@ -648,23 +684,24 @@ class ToFRaycaster:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6-DOF Micro-Quadcopter Dynamics
+# 6-DOF Micro-Quadcopter Dynamics (130g, 15x15cm, 1.2 - 1.5kg Payload)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @dataclass
 class DroneDynamicsParams:
-    mass: float = 0.033                     # 33g Crazyflie-class micro-drone
-    arm_length: float = 0.046               # 46 mm center-to-motor distance
+    mass: float = 0.130                     # 130g base micro-quadcopter (0.130 kg dry weight)
+    payload_mass: float = 0.0               # Attached cargo payload mass in [0.0, 1.5] kg
+    arm_length: float = 0.075               # 75 mm motor radius (150 mm diagonal wheelbase, 15x15cm frame)
     g: float = 9.81                         # gravity [m/s^2]
-    # Moments of inertia [kg*m^2]
-    ixx: float = 1.66e-5
-    iyy: float = 1.66e-5
-    izz: float = 2.93e-5
-    # Motor parameters (calibrated for 50% stick hover at 11,000 RPM, PWM 1500us)
-    thrust_coeff: float = 6.6886e-10       # Thrust = k_f * rpm^2 (total hover thrust = m*g at 50% throttle)
-    torque_coeff: float = 1.2e-11          # Torque = k_m * rpm^2 (k_m / k_f ~ 0.018)
-    max_rpm: float = 22000.0                # Max motor RPM
-    motor_tau: float = 0.020                # First-order motor time constant [s]
+    # Base moments of inertia [kg*m^2] for 130g 15x15cm quadcopter
+    ixx: float = 3.5e-4
+    iyy: float = 3.5e-4
+    izz: float = 6.7e-4
+    # Motor parameters (calibrated to lift 1.2 - 1.5kg payload at 28,000 RPM max, 28 N peak thrust)
+    thrust_coeff: float = 8.9286e-9        # Thrust = k_f * rpm^2 (4 motors deliver up to 28 N peak thrust)
+    torque_coeff: float = 1.6e-10          # Torque = k_m * rpm^2 (k_m / k_f ~ 0.018)
+    max_rpm: float = 28000.0                # Max brushless motor RPM
+    motor_tau: float = 0.025                # Motor time constant [s] (25 ms)
     # Aerodynamic drag coefficients
     drag_linear: float = 0.15               # Linear drag coefficient [N/(m/s)]
     drag_angular: float = 0.002             # Angular damping coefficient [N*m/(rad/s)]
@@ -675,8 +712,8 @@ class DroneDynamicsParams:
 
 class QuadcopterDynamics:
     """
-    Rigid-body 6-DOF equations of motion with quaternion kinematics
-    and first-order motor lag.
+    Rigid-body 6-DOF equations of motion with quaternion kinematics,
+    first-order brushless motor lag, and dynamic cargo payload physics.
     """
 
     def __init__(self, params: DroneDynamicsParams, dt: float = 0.004):
@@ -690,14 +727,40 @@ class QuadcopterDynamics:
         self.omega = np.zeros(3, dtype=np.float32)     # [p, q, r] in body frame (rad/s)
         self.motor_rpms = np.zeros(4, dtype=np.float32) # current motor RPMs
 
-        # Inertia tensor and inverse
-        self.J = np.diag([params.ixx, params.iyy, params.izz]).astype(np.float32)
-        self.J_inv = np.diag([1.0 / params.ixx, 1.0 / params.iyy, 1.0 / params.izz]).astype(np.float32)
+        # Initialize inertia tensor and hover throttle based on total mass (base + payload)
+        self._update_inertias()
 
-        # Hover RPM calculation: mg = 4 * k_f * rpm_hover^2
-        total_weight = params.mass * params.g
-        self.hover_rpm = math.sqrt(total_weight / (4.0 * params.thrust_coeff))
-        self.hover_throttle = self.hover_rpm / params.max_rpm
+    @property
+    def total_mass(self) -> float:
+        """Returns total All-Up Weight (AUW) in kg: base mass (0.130 kg) + payload."""
+        return self.params.mass + self.params.payload_mass
+
+    def set_payload(self, payload_mass: float) -> None:
+        """Dynamically adjusts attached cargo payload mass [0.0, 1.5] kg."""
+        self.params.payload_mass = float(np.clip(payload_mass, 0.0, 1.5))
+        self._update_inertias()
+
+    def _update_inertias(self) -> None:
+        """Updates inertia tensor and hover throttle when payload mass changes."""
+        p = self.params
+        mp = p.payload_mass
+
+        # Payload modeled as concentrated cargo package (80x80x50 mm)
+        delta_ixx = mp * (0.08**2 + 0.05**2) / 12.0
+        delta_iyy = mp * (0.08**2 + 0.05**2) / 12.0
+        delta_izz = mp * (0.08**2 + 0.08**2) / 12.0
+
+        ixx = p.ixx + delta_ixx
+        iyy = p.iyy + delta_iyy
+        izz = p.izz + delta_izz
+
+        self.J = np.diag([ixx, iyy, izz]).astype(np.float32)
+        self.J_inv = np.diag([1.0 / ixx, 1.0 / iyy, 1.0 / izz]).astype(np.float32)
+
+        # Recalculate hover RPM & hover throttle for total weight
+        total_weight = self.total_mass * p.g
+        self.hover_rpm = math.sqrt(total_weight / (4.0 * p.thrust_coeff))
+        self.hover_throttle = self.hover_rpm / p.max_rpm
 
     def reset(self, initial_pos: np.ndarray, seed: Optional[int] = None) -> None:
         rng = np.random.default_rng(seed)
@@ -765,6 +828,7 @@ class QuadcopterDynamics:
         """
         dt = self.dt
         p = self.params
+        total_m = self.total_mass
 
         # 1. First-order motor dynamics (lag)
         target_rpms = np.clip(motor_commands, 0.0, 1.0) * p.max_rpm
@@ -781,7 +845,7 @@ class QuadcopterDynamics:
         # m2: Front Right (CW)  [+d, +d]
         # m3: Rear Left (CW)    [-d, -d]
         # m4: Front Left (CCW)  [+d, -d]
-        d = p.arm_length / math.sqrt(2.0)
+        d = p.arm_length / math.sqrt(2.0)  # ~0.053m moment arm
 
         # Total upward thrust along body +Z
         total_thrust_body = np.sum(thrusts)
@@ -799,10 +863,10 @@ class QuadcopterDynamics:
         # 4. Newton-Euler rigid body translational dynamics
         R = self.quaternion_to_rotation_matrix(self.quat)
         F_world = R @ F_body
-        F_gravity = np.array([0.0, 0.0, -p.mass * p.g], dtype=np.float32)
+        F_gravity = np.array([0.0, 0.0, -total_m * p.g], dtype=np.float32)
         F_drag = -p.drag_linear * self.vel * np.linalg.norm(self.vel)
 
-        acc = (F_world + F_gravity + F_drag) / p.mass
+        acc = (F_world + F_gravity + F_drag) / total_m
 
         # Symplectic Euler integration for translation
         self.vel += acc * dt
@@ -896,10 +960,15 @@ class DroneSimulationEnv:
         # Cascaded Betaflight PID
         self.pid = pid_constants or BetaflightCascadedPID(dt=dt)
 
-        # Sensors
+        # Sensors: Downward Laser + 8x8 Depth Matrix + PMW3901 Optical Flow/Displacement
+        self.downward_laser = DownwardLaserSensor(min_range=0.02, max_range=6.0)
         self.tof = ToFRaycaster(rows=8, cols=8, fov_h_deg=45.0, fov_v_deg=45.0, max_range=3.5)
-        self.flow_sensor = PMW3901FlowSensor(min_altitude=0.08, max_altitude=3.5, derotate_with_gyro=True)
+        self.flow_sensor = PMW3901FlowSensor(min_altitude=0.02, max_altitude=3.5, derotate_with_gyro=True)
 
+        # Optical displacement trackers
+        self.displacement_step = np.zeros(2, dtype=np.float32)
+        self.displacement_total = np.zeros(2, dtype=np.float32)
+        self.last_laser_result: Optional[LaserHitResult] = None
 
         # Physics core
         self.physics = QuadcopterDynamics(self.params, dt=dt)
@@ -922,6 +991,10 @@ class DroneSimulationEnv:
     def is_isaacgym_active(self) -> bool:
         return self.engine == "isaacgym" and HAS_ISAACGYM
 
+    def set_payload(self, payload_kg: float) -> None:
+        """Sets attached payload mass in [0.0, 1.5] kg with instant physics adaptation."""
+        self.physics.set_payload(payload_kg)
+
     def reset(
         self,
         initial_pos: Optional[np.ndarray] = None,
@@ -932,6 +1005,9 @@ class DroneSimulationEnv:
         """
         self.step_count = 0
         self.total_energy_j = 0.0
+        self.displacement_step = np.zeros(2, dtype=np.float32)
+        self.displacement_total = np.zeros(2, dtype=np.float32)
+        self.last_laser_result = None
         self.pid.reset()
 
         if initial_pos is None:
@@ -952,7 +1028,7 @@ class DroneSimulationEnv:
 
     def step(
         self,
-        action: Union[np.ndarray, Tuple[float, float, float, float]],
+        action: Union[np.ndarray, Tuple[float, float, float, float], SITLAction],
         action_type: str = "auto", # "auto", "setpoints", or "pwm"
     ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
@@ -962,7 +1038,7 @@ class DroneSimulationEnv:
         Instead, it sends flight setpoints (Angle Mode: Roll/Pitch, Rate Mode: Yaw Rate, Collective Thrust).
         
         Args:
-            action: 4-element array:
+            action: 4-element array or SITLAction object:
                 - If PWM: [throttle_pwm, roll_pwm, pitch_pwm, yaw_pwm] in [1000, 2000] µs
                 - If setpoints: [target_thrust (0..1), target_roll (rad), target_pitch (rad), target_yaw_rate (rad/s)]
             action_type: "auto" detects based on values (> 500 means PWM); or explicitly "pwm" / "setpoints".
@@ -971,9 +1047,17 @@ class DroneSimulationEnv:
             obs: 66-D observation array [FlowX, FlowY, ToF_00 ... ToF_63]
             reward: scalar reward
             done: boolean termination flag
-            info: auxiliary metrics (altitude, euler angles, motor commands, energy)
+            info: auxiliary metrics (altitude, laser distance, euler angles, motor commands, energy)
         """
-        action = np.asarray(action, dtype=np.float32)
+        if isinstance(action, SITLAction):
+            if action.action_type == "pwm":
+                action = np.array([action.throttle_pwm, action.roll_pwm, action.pitch_pwm, action.yaw_pwm], dtype=np.float32)
+                action_type = "pwm"
+            else:
+                action = np.array([action.thrust, action.roll, action.pitch, action.yaw_rate], dtype=np.float32)
+                action_type = "setpoints"
+        else:
+            action = np.asarray(action, dtype=np.float32)
 
         # ── 1. Parse Neural Network Action ───────────────────────────────────
         is_pwm = (action_type == "pwm") or (action_type == "auto" and np.any(action > 500.0))
@@ -1022,6 +1106,9 @@ class DroneSimulationEnv:
         user_closed = False
         if self.isaac_sim is not None:
             self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
+            # Render visual laser beam if contact point is known
+            if self.last_laser_result is not None:
+                self.isaac_sim.draw_laser_beam(self.physics.pos, self.last_laser_result.hit_point)
             # Decoupled 50 FPS graphics rendering (every 5 steps at 250 Hz physics)
             sim_ok = self.isaac_sim.step(
                 render=(self.step_count % self.isaac_sim.render_every == 0),
@@ -1071,6 +1158,12 @@ class DroneSimulationEnv:
             "altitude_error": alt_error,
             "tilt_error": tilt_error,
             "pid_debug": pid_debug,
+            "laser_alt": float(self.last_laser_result.distance) if self.last_laser_result else float(pos[2]),
+            "laser_hit_surf": self.last_laser_result.surface_type if self.last_laser_result else "floor",
+            "displacement_m": self.displacement_total.copy(),
+            "payload_mass_kg": float(self.physics.params.payload_mass),
+            "total_mass_kg": float(self.physics.total_mass),
+            "hover_throttle": float(self.physics.hover_throttle),
             "crashed": crashed,
             "user_closed": user_closed,
         }
@@ -1084,17 +1177,32 @@ class DroneSimulationEnv:
 
     def _get_observation(self) -> np.ndarray:
         """
-        Synthesizes 66-dimensional observation vector:
-            [0:2]   FlowX, FlowY (optical flow from PMW3901)
-            [2:66]  ToF_00 ... ToF_63 (8x8 depth matrix from VL53L5CX)
+        Synthesizes multi-sensor observation readings:
+        1. Downward Laser Rangefinder: Measures true AGL along body -Z.
+        2. Optical Flow (PMW3901): Surface velocity scaled dynamically by Downward Laser distance.
+        3. Optical Displacement: Body-frame translation [dx, dy] per step and cumulative.
+        4. ToF 8x8 Depth Matrix (VL53L5CX): 64 rays covering 45° FOV.
+        
+        Returns:
+            66-D array [FlowX, FlowY, ToF_00 ... ToF_63] for connectome compatibility.
         """
         rot_mat = self.physics.quaternion_to_rotation_matrix(self.physics.quat)
         pos = self.physics.pos
         vel = self.physics.vel
         omega = self.physics.omega
 
-        # 1. Optical Flow (PMW3901)
-        altitude_surface = max(0.08, float(pos[2]))
+        # 1. Downward Laser Sensor measurement
+        self.last_laser_result = self.downward_laser.measure(
+            drone_pos=pos,
+            rot_matrix=rot_mat,
+            floor_z=self.room.z_min,
+            boxes=self.boxes,
+            cylinders=self.cylinders,
+        )
+        laser_alt = self.last_laser_result.distance
+
+        # 2. Optical Flow (PMW3901) - scaled by actual Downward Laser reading!
+        altitude_surface = max(0.02, float(laser_alt))
         flow_xy = self.flow_sensor.compute_flow(
             v_world=vel,
             rot_matrix=rot_mat,
@@ -1102,7 +1210,12 @@ class DroneSimulationEnv:
             omega_body=omega,
         )
 
-        # 2. ToF 8x8 Raycasting (VL53L5CX)
+        # 3. Optical Displacement Sensor (body translational displacement)
+        v_body = rot_mat.T @ vel
+        self.displacement_step = (v_body[:2] * self.dt).astype(np.float32)
+        self.displacement_total += self.displacement_step
+
+        # 4. ToF 8x8 Raycasting (VL53L5CX, 45° FOV)
         tof_64 = self.tof.cast_rays(
             drone_pos=pos,
             drone_rot=rot_mat,
@@ -1111,9 +1224,60 @@ class DroneSimulationEnv:
             boxes=self.boxes,
         )
 
-        # 3. Concatenate to (66,)
+        # 5. Concatenate to (66,)
         obs = np.concatenate([flow_xy, tof_64], axis=0).astype(np.float32)
         return obs
+
+    def get_sitl_obs(self) -> SITLObservation:
+        """
+        Returns full structured SITLObservation object containing all sensors,
+        IMU, displacement, attitude, and payload state.
+        """
+        if self.last_laser_result is None:
+            self._get_observation()
+
+        rot_mat = self.physics.quaternion_to_rotation_matrix(self.physics.quat)
+        euler = self.physics.quaternion_to_euler(self.physics.quat)
+        tof_64 = self.tof.cast_rays(
+            drone_pos=self.physics.pos,
+            drone_rot=rot_mat,
+            room=self.room,
+            cylinders=self.cylinders,
+            boxes=self.boxes,
+        )
+        depth_8x8 = tof_64.reshape(8, 8)
+        flow_xy = self.flow_sensor.compute_flow(
+            v_world=self.physics.vel,
+            rot_matrix=rot_mat,
+            altitude_above_surface=max(0.02, self.last_laser_result.distance),
+            omega_body=self.physics.omega,
+        )
+
+        # Body-frame acceleration estimate (including gravity reaction)
+        R = rot_mat
+        a_body = R.T @ np.array([0.0, 0.0, self.params.g], dtype=np.float32)
+
+        return SITLObservation(
+            laser_distance=float(self.last_laser_result.distance),
+            laser_distance_norm=float(self.last_laser_result.distance_norm),
+            laser_hit_point=self.last_laser_result.hit_point.copy(),
+            laser_valid=bool(self.last_laser_result.is_valid),
+            depth_8x8=depth_8x8.copy(),
+            depth_flat=tof_64.copy(),
+            optical_flow=flow_xy.copy(),
+            displacement_step=self.displacement_step.copy(),
+            displacement_total=self.displacement_total.copy(),
+            imu_gyro=self.physics.omega.copy(),
+            imu_accel=a_body,
+            attitude_euler=euler.copy(),
+            position=self.physics.pos.copy(),
+            velocity=self.physics.vel.copy(),
+            payload_mass=float(self.physics.params.payload_mass),
+            total_mass=float(self.physics.total_mass),
+            hover_throttle=float(self.physics.hover_throttle),
+            sim_time=float(self.step_count * self.dt),
+            step_count=int(self.step_count),
+        )
 
     def get_chong_fly_obs(self) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -1140,6 +1304,7 @@ def run_flight_simulation(
     meta_path: str = "data/reduced_models/meta_spectral_k64.json",
     duration_s: float = 0.0,            # 0.0 or <= 0 means continuous / infinite flight
     target_altitude: float = 1.0,
+    payload_kg: float = 0.0,            # Payload mass in kg [0.0, 1.5]
     realtime: bool = True,
     hud_interval_s: float = 0.1,
     solver_type: str = "CfC",
@@ -1156,10 +1321,12 @@ def run_flight_simulation(
     import time
     from simulation.policy import ChongFlyMSPPolicy
 
-    # Initialize Environment
+    # Initialize Dynamics & Environment with requested payload
+    dyn_params = DroneDynamicsParams(payload_mass=payload_kg)
     env = DroneSimulationEnv(
         dt=0.004,
         target_altitude=target_altitude,
+        dynamics_params=dyn_params,
         engine=engine,
         headless=headless,
     )
@@ -1181,35 +1348,41 @@ def run_flight_simulation(
     print("\n" + "=" * 80)
     print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT SITL FLIGHT SIMULATION")
     print("=" * 80)
-    print(f"  • Physics Engine:   {engine_str}")
-    print(f"  • Initial Brain:    [{active_model_idx + 1}] {active_model_name}")
-    print(f"  • Model Meta:       {meta_path}")
-    print(f"  • Solver Type:      {solver_type}")
-    print(f"  • Flight Mode:      {'🎮 MANUAL PILOT (WASD)' if control_mode == 'manual' else '🤖 AUTONOMOUS (Neural Connectome)'}")
-    print(f"  • Flight Duration:  {dur_str}")
-    print(f"  • Target Altitude:  {target_altitude:.2f} m")
-    print(f"  • Speed Mode:       {'Real-Time Playback (1:1)' if realtime else 'Maximum Speed (Fast)'}")
+    print(f"  • Physics Engine:       {engine_str}")
+    print(f"  • Base Frame & Mass:    130 g (0.130 kg) | 15 cm x 15 cm Frame")
+    print(f"  • Payload & AUW:        {payload_kg:.2f} kg (Total AUW: {env.physics.total_mass*1000:.0f} g / Max 1.63 kg)")
+    print(f"  • Hover Throttle:       {env.physics.hover_throttle * 100:.1f}% ({env.physics.hover_rpm:.0f} RPM)")
+    print(f"  • Sensors Active:       Downward Laser, 8x8 Depth Matrix (45° FOV), PMW3901 Flow")
+    print(f"  • Active Model / Brain: [{active_model_idx + 1}] {active_model_name}")
+    print(f"  • Flight Mode:          {'🎮 MANUAL PILOT (WASD)' if control_mode == 'manual' else '🤖 AUTONOMOUS (Neural Connectome)'}")
+    print(f"  • Flight Duration:      {dur_str}")
+    print(f"  • Target Altitude:      {target_altitude:.2f} m")
+    print(f"  • Speed Mode:           {'Real-Time Playback (1:1)' if realtime else 'Maximum Speed (Fast)'}")
     print("=" * 80)
     print("  🎮 LIVE 3D VIEWER CONTROLS:")
     print("    • [M] Toggle Mode (Autonomous ↔ Manual Pilot)")
     print("    • [W / S] Pitch Forward / Backward       • [A / D] Roll Left / Right")
     print("    • [Space / C] Throttle Up / Down          • [Q / E] Yaw Turn Left / Right")
-    print("    • [1 - 8] Hot-Swap Connectome Brain on the Fly (k=16..256, No-CX, etc.)")
+    print("    • [1 - 9] Hot-Swap Brain (1-8 Connectomes, 9 Autonomous Laser+8x8)")
+    print("    • [ [ / ] ] Adjust Cargo Payload Mass (-0.1 kg / +0.1 kg)")
     print("    • [V] Cycle Camera View (Chase Cam ↔ Arena Cam ↔ Free Mouse Look)")
     print("    • [R] Respawn / Reset Drone after Collision")
     print("    • [P] Pause / Resume Simulation          • [Esc] Exit Flight")
     print("=" * 80 + "\n")
 
     # 1. Initialize Policy
-    policy = ChongFlyMSPPolicy.from_meta(
-        meta_path=meta_path,
-        mode="fixed",
-        dt=0.004,
-        solver_type=solver_type,
-        pruning_sparsity=pruning_sparsity,
-        ablate_cx=ablate_cx,
-    )
-    policy.reset_state()
+    autonomous_model = AutonomousLaserNavigatorModel(target_altitude=target_altitude)
+    policy = None
+    if active_model_idx != 8:
+        policy = ChongFlyMSPPolicy.from_meta(
+            meta_path=meta_path,
+            mode="fixed",
+            dt=0.004,
+            solver_type=solver_type,
+            pruning_sparsity=pruning_sparsity,
+            ablate_cx=ablate_cx,
+        )
+        policy.reset_state()
 
     total_steps = sys.maxsize if is_infinite else int(duration_s / env.dt)
     steps_survived = 0
@@ -1251,11 +1424,21 @@ def run_flight_simulation(
                     if env.isaac_sim:
                         env.isaac_sim.camera_mode_idx = (env.isaac_sim.camera_mode_idx + 1) % len(env.isaac_sim.camera_modes)
                         status_msg = f"Camera Mode -> [{env.isaac_sim.camera_modes[env.isaac_sim.camera_mode_idx].upper()}]"
+                elif trig == "payload_up":
+                    new_p = min(1.5, env.physics.params.payload_mass + 0.1)
+                    env.set_payload(new_p)
+                    status_msg = f"📦 Payload Increased -> {new_p:.2f} kg (AUW: {env.physics.total_mass*1000:.0f}g, Hover Th: {env.physics.hover_throttle*100:.1f}%)"
+                elif trig == "payload_down":
+                    new_p = max(0.0, env.physics.params.payload_mass - 0.1)
+                    env.set_payload(new_p)
+                    status_msg = f"📦 Payload Decreased -> {new_p:.2f} kg (AUW: {env.physics.total_mass*1000:.0f}g, Hover Th: {env.physics.hover_throttle*100:.1f}%)"
                 elif trig == "reset":
                     # Instant Respawn / Reset
                     env.physics.reset(np.array([0.0, 0.0, target_altitude]))
                     env.pid.reset()
-                    policy.reset_state()
+                    if policy:
+                        policy.reset_state()
+                    autonomous_model.reset()
                     if env.isaac_sim:
                         env.isaac_sim.sync_state(env.physics.pos, env.physics.quat, env.physics.vel, env.physics.omega)
                     is_crashed = False
@@ -1267,14 +1450,18 @@ def run_flight_simulation(
                             active_model_idx = m_idx
                             active_model_name = AVAILABLE_MODELS[m_idx]["name"]
                             new_meta = AVAILABLE_MODELS[m_idx]["meta"]
-                            policy = ChongFlyMSPPolicy.from_meta(
-                                meta_path=new_meta,
-                                mode="fixed",
-                                dt=0.004,
-                                solver_type=solver_type,
-                            )
-                            policy.reset_state()
-                            status_msg = f"🧠 Hot-Swapped Brain -> [{m_idx + 1}] {active_model_name}"
+                            if m_idx == 8:
+                                autonomous_model.reset()
+                                status_msg = f"🧠 Hot-Swapped Brain -> [9] {active_model_name}"
+                            else:
+                                policy = ChongFlyMSPPolicy.from_meta(
+                                    meta_path=new_meta,
+                                    mode="fixed",
+                                    dt=0.004,
+                                    solver_type=solver_type,
+                                )
+                                policy.reset_state()
+                                status_msg = f"🧠 Hot-Swapped Brain -> [{m_idx + 1}] {active_model_name}"
                     except Exception as ex:
                         status_msg = f"⚠️ Model switch error: {ex}"
 
@@ -1297,11 +1484,18 @@ def run_flight_simulation(
 
             # ── Action Computation ───────────────────────────────────────────
             if control_mode == "auto":
-                # Biological Neural Connectome Policy Step
-                pwm = policy.step_np(flow_xy, tof_8x8)
+                if active_model_idx == 8:
+                    # Autonomous Multi-Modal Laser + 8x8 Depth + Flow Navigator
+                    sitl_obs = env.get_sitl_obs()
+                    action_cmd = autonomous_model.step(sitl_obs)
+                else:
+                    # Biological Neural Connectome Policy Step
+                    pwm = policy.step_np(flow_xy, tof_8x8)
+                    action_cmd = pwm
             else:
                 # Manual Flight Control via Keyboard
-                th = 1500.0  # Hover neutral
+                hover_th_pwm = 1000.0 + env.physics.hover_throttle * 1000.0
+                th = hover_th_pwm
                 roll = 1500.0
                 pitch = 1500.0
                 yaw = 1500.0
@@ -1323,12 +1517,10 @@ def run_flight_simulation(
                 if key_states.get("yaw_right"):
                     yaw += 160.0
 
-                pwm = np.array([th, roll, pitch, yaw], dtype=np.float32)
-
-            pwms.append(pwm)
+                action_cmd = np.array([th, roll, pitch, yaw], dtype=np.float32)
 
             # ── Environment & Betaflight Step ────────────────────────────────
-            obs, reward, done, info = env.step(pwm)
+            obs, reward, done, info = env.step(action_cmd)
             steps_survived += 1
 
             pos = info["position"]
@@ -1337,6 +1529,12 @@ def run_flight_simulation(
             omega = info["omega_rads"]
             motors = info["motor_commands"]
             power_w = info["power_w"]
+            laser_alt = info.get("laser_alt", float(pos[2]))
+            laser_surf = info.get("laser_hit_surf", "floor")
+            disp = info.get("displacement_m", np.zeros(2))
+            payload = info.get("payload_mass_kg", 0.0)
+            total_m = info.get("total_mass_kg", 0.130)
+            hover_th = info.get("hover_throttle", 0.213)
 
             alt_errors.append(abs(float(pos[2]) - target_altitude))
             tilt_errors.append(math.sqrt(float(euler[0]**2 + euler[1]**2)))
@@ -1371,7 +1569,9 @@ def run_flight_simulation(
                 print(f"│ MOTORS (Betaflight Quad-X):                                              │")
                 print(f"│   M4 (FL): [{_make_bar(motors[3])}] {motors[3]*100:4.1f}%     M2 (FR): [{_make_bar(motors[1])}] {motors[1]*100:4.1f}%       │")
                 print(f"│   M3 (RL): [{_make_bar(motors[2])}] {motors[2]*100:4.1f}%     M1 (RR): [{_make_bar(motors[0])}] {motors[0]*100:4.1f}%       │")
-                print(f"│ SENSORS: Optical Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | ToF Center Dist: {center_tof*3.5:4.2f}m  │")
+                print(f"│ SENSORS: Down Laser: {laser_alt:4.2f}m ({laser_surf:<8}) | ToF 8x8 Center: {center_tof*3.5:4.2f}m (45° FOV) │")
+                print(f"│ OPTICAL: Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | Disp=[X:{disp[0]:+5.2f}m, Y:{disp[1]:+5.2f}m]         │")
+                print(f"│ PAYLOAD: {payload:4.2f} kg (AUW: {total_m:4.2f}kg / Max 1.63kg) | Hover Throttle: {hover_th*100:4.1f}%     │")
                 print(f"│ STATUS:  {status_msg:<63} │")
                 print(f"└" + "─" * 74 + "┘")
 
@@ -1393,8 +1593,6 @@ def run_flight_simulation(
     # 3. Final Performance Summary
     mean_alt_err = float(np.mean(alt_errors)) if alt_errors else 0.0
     mean_tilt_err = math.degrees(float(np.mean(tilt_errors))) if tilt_errors else 0.0
-    pwm_arr = np.array(pwms)
-    pwm_jitter = float(np.mean(np.abs(np.diff(pwm_arr, axis=0)))) if len(pwm_arr) > 1 else 0.0
 
     if info.get("user_closed", False):
         outcome_str = "🚪 VIEWER CLOSED"
@@ -1413,7 +1611,6 @@ def run_flight_simulation(
     print(f"  • Simulation Speed:       {fps:.1f} steps/s ({fps * env.dt:.1f}x real-time)")
     print(f"  • Mean Altitude Error:    {mean_alt_err:.4f} m")
     print(f"  • Mean Attitude Tilt:     {mean_tilt_err:.2f}°")
-    print(f"  • Mean PWM Jitter:        {pwm_jitter:.2f} µs/step")
     print(f"  • Total Energy Consumed:  {env.total_energy_j:.2f} Joules")
     print(f"  • Average Power Demand:   {env.total_energy_j / max(1e-6, steps_survived * env.dt):.2f} Watts")
     print("=" * 80 + "\n")
@@ -1438,25 +1635,27 @@ def run_flight_simulation(
         "energy_j": env.total_energy_j,
         "mean_alt_error": mean_alt_err,
         "mean_tilt_error_deg": mean_tilt_err,
-        "pwm_jitter": pwm_jitter,
     }
 
 
-def interactive_menu() -> Tuple[str, float, str]:
+def interactive_menu() -> Tuple[str, float, str, float]:
     """
-    Displays an interactive CLI launcher menu to select model, flight mode, and duration.
+    Displays an interactive CLI launcher menu to select model, flight mode, duration, and payload.
     """
     print("\n" + "=" * 80)
     print("   🚁 CHONG-FLY INTERACTIVE FLIGHT SIMULATION LAUNCHER")
     print("=" * 80)
-    print("  Select Biological Connectome Neural Model:")
+    print("  Quadcopter: 130g Base Mass | 15x15 cm Frame | 1.2-1.5 kg Payload Capacity")
+    print("  Sensors: Downward Laser + 8x8 ToF Matrix (45° FOV) + Optical Flow/Disp")
+    print("-" * 80)
+    print("  Select Flight Brain / Policy:")
     for m in AVAILABLE_MODELS:
         print(f"    [{m['id']}] {m['name']:<25} • {m['tag']}")
     print("    [M] Manual Piloting Mode (Fly with WASD / Space / C)")
     print("-" * 80)
 
     try:
-        choice = input("  Select Model [1-8] or [M] for Manual (default: 1): ").strip()
+        choice = input("  Select Model [1-9] or [M] for Manual (default: 1): ").strip()
     except (EOFError, KeyboardInterrupt):
         choice = "1"
 
@@ -1466,6 +1665,23 @@ def interactive_menu() -> Tuple[str, float, str]:
         mode = "manual"
     elif choice.isdigit() and 1 <= int(choice) <= len(AVAILABLE_MODELS):
         selected_meta = AVAILABLE_MODELS[int(choice) - 1]["meta"]
+
+    print("\n  Select Cargo Payload Mass [0.0 - 1.5 kg]:")
+    print("    [0] 0.00 kg (Unladen, 130g base AUW, extreme agility)")
+    print("    [1] 0.50 kg (Medium cargo, 630g AUW)")
+    print("    [2] 1.20 kg (Heavy payload, 1.33 kg AUW)")
+    print("    [3] 1.50 kg (Maximum rated payload capacity, 1.63 kg AUW)")
+    try:
+        p_choice = input("  Select Payload [0-3] or enter kg (default: 0): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        p_choice = "0"
+
+    p_map = {"0": 0.0, "1": 0.5, "2": 1.2, "3": 1.5}
+    try:
+        payload_kg = p_map.get(p_choice, float(p_choice))
+    except ValueError:
+        payload_kg = 0.0
+    payload_kg = float(np.clip(payload_kg, 0.0, 1.5))
 
     print("\n  Select Flight Duration:")
     print("    [0] Continuous Flight (Infinite / Fly as long as you want, [R] to respawn)")
@@ -1481,7 +1697,7 @@ def interactive_menu() -> Tuple[str, float, str]:
     duration_s = dur_map.get(dur_choice, 0.0)
 
     print("=" * 80 + "\n")
-    return selected_meta, duration_s, mode
+    return selected_meta, duration_s, mode, payload_kg
 
 
 def main():
@@ -1489,11 +1705,13 @@ def main():
 
     parser = argparse.ArgumentParser(description="Chong-Fly 6-DOF Drone Betaflight SITL Simulation")
     parser.add_argument("--model", type=str, default=None,
-                        help="Path to reduced model meta JSON (default: meta_spectral_k64.json)")
+                        help="Path to reduced model meta JSON or model name (default: meta_spectral_k64.json)")
     parser.add_argument("--duration", type=float, default=None,
                         help="Flight duration in seconds (default: 0 = continuous flight in GUI mode)")
     parser.add_argument("--alt", type=float, default=1.0,
                         help="Target hover altitude in meters (default: 1.0m)")
+    parser.add_argument("--payload", type=float, default=0.0,
+                        help="Attached cargo payload in kg [0.0 - 1.5 kg] (default: 0.0 kg)")
     parser.add_argument("--realtime", action="store_true",
                         help="Run at 1x real-time playback speed (default: auto for viewer)")
     parser.add_argument("--fast", action="store_true",
@@ -1509,7 +1727,7 @@ def main():
     parser.add_argument("--headless", action="store_true", default=False,
                         help="Run Isaac Gym in headless mode (no 3D viewer window)")
     parser.add_argument("--menu", action="store_true", default=False,
-                        help="Launch interactive terminal menu to select model and flight mode")
+                        help="Launch interactive terminal menu to select model, payload, and flight mode")
     parser.add_argument("--manual", action="store_true", default=False,
                         help="Start directly in manual pilot mode (WASD + Space/C)")
     parser.add_argument("--infinite", action="store_true", default=False,
@@ -1519,6 +1737,7 @@ def main():
 
     mode = "manual" if args.manual else "auto"
     selected_meta = args.model or "data/reduced_models/meta_spectral_k64.json"
+    payload_kg = float(np.clip(args.payload, 0.0, 1.5))
 
     # Default duration: if headless and not specified, 2.0s; if GUI and not specified, continuous (0.0s)
     if args.infinite:
@@ -1529,7 +1748,7 @@ def main():
         duration_s = 2.0 if args.headless else 0.0
 
     if args.menu:
-        selected_meta, duration_s, mode = interactive_menu()
+        selected_meta, duration_s, mode, payload_kg = interactive_menu()
 
     realtime = False if args.fast else (True if args.realtime else not args.headless)
 
@@ -1537,6 +1756,7 @@ def main():
         meta_path=selected_meta,
         duration_s=duration_s,
         target_altitude=args.alt,
+        payload_kg=payload_kg,
         realtime=realtime,
         solver_type=args.solver,
         pruning_sparsity=args.sparsity,
