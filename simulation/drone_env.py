@@ -65,6 +65,78 @@ from simulation.pmw3901_emulator import PMW3901FlowSensor
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Pre-Configured Biological Connectome Models Registry
+# ─────────────────────────────────────────────────────────────────────────────
+
+AVAILABLE_MODELS = [
+    {
+        "id": 1,
+        "key": "1",
+        "name": "Spectral k=64",
+        "tag": "Balanced Connectome (Full CX)",
+        "meta": "data/reduced_models/meta_spectral_k64.json",
+        "desc": "Default 64-cluster connectome with Central Complex",
+    },
+    {
+        "id": 2,
+        "key": "2",
+        "name": "Spectral k=16",
+        "tag": "Micro-MCU / Low Latency",
+        "meta": "data/reduced_models/meta_spectral_k16.json",
+        "desc": "Ultra-compact 16 clusters for low-power MCUs",
+    },
+    {
+        "id": 3,
+        "key": "3",
+        "name": "Spectral k=32",
+        "tag": "Fast 32-cluster",
+        "meta": "data/reduced_models/meta_spectral_k32.json",
+        "desc": "32-cluster connectome optimized for speed",
+    },
+    {
+        "id": 4,
+        "key": "4",
+        "name": "Spectral k=128",
+        "tag": "High Capacity",
+        "meta": "data/reduced_models/meta_spectral_k128.json",
+        "desc": "128 clusters with rich multi-sensory representation",
+    },
+    {
+        "id": 5,
+        "key": "5",
+        "name": "Spectral k=256",
+        "tag": "Deep Connectome",
+        "meta": "data/reduced_models/meta_spectral_k256.json",
+        "desc": "High-resolution 256-cluster Drosophila connectome",
+    },
+    {
+        "id": 6,
+        "key": "6",
+        "name": "Spectral k=64 No-CX",
+        "tag": "Reflex Only (CX Ablated)",
+        "meta": "data/reduced_models/meta_spectral_k64_nocx.json",
+        "desc": "Central Complex severed; reflex-only flight behavior",
+    },
+    {
+        "id": 7,
+        "key": "7",
+        "name": "Centrality k=64",
+        "tag": "Hub Prior Clustering",
+        "meta": "data/reduced_models/meta_centrality_k64.json",
+        "desc": "Clustering preserving high betweenness-centrality hubs",
+    },
+    {
+        "id": 8,
+        "key": "8",
+        "name": "Magnitude Pruned p80",
+        "tag": "80% Sparse Graph",
+        "meta": "data/reduced_models/meta_magnitude_p80_k12942.json",
+        "desc": "80% synaptic weight pruning on raw connectome",
+    },
+]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # NVIDIA Isaac Gym PhysX Simulation Pipeline
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -77,7 +149,8 @@ class IsaacGymDroneSim:
       - Interactive 3D visualizer (gym.create_viewer) with camera tracking
       - URDF loading of assets/chong_micro_quad.urdf
       - Batched PyTorch tensor wrapping via gymtorch.wrap_actor_root_state_tensor
-      - Application of 6-DOF aerodynamic thrust and motor torques
+      - Real-time keyboard event processing (WASD, Space/C, 1-8 model switching, R reset)
+      - Dynamic camera tracking modes (Chase Cam, Arena Cam, Free Cam)
       - Multi-environment parallel scaling (num_envs = 1..4096)
     """
 
@@ -99,6 +172,11 @@ class IsaacGymDroneSim:
         self.asset_root = os.path.join(_ROOT, asset_root)
         self.asset_file = asset_file
         self.render_every = 5  # Decoupled 50 FPS graphics at 250 Hz physics
+
+        # Keyboard & Camera state
+        self.key_states: Dict[str, bool] = {}
+        self.camera_modes = ["chase", "arena", "free"]
+        self.camera_mode_idx = 0
 
         if not HAS_ISAACGYM:
             raise RuntimeError(
@@ -182,18 +260,102 @@ class IsaacGymDroneSim:
         self.root_tensor = self.gym.acquire_actor_root_state_tensor(self.sim)
         self.root_states = gymtorch.wrap_tensor(self.root_tensor)
 
-        # 3D Visualizer
+        # 3D Visualizer & Input Handling
         if not self.headless:
             camera_props = gymapi.CameraProperties()
             camera_props.width = 1280
             camera_props.height = 720
             self.viewer = self.gym.create_viewer(self.sim, camera_props)
-            # Position camera with clear perspective of drone at hover (1.0m) and arena
+            # Position camera with clear initial perspective of drone
             cam_pos = gymapi.Vec3(1.6, 1.6, 1.5)
             cam_target = gymapi.Vec3(0.0, 0.0, 1.0)
             self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+            self._setup_keyboard_events()
         else:
             self.viewer = None
+
+    def _setup_keyboard_events(self):
+        """Subscribes to viewer keyboard events for interactive control and hotkeys."""
+        if self.viewer is None:
+            return
+        g = self.gym
+        v = self.viewer
+        # Manual flight controls (WASD)
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_W, "pitch_fwd")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_S, "pitch_back")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_A, "roll_left")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_D, "roll_right")
+        # Throttle (Space / Shift / C / Arrow Up/Down)
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_SPACE, "throttle_up")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_UP, "throttle_up")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_LEFT_SHIFT, "throttle_down")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_DOWN, "throttle_down")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_C, "throttle_down")
+        # Yaw (Q / E / Arrow Left/Right)
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_Q, "yaw_left")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_E, "yaw_right")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_LEFT, "yaw_left")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_RIGHT, "yaw_right")
+        # Mode & Utility
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_M, "toggle_mode")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_R, "reset")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_P, "pause")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_V, "cycle_camera")
+        g.subscribe_viewer_keyboard_event(v, gymapi.KEY_ESCAPE, "quit")
+
+        # Number keys 1-8 for live model switching
+        for i in range(1, 9):
+            key_attr = f"KEY_{i}"
+            if hasattr(gymapi, key_attr):
+                g.subscribe_viewer_keyboard_event(v, getattr(gymapi, key_attr), f"model_{i}")
+
+    def poll_input(self) -> Tuple[Dict[str, bool], List[str]]:
+        """
+        Polls viewer keyboard events.
+        Returns:
+            key_states: dict of active keys currently held down
+            triggers: list of action names that were just pressed down this step
+        """
+        if self.viewer is None:
+            return {}, []
+
+        triggers = []
+        events = self.gym.query_viewer_action_events(self.viewer)
+        for evt in events:
+            is_down = (evt.value > 0.5)
+            self.key_states[evt.action] = is_down
+            if is_down:
+                triggers.append(evt.action)
+
+        return self.key_states, triggers
+
+    def update_camera(self, pos: np.ndarray, euler: np.ndarray):
+        """Updates camera position according to current camera mode."""
+        if self.viewer is None:
+            return
+        mode = self.camera_modes[self.camera_mode_idx]
+        if mode == "chase":
+            yaw = float(euler[2])
+            cam_pos = gymapi.Vec3(
+                float(pos[0]) - 0.85 * math.cos(yaw),
+                float(pos[1]) - 0.85 * math.sin(yaw),
+                float(pos[2]) + 0.35,
+            )
+            cam_target = gymapi.Vec3(
+                float(pos[0]) + 0.25 * math.cos(yaw),
+                float(pos[1]) + 0.25 * math.sin(yaw),
+                float(pos[2]) + 0.05,
+            )
+            self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+        elif mode == "arena":
+            cam_pos = gymapi.Vec3(
+                float(pos[0]) + 1.4,
+                float(pos[1]) + 1.4,
+                float(pos[2]) + 0.9,
+            )
+            cam_target = gymapi.Vec3(float(pos[0]), float(pos[1]), float(pos[2]))
+            self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+        # "free": do not call viewer_camera_look_at to allow free mouse orbit/pan/zoom
 
     def sync_state(
         self,
@@ -226,7 +388,12 @@ class IsaacGymDroneSim:
                 self.root_states[0, 12] = float(omega[2])
             self.gym.set_actor_root_state_tensor(self.sim, self.root_tensor)
 
-    def step(self, render: bool = True) -> bool:
+    def step(
+        self,
+        render: bool = True,
+        pos: Optional[np.ndarray] = None,
+        euler: Optional[np.ndarray] = None,
+    ) -> bool:
         """Advances PhysX simulation by one dt and renders if viewer is active."""
         self.gym.simulate(self.sim)
         self.gym.fetch_results(self.sim, True)
@@ -235,6 +402,8 @@ class IsaacGymDroneSim:
         if self.viewer is not None and render:
             if self.gym.query_viewer_has_closed(self.viewer):
                 return False
+            if pos is not None and euler is not None:
+                self.update_camera(pos, euler)
             self.gym.step_graphics(self.sim)
             self.gym.draw_viewer(self.viewer, self.sim, True)
             self.gym.sync_frame_time(self.sim)
@@ -854,7 +1023,11 @@ class DroneSimulationEnv:
         if self.isaac_sim is not None:
             self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
             # Decoupled 50 FPS graphics rendering (every 5 steps at 250 Hz physics)
-            sim_ok = self.isaac_sim.step(render=(self.step_count % self.isaac_sim.render_every == 0))
+            sim_ok = self.isaac_sim.step(
+                render=(self.step_count % self.isaac_sim.render_every == 0),
+                pos=self.physics.pos,
+                euler=euler,
+            )
             if not sim_ok:
                 user_closed = True
 
@@ -965,18 +1138,20 @@ def _make_bar(value: float, width: int = 12) -> str:
 
 def run_flight_simulation(
     meta_path: str = "data/reduced_models/meta_spectral_k64.json",
-    duration_s: float = 2.0,
+    duration_s: float = 0.0,            # 0.0 or <= 0 means continuous / infinite flight
     target_altitude: float = 1.0,
-    realtime: bool = False,
+    realtime: bool = True,
     hud_interval_s: float = 0.1,
     solver_type: str = "CfC",
     pruning_sparsity: Optional[float] = None,
     ablate_cx: Optional[bool] = None,
     engine: str = "auto",
     headless: bool = False,
+    control_mode: str = "auto",         # "auto" (neural policy) or "manual" (pilot WASD)
 ) -> Dict[str, Any]:
     """
-    Executes an interactive closed-loop flight simulation with ChongFlyMSPPolicy.
+    Executes an interactive closed-loop flight simulation with live controls,
+    on-the-fly model switching, continuous flight, and real-time HUD telemetry.
     """
     import time
     from simulation.policy import ChongFlyMSPPolicy
@@ -996,17 +1171,33 @@ def run_flight_simulation(
     if not headless and not realtime:
         realtime = True
 
+    is_infinite = (duration_s is None or duration_s <= 0.0)
+    dur_str = "Continuous (Infinite / Press Esc to exit)" if is_infinite else f"{duration_s:.1f} s ({int(duration_s / 0.004)} steps @ 250 Hz)"
+
+    # Locate initial model in registry
+    active_model_idx = next((i for i, m in enumerate(AVAILABLE_MODELS) if m["meta"] == meta_path), 0)
+    active_model_name = AVAILABLE_MODELS[active_model_idx]["name"]
+
     print("\n" + "=" * 80)
     print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT SITL FLIGHT SIMULATION")
     print("=" * 80)
     print(f"  • Physics Engine:   {engine_str}")
+    print(f"  • Initial Brain:    [{active_model_idx + 1}] {active_model_name}")
     print(f"  • Model Meta:       {meta_path}")
     print(f"  • Solver Type:      {solver_type}")
-    print(f"  • Sparsity Prune:   {pruning_sparsity if pruning_sparsity is not None else 'Default'}")
-    print(f"  • Ablate CX:        {ablate_cx if ablate_cx is not None else 'Default'}")
-    print(f"  • Flight Duration:  {duration_s:.1f} s ({int(duration_s / 0.004)} steps @ 250 Hz)")
+    print(f"  • Flight Mode:      {'🎮 MANUAL PILOT (WASD)' if control_mode == 'manual' else '🤖 AUTONOMOUS (Neural Connectome)'}")
+    print(f"  • Flight Duration:  {dur_str}")
     print(f"  • Target Altitude:  {target_altitude:.2f} m")
-    print(f"  • Mode:             {'Real-Time Playback' if realtime else 'Maximum Speed (Fast)'}")
+    print(f"  • Speed Mode:       {'Real-Time Playback (1:1)' if realtime else 'Maximum Speed (Fast)'}")
+    print("=" * 80)
+    print("  🎮 LIVE 3D VIEWER CONTROLS:")
+    print("    • [M] Toggle Mode (Autonomous ↔ Manual Pilot)")
+    print("    • [W / S] Pitch Forward / Backward       • [A / D] Roll Left / Right")
+    print("    • [Space / C] Throttle Up / Down          • [Q / E] Yaw Turn Left / Right")
+    print("    • [1 - 8] Hot-Swap Connectome Brain on the Fly (k=16..256, No-CX, etc.)")
+    print("    • [V] Cycle Camera View (Chase Cam ↔ Arena Cam ↔ Free Mouse Look)")
+    print("    • [R] Respawn / Reset Drone after Collision")
+    print("    • [P] Pause / Resume Simulation          • [Esc] Exit Flight")
     print("=" * 80 + "\n")
 
     # 1. Initialize Policy
@@ -1020,7 +1211,7 @@ def run_flight_simulation(
     )
     policy.reset_state()
 
-    total_steps = int(duration_s / env.dt)
+    total_steps = sys.maxsize if is_infinite else int(duration_s / env.dt)
     steps_survived = 0
     alt_errors = []
     tilt_errors = []
@@ -1029,20 +1220,114 @@ def run_flight_simulation(
     last_hud_time = -1.0
     start_wall_time = time.time()
     info = {}
+    is_paused = False
+    is_crashed = False
+    status_msg = "Flight started."
 
-    # 2. Flight Loop (250 Hz)
+    # 2. Interactive Flight Loop (250 Hz)
     try:
-        for step in range(total_steps):
+        step = 0
+        while step < total_steps:
             t_sim = step * env.dt
 
-            # A. Sensory Readout
+            # ── Keyboard & Hotkey Event Polling ──────────────────────────────
+            key_states = {}
+            triggers = []
+            if env.isaac_sim is not None:
+                key_states, triggers = env.isaac_sim.poll_input()
+
+            # Process Triggers (single keypress events)
+            for trig in triggers:
+                if trig == "quit":
+                    print("\n🛑 Flight stopped by user [Esc].")
+                    return {}
+                elif trig == "pause":
+                    is_paused = not is_paused
+                    status_msg = "⏸️  PAUSED (Press [P] to Resume)" if is_paused else "▶️  RESUMED"
+                elif trig == "toggle_mode":
+                    control_mode = "manual" if control_mode == "auto" else "auto"
+                    status_msg = f"Switched Mode -> {'🎮 MANUAL PILOT' if control_mode == 'manual' else '🤖 AUTONOMOUS'}"
+                elif trig == "cycle_camera":
+                    if env.isaac_sim:
+                        env.isaac_sim.camera_mode_idx = (env.isaac_sim.camera_mode_idx + 1) % len(env.isaac_sim.camera_modes)
+                        status_msg = f"Camera Mode -> [{env.isaac_sim.camera_modes[env.isaac_sim.camera_mode_idx].upper()}]"
+                elif trig == "reset":
+                    # Instant Respawn / Reset
+                    env.physics.reset(np.array([0.0, 0.0, target_altitude]))
+                    env.pid.reset()
+                    policy.reset_state()
+                    if env.isaac_sim:
+                        env.isaac_sim.sync_state(env.physics.pos, env.physics.quat, env.physics.vel, env.physics.omega)
+                    is_crashed = False
+                    status_msg = "🔄 Drone Respawned at hover altitude!"
+                elif trig.startswith("model_"):
+                    try:
+                        m_idx = int(trig.split("_")[1]) - 1
+                        if 0 <= m_idx < len(AVAILABLE_MODELS):
+                            active_model_idx = m_idx
+                            active_model_name = AVAILABLE_MODELS[m_idx]["name"]
+                            new_meta = AVAILABLE_MODELS[m_idx]["meta"]
+                            policy = ChongFlyMSPPolicy.from_meta(
+                                meta_path=new_meta,
+                                mode="fixed",
+                                dt=0.004,
+                                solver_type=solver_type,
+                            )
+                            policy.reset_state()
+                            status_msg = f"🧠 Hot-Swapped Brain -> [{m_idx + 1}] {active_model_name}"
+                    except Exception as ex:
+                        status_msg = f"⚠️ Model switch error: {ex}"
+
+            # If Paused: render frame and sleep
+            if is_paused:
+                if env.isaac_sim:
+                    env.isaac_sim.render()
+                time.sleep(0.02)
+                continue
+
+            # If Crashed: wait for user to press [R] to respawn
+            if is_crashed:
+                if env.isaac_sim:
+                    env.isaac_sim.render()
+                time.sleep(0.02)
+                continue
+
+            # ── Sensory Readout ──────────────────────────────────────────────
             flow_xy, tof_8x8 = env.get_chong_fly_obs()
 
-            # B. Biological Policy Step
-            pwm = policy.step_np(flow_xy, tof_8x8)
+            # ── Action Computation ───────────────────────────────────────────
+            if control_mode == "auto":
+                # Biological Neural Connectome Policy Step
+                pwm = policy.step_np(flow_xy, tof_8x8)
+            else:
+                # Manual Flight Control via Keyboard
+                th = 1500.0  # Hover neutral
+                roll = 1500.0
+                pitch = 1500.0
+                yaw = 1500.0
+
+                if key_states.get("pitch_fwd"):
+                    pitch += 140.0
+                if key_states.get("pitch_back"):
+                    pitch -= 140.0
+                if key_states.get("roll_left"):
+                    roll -= 140.0
+                if key_states.get("roll_right"):
+                    roll += 140.0
+                if key_states.get("throttle_up"):
+                    th += 200.0
+                if key_states.get("throttle_down"):
+                    th -= 200.0
+                if key_states.get("yaw_left"):
+                    yaw -= 160.0
+                if key_states.get("yaw_right"):
+                    yaw += 160.0
+
+                pwm = np.array([th, roll, pitch, yaw], dtype=np.float32)
+
             pwms.append(pwm)
 
-            # C. Environment & Betaflight Step
+            # ── Environment & Betaflight Step ────────────────────────────────
             obs, reward, done, info = env.step(pwm)
             steps_survived += 1
 
@@ -1056,8 +1341,18 @@ def run_flight_simulation(
             alt_errors.append(abs(float(pos[2]) - target_altitude))
             tilt_errors.append(math.sqrt(float(euler[0]**2 + euler[1]**2)))
 
-            # D. Real-Time Telemetry HUD Display
-            if (t_sim - last_hud_time) >= hud_interval_s or step == 0 or done:
+            # Handle Collision / Crash (allow respawn with 'R')
+            if info.get("crashed", False):
+                is_crashed = True
+                status_msg = "💥 COLLISION! Press [R] in 3D viewer to Respawn."
+
+            # Handle Window Close
+            if info.get("user_closed", False):
+                print(f"\n🚪 Isaac Gym 3D Viewer closed by user at T = {t_sim:.3f} s.")
+                break
+
+            # ── Real-Time Telemetry HUD Display ──────────────────────────────
+            if (t_sim - last_hud_time) >= hud_interval_s or step == 0 or is_crashed:
                 last_hud_time = t_sim
                 roll_deg = math.degrees(euler[0])
                 pitch_deg = math.degrees(euler[1])
@@ -1066,13 +1361,18 @@ def run_flight_simulation(
                 tof_mat = tof_8x8.reshape(8, 8)
                 center_tof = float(np.mean(tof_mat[3:5, 3:5]))
 
-                print(f"\r┌─[ T = {t_sim:5.3f}s | Step {step:4d}/{total_steps} | Power: {power_w:5.1f}W | Energy: {env.total_energy_j:6.2f}J ]" + "─" * 25 + "┐")
+                cam_name = env.isaac_sim.camera_modes[env.isaac_sim.camera_mode_idx].upper() if env.isaac_sim else "N/A"
+                mode_label = "MANUAL PILOT" if control_mode == "manual" else f"AUTO ({active_model_name})"
+                total_str = f"/{total_steps}" if not is_infinite else " (Inf)"
+
+                print(f"\r┌─[ T = {t_sim:5.3f}s | Step {step:4d}{total_str} | Mode: {mode_label} | Cam: {cam_name} ]" + "─" * 10 + "┐")
                 print(f"│ POS:  X={pos[0]:+6.2f}m  Y={pos[1]:+6.2f}m  Z={pos[2]:5.2f}m (Target: {target_altitude:4.2f}m)  │ VEL: Vx={vel[0]:+5.2f} Vy={vel[1]:+5.2f} Vz={vel[2]:+5.2f} m/s │")
                 print(f"│ ATT:  Roll={roll_deg:+5.1f}° Pitch={pitch_deg:+5.1f}° Yaw={yaw_deg:+5.1f}°     │ GYRO: p={omega[0]:+5.2f}  q={omega[1]:+5.2f}  r={omega[2]:+5.2f} rad/s │")
                 print(f"│ MOTORS (Betaflight Quad-X):                                              │")
                 print(f"│   M4 (FL): [{_make_bar(motors[3])}] {motors[3]*100:4.1f}%     M2 (FR): [{_make_bar(motors[1])}] {motors[1]*100:4.1f}%       │")
                 print(f"│   M3 (RL): [{_make_bar(motors[2])}] {motors[2]*100:4.1f}%     M1 (RR): [{_make_bar(motors[0])}] {motors[0]*100:4.1f}%       │")
                 print(f"│ SENSORS: Optical Flow=[X:{flow_xy[0]:+5.2f}, Y:{flow_xy[1]:+5.2f}] | ToF Center Dist: {center_tof*3.5:4.2f}m  │")
+                print(f"│ STATUS:  {status_msg:<63} │")
                 print(f"└" + "─" * 74 + "┘")
 
             if realtime:
@@ -1082,12 +1382,8 @@ def run_flight_simulation(
                 if sleep_time > 0.0005:
                     time.sleep(sleep_time)
 
-            if done:
-                if info.get("user_closed", False):
-                    print(f"\n🚪 Isaac Gym 3D Viewer closed by user at T = {t_sim:.3f} s.")
-                elif info.get("crashed", False):
-                    print(f"\n⚠️  DRONE COLLISION / FLIGHT TERMINATION at T = {t_sim:.3f} s!")
-                break
+            step += 1
+
     except KeyboardInterrupt:
         print("\n🛑 Simulation paused / interrupted by user.")
 
@@ -1102,16 +1398,18 @@ def run_flight_simulation(
 
     if info.get("user_closed", False):
         outcome_str = "🚪 VIEWER CLOSED"
-    elif not info.get("crashed", False):
-        outcome_str = "✅ FLIGHT COMPLETED (STABLE)"
-    else:
+    elif is_crashed:
         outcome_str = "❌ CRASHED"
+    else:
+        outcome_str = "✅ FLIGHT COMPLETED (STABLE)"
+
+    dur_disp = f"{steps_survived * env.dt:.3f} s / {duration_s:.3f} s" if not is_infinite else f"{steps_survived * env.dt:.3f} s (Continuous)"
 
     print("\n" + "=" * 80)
     print("   📊 FLIGHT TELEMETRY SUMMARY & EVALUATION REPORT")
     print("=" * 80)
     print(f"  • Flight Outcome:         {outcome_str}")
-    print(f"  • Survival Duration:      {steps_survived * env.dt:.3f} s / {duration_s:.3f} s ({steps_survived / total_steps * 100:.1f} %)")
+    print(f"  • Survival Duration:      {dur_disp}")
     print(f"  • Simulation Speed:       {fps:.1f} steps/s ({fps * env.dt:.1f}x real-time)")
     print(f"  • Mean Altitude Error:    {mean_alt_err:.4f} m")
     print(f"  • Mean Attitude Tilt:     {mean_tilt_err:.2f}°")
@@ -1134,7 +1432,7 @@ def run_flight_simulation(
     env.close()
 
     return {
-        "survived": not info.get("crashed", False) and not info.get("user_closed", False),
+        "survived": not is_crashed and not info.get("user_closed", False),
         "steps_survived": steps_survived,
         "flight_time_s": steps_survived * env.dt,
         "energy_j": env.total_energy_j,
@@ -1144,14 +1442,56 @@ def run_flight_simulation(
     }
 
 
+def interactive_menu() -> Tuple[str, float, str]:
+    """
+    Displays an interactive CLI launcher menu to select model, flight mode, and duration.
+    """
+    print("\n" + "=" * 80)
+    print("   🚁 CHONG-FLY INTERACTIVE FLIGHT SIMULATION LAUNCHER")
+    print("=" * 80)
+    print("  Select Biological Connectome Neural Model:")
+    for m in AVAILABLE_MODELS:
+        print(f"    [{m['id']}] {m['name']:<25} • {m['tag']}")
+    print("    [M] Manual Piloting Mode (Fly with WASD / Space / C)")
+    print("-" * 80)
+
+    try:
+        choice = input("  Select Model [1-8] or [M] for Manual (default: 1): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        choice = "1"
+
+    mode = "auto"
+    selected_meta = AVAILABLE_MODELS[0]["meta"]
+    if choice.upper() == "M":
+        mode = "manual"
+    elif choice.isdigit() and 1 <= int(choice) <= len(AVAILABLE_MODELS):
+        selected_meta = AVAILABLE_MODELS[int(choice) - 1]["meta"]
+
+    print("\n  Select Flight Duration:")
+    print("    [0] Continuous Flight (Infinite / Fly as long as you want, [R] to respawn)")
+    print("    [1] 5.0 seconds")
+    print("    [2] 15.0 seconds")
+    print("    [3] 30.0 seconds")
+    try:
+        dur_choice = input("  Select Duration [0-3] (default: 0 - Continuous): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        dur_choice = "0"
+
+    dur_map = {"0": 0.0, "1": 5.0, "2": 15.0, "3": 30.0}
+    duration_s = dur_map.get(dur_choice, 0.0)
+
+    print("=" * 80 + "\n")
+    return selected_meta, duration_s, mode
+
+
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Chong-Fly 6-DOF Drone Betaflight SITL Simulation")
-    parser.add_argument("--model", type=str, default="data/reduced_models/meta_spectral_k64.json",
+    parser.add_argument("--model", type=str, default=None,
                         help="Path to reduced model meta JSON (default: meta_spectral_k64.json)")
-    parser.add_argument("--duration", type=float, default=2.0,
-                        help="Flight duration in seconds (default: 2.0s = 500 steps)")
+    parser.add_argument("--duration", type=float, default=None,
+                        help="Flight duration in seconds (default: 0 = continuous flight in GUI mode)")
     parser.add_argument("--alt", type=float, default=1.0,
                         help="Target hover altitude in meters (default: 1.0m)")
     parser.add_argument("--realtime", action="store_true",
@@ -1168,14 +1508,34 @@ def main():
                         help="Simulation backend: 'isaacgym' (NVIDIA PhysX GPU/CPU) or 'standalone' (vectorized 6-DOF CPU)")
     parser.add_argument("--headless", action="store_true", default=False,
                         help="Run Isaac Gym in headless mode (no 3D viewer window)")
+    parser.add_argument("--menu", action="store_true", default=False,
+                        help="Launch interactive terminal menu to select model and flight mode")
+    parser.add_argument("--manual", action="store_true", default=False,
+                        help="Start directly in manual pilot mode (WASD + Space/C)")
+    parser.add_argument("--infinite", action="store_true", default=False,
+                        help="Run continuous flight without time limit")
 
     args = parser.parse_args()
+
+    mode = "manual" if args.manual else "auto"
+    selected_meta = args.model or "data/reduced_models/meta_spectral_k64.json"
+
+    # Default duration: if headless and not specified, 2.0s; if GUI and not specified, continuous (0.0s)
+    if args.infinite:
+        duration_s = 0.0
+    elif args.duration is not None:
+        duration_s = args.duration
+    else:
+        duration_s = 2.0 if args.headless else 0.0
+
+    if args.menu:
+        selected_meta, duration_s, mode = interactive_menu()
 
     realtime = False if args.fast else (True if args.realtime else not args.headless)
 
     run_flight_simulation(
-        meta_path=args.model,
-        duration_s=args.duration,
+        meta_path=selected_meta,
+        duration_s=duration_s,
         target_altitude=args.alt,
         realtime=realtime,
         solver_type=args.solver,
@@ -1183,6 +1543,7 @@ def main():
         ablate_cx=args.ablate_cx,
         engine=args.engine,
         headless=args.headless,
+        control_mode=mode,
     )
 
 
