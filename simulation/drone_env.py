@@ -72,6 +72,7 @@ from simulation.sitl_interface import (
     ConnectomeModelAdapter,
     AutonomousLaserNavigatorModel,
 )
+from simulation.isaac_hud import IsaacGymHUD
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -288,9 +289,15 @@ class IsaacGymDroneSim:
             cam_pos = gymapi.Vec3(1.6, 1.6, 1.5)
             cam_target = gymapi.Vec3(0.0, 0.0, 1.0)
             self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+            self.last_cam_pos = np.array([1.6, 1.6, 1.5], dtype=np.float32)
+            self.last_cam_target = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+            self.hud = IsaacGymHUD()
             self._setup_keyboard_events()
         else:
             self.viewer = None
+            self.last_cam_pos = np.array([1.6, 1.6, 1.5], dtype=np.float32)
+            self.last_cam_target = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+            self.hud = IsaacGymHUD()
 
     def _setup_keyboard_events(self):
         """Subscribes to viewer keyboard events for interactive control and hotkeys."""
@@ -321,17 +328,86 @@ class IsaacGymDroneSim:
         g.subscribe_viewer_keyboard_event(v, gymapi.KEY_V, "cycle_camera")
         g.subscribe_viewer_keyboard_event(v, gymapi.KEY_ESCAPE, "quit")
 
-        # Dynamic Payload Adjustment hotkeys ('[' to decrease, ']' to increase payload by 0.1 kg)
+        # In-Viewer Model Selector Menu Toggle & Cycling
+        if hasattr(gymapi, "KEY_TAB"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_TAB, "toggle_menu")
+        if hasattr(gymapi, "KEY_N"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_N, "next_model")
+        if hasattr(gymapi, "KEY_B"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_B, "prev_model")
+
+        # Hover Target Altitude Adjustment (+/- 0.25 m)
+        if hasattr(gymapi, "KEY_U"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_U, "alt_up")
+        if hasattr(gymapi, "KEY_J"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_J, "alt_down")
+
+        # Dynamic Payload Adjustment hotkeys ('[' / '-' to decrease, ']' / '=' to increase payload by 0.1 kg)
         if hasattr(gymapi, "KEY_LEFT_BRACKET"):
             g.subscribe_viewer_keyboard_event(v, gymapi.KEY_LEFT_BRACKET, "payload_down")
+        if hasattr(gymapi, "KEY_MINUS"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_MINUS, "payload_down")
         if hasattr(gymapi, "KEY_RIGHT_BRACKET"):
             g.subscribe_viewer_keyboard_event(v, gymapi.KEY_RIGHT_BRACKET, "payload_up")
+        if hasattr(gymapi, "KEY_EQUAL"):
+            g.subscribe_viewer_keyboard_event(v, gymapi.KEY_EQUAL, "payload_up")
 
         # Number keys 1-9 for live model switching (1-8 biological connectomes, 9 autonomous laser nav)
         for i in range(1, 10):
             key_attr = f"KEY_{i}"
             if hasattr(gymapi, key_attr):
                 g.subscribe_viewer_keyboard_event(v, getattr(gymapi, key_attr), f"model_{i}")
+
+    def render_hud(
+        self,
+        drone_pos: np.ndarray,
+        drone_rot: np.ndarray,
+        drone_vel: np.ndarray,
+        laser_hit_point: Optional[np.ndarray],
+        depth_8x8: np.ndarray,
+        optical_flow: np.ndarray,
+        active_model_idx: int,
+        models_list: List[Dict[str, Any]],
+        control_mode: str,
+        payload_kg: float,
+        total_mass_kg: float,
+        hover_throttle: float,
+        laser_alt_m: float,
+        target_alt_m: float,
+        motors: np.ndarray,
+        power_w: float,
+        is_paused: bool = False,
+        is_crashed: bool = False,
+    ):
+        """Draws all 3D sensor rays and camera-fixed HUD dashboard lines in Isaac Gym."""
+        if self.viewer is None or not self.envs:
+            return
+
+        self.gym.clear_lines(self.viewer)
+        verts, cols, num_lines = self.hud.generate_frame_lines(
+            cam_pos=self.last_cam_pos,
+            cam_target=self.last_cam_target,
+            drone_pos=drone_pos,
+            drone_rot=drone_rot,
+            drone_vel=drone_vel,
+            laser_hit_point=laser_hit_point,
+            depth_8x8=depth_8x8,
+            optical_flow=optical_flow,
+            active_model_idx=active_model_idx,
+            models_list=models_list,
+            control_mode=control_mode,
+            payload_kg=payload_kg,
+            total_mass_kg=total_mass_kg,
+            hover_throttle=hover_throttle,
+            laser_alt_m=laser_alt_m,
+            target_alt_m=target_alt_m,
+            motors=motors,
+            power_w=power_w,
+            is_paused=is_paused,
+            is_crashed=is_crashed,
+        )
+        if num_lines > 0:
+            self.gym.add_lines(self.viewer, self.envs[0], num_lines, verts, cols)
 
     def draw_laser_beam(self, origin: np.ndarray, hit_point: np.ndarray):
         """Draws visual downward laser beam in Isaac Gym 3D visualizer."""
@@ -383,6 +459,8 @@ class IsaacGymDroneSim:
                 float(pos[2]) + 0.05,
             )
             self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
+            self.last_cam_pos = np.array([cam_pos.x, cam_pos.y, cam_pos.z], dtype=np.float32)
+            self.last_cam_target = np.array([cam_target.x, cam_target.y, cam_target.z], dtype=np.float32)
         elif mode == "arena":
             cam_pos = gymapi.Vec3(
                 float(pos[0]) + 1.4,
@@ -391,7 +469,19 @@ class IsaacGymDroneSim:
             )
             cam_target = gymapi.Vec3(float(pos[0]), float(pos[1]), float(pos[2]))
             self.gym.viewer_camera_look_at(self.viewer, None, cam_pos, cam_target)
-        # "free": do not call viewer_camera_look_at to allow free mouse orbit/pan/zoom
+            self.last_cam_pos = np.array([cam_pos.x, cam_pos.y, cam_pos.z], dtype=np.float32)
+            self.last_cam_target = np.array([cam_target.x, cam_target.y, cam_target.z], dtype=np.float32)
+        elif mode == "free":
+            try:
+                ct = self.gym.get_viewer_camera_transform(self.viewer, None)
+                self.last_cam_pos = np.array([ct.p.x, ct.p.y, ct.p.z], dtype=np.float32)
+                qx, qy, qz, qw = ct.r.x, ct.r.y, ct.r.z, ct.r.w
+                fwd_x = 2.0 * (qx * qz + qy * qw)
+                fwd_y = 2.0 * (qy * qz - qx * qw)
+                fwd_z = 1.0 - 2.0 * (qx * qx + qy * qy)
+                self.last_cam_target = self.last_cam_pos + np.array([fwd_x, fwd_y, fwd_z], dtype=np.float32)
+            except Exception:
+                pass
 
     def sync_state(
         self,
@@ -472,12 +562,12 @@ class IsaacGymDroneSim:
 @dataclass
 class RoomBoundaries:
     """3D bounding box of the flight arena."""
-    x_min: float = -3.0
-    x_max: float = 3.0
-    y_min: float = -3.0
-    y_max: float = 3.0
+    x_min: float = -4.0
+    x_max: float = 4.0
+    y_min: float = -4.0
+    y_max: float = 4.0
     z_min: float = 0.0
-    z_max: float = 3.0
+    z_max: float = 5.0
 
 
 @dataclass
@@ -987,6 +1077,14 @@ class DroneSimulationEnv:
         self.total_energy_j = 0.0
         self.last_action = np.zeros(4, dtype=np.float32)
 
+        # UI & HUD state tracking
+        self.active_model_idx = 0
+        self.control_mode = "auto"
+        self.is_paused = False
+        self.is_crashed = False
+        self.last_motors = np.zeros(4, dtype=np.float32)
+        self.last_power_w = 0.0
+
     @property
     def is_isaacgym_active(self) -> bool:
         return self.engine == "isaacgym" and HAS_ISAACGYM
@@ -994,6 +1092,65 @@ class DroneSimulationEnv:
     def set_payload(self, payload_kg: float) -> None:
         """Sets attached payload mass in [0.0, 1.5] kg with instant physics adaptation."""
         self.physics.set_payload(payload_kg)
+
+    def render_hud(
+        self,
+        active_model_idx: Optional[int] = None,
+        models_list: Optional[List[Dict[str, Any]]] = None,
+        control_mode: Optional[str] = None,
+        target_alt_m: Optional[float] = None,
+        is_paused: Optional[bool] = None,
+        is_crashed: Optional[bool] = None,
+    ):
+        """Renders 3D sensor rays and camera-projected HUD dashboard in Isaac Gym."""
+        if self.isaac_sim is None or self.isaac_sim.viewer is None:
+            return
+
+        rot_mat = self.physics.quaternion_to_rotation_matrix(self.physics.quat)
+        m_idx = self.active_model_idx if active_model_idx is None else active_model_idx
+        m_list = AVAILABLE_MODELS if models_list is None else models_list
+        c_mode = self.control_mode if control_mode is None else control_mode
+        t_alt = self.target_altitude if target_alt_m is None else target_alt_m
+        paused = self.is_paused if is_paused is None else is_paused
+        crashed = self.is_crashed if is_crashed is None else is_crashed
+
+        tof_64 = self.tof.cast_rays(
+            drone_pos=self.physics.pos,
+            drone_rot=rot_mat,
+            room=self.room,
+            cylinders=self.cylinders,
+            boxes=self.boxes,
+        )
+        depth_8x8 = tof_64.reshape(8, 8)
+        laser_alt = float(self.last_laser_result.distance) if self.last_laser_result else float(self.physics.pos[2])
+        laser_hit = self.last_laser_result.hit_point if self.last_laser_result else None
+        flow_xy = self.flow_sensor.compute_flow(
+            v_world=self.physics.vel,
+            rot_matrix=rot_mat,
+            altitude_above_surface=max(0.02, laser_alt),
+            omega_body=self.physics.omega,
+        )
+
+        self.isaac_sim.render_hud(
+            drone_pos=self.physics.pos,
+            drone_rot=rot_mat,
+            drone_vel=self.physics.vel,
+            laser_hit_point=laser_hit,
+            depth_8x8=depth_8x8,
+            optical_flow=flow_xy,
+            active_model_idx=m_idx,
+            models_list=m_list,
+            control_mode=c_mode,
+            payload_kg=float(self.physics.params.payload_mass),
+            total_mass_kg=float(self.physics.total_mass),
+            hover_throttle=float(self.physics.hover_throttle),
+            laser_alt_m=laser_alt,
+            target_alt_m=t_alt,
+            motors=self.last_motors,
+            power_w=self.last_power_w,
+            is_paused=paused,
+            is_crashed=crashed,
+        )
 
     def reset(
         self,
@@ -1101,29 +1258,31 @@ class DroneSimulationEnv:
         # ── 3. Step 6-DOF Physics Dynamics ──────────────────────────────────
         self.physics.step(motors)
         self.step_count += 1
+        self.last_motors = motors.copy()
+
+        # Calculate electrical / mechanical energy expenditure (P = sum(T * omega))
+        power_w = float(np.sum(motors ** 2) * 25.0)  # ~25W hover power for micro-drone
+        self.last_power_w = power_w
+        self.total_energy_j += power_w * self.dt
+
+        # ── 4. Collect Sensor Observations ──────────────────────────────────
+        obs = self._get_observation()
 
         # Synchronize and step Isaac Gym graphics / PhysX
         user_closed = False
         if self.isaac_sim is not None:
             self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
-            # Render visual laser beam if contact point is known
-            if self.last_laser_result is not None:
-                self.isaac_sim.draw_laser_beam(self.physics.pos, self.last_laser_result.hit_point)
-            # Decoupled 50 FPS graphics rendering (every 5 steps at 250 Hz physics)
+            should_render = (self.step_count % self.isaac_sim.render_every == 0)
+            if should_render and self.isaac_sim.viewer is not None:
+                self.isaac_sim.update_camera(self.physics.pos, euler)
+                self.render_hud()
             sim_ok = self.isaac_sim.step(
-                render=(self.step_count % self.isaac_sim.render_every == 0),
-                pos=self.physics.pos,
-                euler=euler,
+                render=should_render,
+                pos=None,
+                euler=None,
             )
             if not sim_ok:
                 user_closed = True
-
-        # Calculate electrical / mechanical energy expenditure (P = sum(T * omega))
-        power_w = float(np.sum(motors ** 2) * 25.0)  # ~25W hover power for micro-drone
-        self.total_energy_j += power_w * self.dt
-
-        # ── 4. Collect Sensor Observations ──────────────────────────────────
-        obs = self._get_observation()
 
         # ── 5. Termination & Reward Evaluation ──────────────────────────────
         pos = self.physics.pos
@@ -1342,7 +1501,16 @@ def run_flight_simulation(
     dur_str = "Continuous (Infinite / Press Esc to exit)" if is_infinite else f"{duration_s:.1f} s ({int(duration_s / 0.004)} steps @ 250 Hz)"
 
     # Locate initial model in registry
-    active_model_idx = next((i for i, m in enumerate(AVAILABLE_MODELS) if m["meta"] == meta_path), 0)
+    active_model_idx = 0
+    if str(meta_path).isdigit():
+        val = int(meta_path) - 1
+        if 0 <= val < len(AVAILABLE_MODELS):
+            active_model_idx = val
+    else:
+        for i, m in enumerate(AVAILABLE_MODELS):
+            if m["meta"] == meta_path or m["name"].lower() == str(meta_path).lower() or str(meta_path).lower() in m["name"].lower():
+                active_model_idx = i
+                break
     active_model_name = AVAILABLE_MODELS[active_model_idx]["name"]
 
     print("\n" + "=" * 80)
@@ -1359,15 +1527,17 @@ def run_flight_simulation(
     print(f"  • Target Altitude:      {target_altitude:.2f} m")
     print(f"  • Speed Mode:           {'Real-Time Playback (1:1)' if realtime else 'Maximum Speed (Fast)'}")
     print("=" * 80)
-    print("  🎮 LIVE 3D VIEWER CONTROLS:")
-    print("    • [M] Toggle Mode (Autonomous ↔ Manual Pilot)")
-    print("    • [W / S] Pitch Forward / Backward       • [A / D] Roll Left / Right")
-    print("    • [Space / C] Throttle Up / Down          • [Q / E] Yaw Turn Left / Right")
-    print("    • [1 - 9] Hot-Swap Brain (1-8 Connectomes, 9 Autonomous Laser+8x8)")
-    print("    • [ [ / ] ] Adjust Cargo Payload Mass (-0.1 kg / +0.1 kg)")
+    print("  🎮 LIVE 3D VIEWER CONTROLS (IN-VIEWER GUI ACTIVE):")
+    print("    • [TAB] Toggle In-Viewer Interactive Model Selector Menu Overlay")
+    print("    • [1 - 9] Direct Model Selection   • [N / B] Next / Previous Model")
+    print("    • [ [ / ] ] or [- / =] Adjust Cargo Payload Mass (-0.1 kg / +0.1 kg)")
+    print("    • [U / J] Adjust Target Hover Altitude (+0.25 m / -0.25 m)")
+    print("    • [M] Toggle Mode (Autonomous ↔ Manual Pilot WASD)")
+    print("    • [W / S] Pitch Forward / Backward • [A / D] Roll Left / Right")
+    print("    • [Space / C] Throttle Up / Down   • [Q / E] Yaw Turn Left / Right")
     print("    • [V] Cycle Camera View (Chase Cam ↔ Arena Cam ↔ Free Mouse Look)")
-    print("    • [R] Respawn / Reset Drone after Collision")
-    print("    • [P] Pause / Resume Simulation          • [Esc] Exit Flight")
+    print("    • [R] Respawn / Reset Drone        • [P] Pause / Resume Simulation")
+    print("    • [Esc] Exit Flight")
     print("=" * 80 + "\n")
 
     # 1. Initialize Policy
@@ -1383,6 +1553,33 @@ def run_flight_simulation(
             ablate_cx=ablate_cx,
         )
         policy.reset_state()
+
+    # Model Switch Helper
+    def switch_to_model(m_idx: int):
+        nonlocal active_model_idx, active_model_name, policy, status_msg
+        if not (0 <= m_idx < len(AVAILABLE_MODELS)):
+            return
+        try:
+            active_model_idx = m_idx
+            active_model_name = AVAILABLE_MODELS[m_idx]["name"]
+            new_meta = AVAILABLE_MODELS[m_idx]["meta"]
+            if m_idx == 8:
+                autonomous_model.reset()
+                status_msg = f"🧠 Hot-Swapped Brain -> [9] {active_model_name}"
+            else:
+                policy = ChongFlyMSPPolicy.from_meta(
+                    meta_path=new_meta,
+                    mode="fixed",
+                    dt=0.004,
+                    solver_type=solver_type,
+                )
+                policy.reset_state()
+                status_msg = f"🧠 Hot-Swapped Brain -> [{m_idx + 1}] {active_model_name}"
+            env.active_model_idx = active_model_idx
+            if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                env.isaac_sim.hud.set_notification(status_msg)
+        except Exception as ex:
+            status_msg = f"⚠️ Model switch error: {ex}"
 
     total_steps = sys.maxsize if is_infinite else int(duration_s / env.dt)
     steps_survived = 0
@@ -1416,22 +1613,57 @@ def run_flight_simulation(
                     return {}
                 elif trig == "pause":
                     is_paused = not is_paused
+                    env.is_paused = is_paused
                     status_msg = "⏸️  PAUSED (Press [P] to Resume)" if is_paused else "▶️  RESUMED"
-                elif trig == "toggle_mode":
-                    control_mode = "manual" if control_mode == "auto" else "auto"
-                    status_msg = f"Switched Mode -> {'🎮 MANUAL PILOT' if control_mode == 'manual' else '🤖 AUTONOMOUS'}"
-                elif trig == "cycle_camera":
-                    if env.isaac_sim:
-                        env.isaac_sim.camera_mode_idx = (env.isaac_sim.camera_mode_idx + 1) % len(env.isaac_sim.camera_modes)
-                        status_msg = f"Camera Mode -> [{env.isaac_sim.camera_modes[env.isaac_sim.camera_mode_idx].upper()}]"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
+                elif trig == "toggle_menu":
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.toggle_menu()
+                        status_msg = "HUD Menu: " + ("OPEN" if env.isaac_sim.hud.show_menu else "MINIMIZED")
+                elif trig == "next_model":
+                    switch_to_model((active_model_idx + 1) % len(AVAILABLE_MODELS))
+                elif trig == "prev_model":
+                    switch_to_model((active_model_idx - 1) % len(AVAILABLE_MODELS))
+                elif trig == "alt_up":
+                    target_altitude = min(5.0, target_altitude + 0.25)
+                    env.target_altitude = target_altitude
+                    autonomous_model.target_altitude = target_altitude
+                    status_msg = f"Target Alt -> {target_altitude:.2f} m [U/J]"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
+                elif trig == "alt_down":
+                    target_altitude = max(0.25, target_altitude - 0.25)
+                    env.target_altitude = target_altitude
+                    autonomous_model.target_altitude = target_altitude
+                    status_msg = f"Target Alt -> {target_altitude:.2f} m [U/J]"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
                 elif trig == "payload_up":
                     new_p = min(1.5, env.physics.params.payload_mass + 0.1)
                     env.set_payload(new_p)
                     status_msg = f"📦 Payload Increased -> {new_p:.2f} kg (AUW: {env.physics.total_mass*1000:.0f}g, Hover Th: {env.physics.hover_throttle*100:.1f}%)"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
                 elif trig == "payload_down":
                     new_p = max(0.0, env.physics.params.payload_mass - 0.1)
                     env.set_payload(new_p)
                     status_msg = f"📦 Payload Decreased -> {new_p:.2f} kg (AUW: {env.physics.total_mass*1000:.0f}g, Hover Th: {env.physics.hover_throttle*100:.1f}%)"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
+                elif trig == "toggle_mode":
+                    control_mode = "manual" if control_mode == "auto" else "auto"
+                    env.control_mode = control_mode
+                    status_msg = f"Switched Mode -> {'🎮 MANUAL PILOT' if control_mode == 'manual' else '🤖 AUTONOMOUS'}"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
+                elif trig == "cycle_camera":
+                    if env.isaac_sim:
+                        env.isaac_sim.camera_mode_idx = (env.isaac_sim.camera_mode_idx + 1) % len(env.isaac_sim.camera_modes)
+                        cam_name = env.isaac_sim.camera_modes[env.isaac_sim.camera_mode_idx].upper()
+                        status_msg = f"Camera Mode -> [{cam_name}]"
+                        if hasattr(env.isaac_sim, "hud"):
+                            env.isaac_sim.hud.set_notification(status_msg)
                 elif trig == "reset":
                     # Instant Respawn / Reset
                     env.physics.reset(np.array([0.0, 0.0, target_altitude]))
@@ -1442,39 +1674,37 @@ def run_flight_simulation(
                     if env.isaac_sim:
                         env.isaac_sim.sync_state(env.physics.pos, env.physics.quat, env.physics.vel, env.physics.omega)
                     is_crashed = False
+                    env.is_crashed = False
                     status_msg = "🔄 Drone Respawned at hover altitude!"
+                    if env.isaac_sim and hasattr(env.isaac_sim, "hud"):
+                        env.isaac_sim.hud.set_notification(status_msg)
                 elif trig.startswith("model_"):
                     try:
                         m_idx = int(trig.split("_")[1]) - 1
-                        if 0 <= m_idx < len(AVAILABLE_MODELS):
-                            active_model_idx = m_idx
-                            active_model_name = AVAILABLE_MODELS[m_idx]["name"]
-                            new_meta = AVAILABLE_MODELS[m_idx]["meta"]
-                            if m_idx == 8:
-                                autonomous_model.reset()
-                                status_msg = f"🧠 Hot-Swapped Brain -> [9] {active_model_name}"
-                            else:
-                                policy = ChongFlyMSPPolicy.from_meta(
-                                    meta_path=new_meta,
-                                    mode="fixed",
-                                    dt=0.004,
-                                    solver_type=solver_type,
-                                )
-                                policy.reset_state()
-                                status_msg = f"🧠 Hot-Swapped Brain -> [{m_idx + 1}] {active_model_name}"
+                        switch_to_model(m_idx)
                     except Exception as ex:
                         status_msg = f"⚠️ Model switch error: {ex}"
 
-            # If Paused: render frame and sleep
+            # Keep environment UI states synchronized
+            env.active_model_idx = active_model_idx
+            env.control_mode = control_mode
+            env.is_paused = is_paused
+            env.is_crashed = is_crashed
+
+            # If Paused: render HUD overlay and sleep
             if is_paused:
                 if env.isaac_sim:
+                    env.render_hud()
                     env.isaac_sim.render()
                 time.sleep(0.02)
                 continue
 
-            # If Crashed: wait for user to press [R] to respawn
+            # If Crashed: wait for user to press [R] to respawn (or exit in headless mode)
             if is_crashed:
+                if headless:
+                    break
                 if env.isaac_sim:
+                    env.render_hud()
                     env.isaac_sim.render()
                 time.sleep(0.02)
                 continue
