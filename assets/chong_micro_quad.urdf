@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<robot name="chong_micro_quad">
+  <!-- Base Link: Chassis & Avionics Core -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.033"/>
+      <!-- Moments of inertia [kg*m^2] matching Crazyflie 2.1 -->
+      <inertia ixx="1.66e-5" ixy="0.0" ixz="0.0" iyy="1.66e-5" iyz="0.0" izz="2.93e-5"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.065 0.065 0.020"/>
+      </geometry>
+      <material name="dark_carbon">
+        <color rgba="0.15 0.15 0.15 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.070 0.070 0.025"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Visual Cross Arms -->
+  <link name="arm_cross">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.002"/>
+      <inertia ixx="1.0e-7" ixy="0" ixz="0" iyy="1.0e-7" iyz="0" izz="2.0e-7"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0.785398"/>
+      <geometry>
+        <box size="0.092 0.006 0.003"/>
+      </geometry>
+      <material name="carbon_blue">
+        <color rgba="0.1 0.3 0.8 0.9"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="base_to_arms" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_cross"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ── 4 Rotors in Quad-X Layout (Arm length = 46mm) ────────────────── -->
+  <!-- M1: Rear Right (CCW) [-d, +d, 0] -->
+  <link name="rotor_1">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.023" length="0.002"/>
+      </geometry>
+      <material name="red_prop">
+        <color rgba="0.9 0.1 0.1 0.7"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_rotor_1" type="continuous">
+    <parent link="base_link"/>
+    <child link="rotor_1"/>
+    <origin xyz="-0.0325 0.0325 0.006" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- M2: Front Right (CW) [+d, +d, 0] -->
+  <link name="rotor_2">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.023" length="0.002"/>
+      </geometry>
+      <material name="white_prop">
+        <color rgba="0.9 0.9 0.9 0.7"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_rotor_2" type="continuous">
+    <parent link="base_link"/>
+    <child link="rotor_2"/>
+    <origin xyz="0.0325 0.0325 0.006" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- M3: Rear Left (CW) [-d, -d, 0] -->
+  <link name="rotor_3">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.023" length="0.002"/>
+      </geometry>
+      <material name="red_prop">
+        <color rgba="0.9 0.1 0.1 0.7"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_rotor_3" type="continuous">
+    <parent link="base_link"/>
+    <child link="rotor_3"/>
+    <origin xyz="-0.0325 -0.0325 0.006" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <!-- M4: Front Left (CCW) [+d, -d, 0] -->
+  <link name="rotor_4">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="1e-8" ixy="0" ixz="0" iyy="1e-8" iyz="0" izz="2e-8"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0.008" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.023" length="0.002"/>
+      </geometry>
+      <material name="white_prop">
+        <color rgba="0.9 0.9 0.9 0.7"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_rotor_4" type="continuous">
+    <parent link="base_link"/>
+    <child link="rotor_4"/>
+    <origin xyz="0.0325 -0.0325 0.006" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+</robot>
