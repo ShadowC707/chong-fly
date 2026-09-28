@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="chong_micro_quad">
   <!-- ─────────────────────────────────────────────────────────────────────────
-       Chong-Fly SITL Quadcopter (130g, 15x15cm, 1.2-1.5kg Payload Capacity)
+       Chong-Fly Quadcopter (130g, 15x15cm, 1.2-1.5kg Payload Capacity)
        Sensors: Downward Laser Altimeter, 8x8 ToF Matrix (45° FOV), Optical Flow
        ───────────────────────────────────────────────────────────────────────── -->
 

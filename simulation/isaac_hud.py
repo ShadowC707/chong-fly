@@ -278,7 +278,7 @@ class IsaacGymHUD:
         draw_hud_box(-0.95, 0.75, 1.90, 0.20, c_cyan)
 
         # Title & Drone Platform specs
-        draw_text("CHONG-FLY 130G 15X15CM SITL", -0.92, 0.88, 0.015, 0.028, c_cyan)
+        draw_text("CHONG-FLY 130G 15X15CM", -0.92, 0.88, 0.015, 0.028, c_cyan)
 
         # Mode Badge: [AUTONOMOUS] or [MANUAL]
         if control_mode == "manual":
