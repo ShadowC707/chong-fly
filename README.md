@@ -56,12 +56,16 @@ The reduction collapses the 12.9k biological graph into 11 macro-cluster interac
 ## 📂 Repository Structure
 
 ```text
-fly-drone-bioai/
+chong-fly/
+├── benchmarks/                  # Test suites, dynamics validation, and hardware profiling
+│   ├── check_spectral.py
+│   ├── hardware_benchmark.py
+│   ├── test_cfc_dynamics.py
+│   ├── test_drone_env.py
+│   ├── test_optuna_search_space.py
+│   └── test_policy.py
 ├── bio_pipeline/
-│   ├── circuit_extractor.py     # Connectome query & synthetic bilateral generator (Optomotor + CX)
-│   ├── graph_reducer.py         # Numba JIT spectral Laplacian reduction & linear benchmark
-│   ├── models.py                # Biological Closed-Form Continuous-Time (CfC) neural core
-│   └── test_cfc_dynamics.py     # Pre-evolutionary dynamical validation
+│   └── models.py                # Biological Closed-Form Continuous-Time (CfC) neural core
 ├── data/
 │   ├── raw_connectome/          # Extracted topology, metadata, and cell class registries
 │   │   ├── raw_nodes.csv
@@ -73,8 +77,24 @@ fly-drone-bioai/
 │       └── matrix_benchmark_report.json
 ├── deployment/                  # Target firmware cross-compilation & ONNX/C header exporters
 ├── firmware/                    # Embedded real-time execution kernels (C/C++ & MicroPython)
-├── simulation/                  # Multi-room obstacle grid environment & aerodynamic drone models
-└── training/                    # Two-Phase Bilevel Evolutionary Optimization (CMA-ES / CfC)
+├── generator/
+│   ├── circuit_extractor.py     # Connectome query & synthetic bilateral generator (Optomotor + CX)
+│   └── graph_reducer.py         # Numba JIT spectral Laplacian reduction & linear benchmark
+├── optimizer/                   # Evolutionary Optuna tuner & metrics evaluator
+│   ├── evaluate.py
+│   └── optuna_tuner.py
+├── simulation/                  # Sensor→PWM translation & Isaac Gym / MSP Drone Environment
+│   ├── avionics_filter.py
+│   ├── drone_env.py
+│   ├── drone_interface.py
+│   ├── isaac_hud.py
+│   ├── memory.py
+│   ├── metrics.py
+│   ├── pmw3901_emulator.py
+│   └── policy.py
+└── training/                    # Legacy / high-level training loops
+    ├── cma_es_tuner.py
+    └── env.py
 ```
 
 ---
@@ -99,13 +119,13 @@ pip install numpy pandas scipy scikit-learn torch numba pyarrow
 
 ### 2. Extract Connectome Topology
 ```bash
-python bio_pipeline/circuit_extractor.py
+python generator/circuit_extractor.py
 ```
 
 ### 3. Generate Multi-Scale Model Grid & Benchmark
 Runs parallel spectral embedding and synaptic condensation with high-performance linear throughput profiling:
 ```bash
-python bio_pipeline/graph_reducer.py
+python generator/graph_reducer.py
 ```
 
 ---
