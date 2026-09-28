@@ -67,7 +67,7 @@ _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from bio_pipeline.models import BiologicalCfCCell, BiologicalCfCNetwork
+from core.models import BiologicalCfCCell, BiologicalCfCNetwork
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -470,7 +470,7 @@ class ChongFlyMSPPolicy(nn.Module):
         pruning_sparsity: optional float in [0.0, 1.0)
         ablate_cx       : whether Central Complex is ablated (loads _nocx meta if available)
         """
-        from bio_pipeline.models import build_network_from_meta
+        from core.models import build_network_from_meta
 
         net = build_network_from_meta(
             meta_path=meta_path,

@@ -58,14 +58,12 @@ The reduction collapses the 12.9k biological graph into 11 macro-cluster interac
 
 ```text
 chong-fly/
-├── benchmarks/                  # Test suites, dynamics validation, and hardware profiling
+├── benchmarks/                  # Hardware profiling and spectral benchmarks
 │   ├── check_spectral.py
-│   ├── hardware_benchmark.py
-│   ├── test_cfc_dynamics.py
-│   ├── test_drone_env.py
-│   ├── test_optuna_search_space.py
-│   └── test_policy.py
-├── bio_pipeline/
+│   └── hardware_benchmark.py
+├── configs/                     # Hyperparameters and biological mappings
+│   └── cell_mapping.json
+├── core/                        # Biological Neural Network logic
 │   └── models.py                # Biological Closed-Form Continuous-Time (CfC) neural core
 ├── data/
 │   ├── raw_connectome/          # Extracted topology, metadata, and cell class registries
@@ -76,13 +74,14 @@ chong-fly/
 │       ├── w_macro_k16.npy ... w_macro_k12934.npy
 │       ├── models_grid_manifest.json
 │       └── matrix_benchmark_report.json
-├── deployment/                  # Target firmware cross-compilation & ONNX/C header exporters
-├── firmware/                    # Embedded real-time execution kernels (C/C++ & MicroPython)
+├── edge/                        # Deployment and real-time execution
+│   ├── embedded/                # Embedded real-time execution kernels (C/C++ & MicroPython)
+│   └── exporter/                # Target firmware cross-compilation & ONNX/C header exporters
 ├── generator/
 │   ├── circuit_extractor.py     # Connectome query & synthetic bilateral generator (Optomotor + CX)
 │   └── graph_reducer.py         # Numba JIT spectral Laplacian reduction & linear benchmark
 ├── optimizer/                   # Evolutionary Optuna tuner & metrics evaluator
-│   ├── evaluate.py
+│   ├── evaluate.py              # Evaluator & O(N) tuning environment wrapper
 │   └── optuna_tuner.py
 ├── simulation/                  # Sensor→PWM translation & Isaac Gym / MSP Drone Environment
 │   ├── avionics_filter.py
@@ -93,9 +92,11 @@ chong-fly/
 │   ├── metrics.py
 │   ├── pmw3901_emulator.py
 │   └── policy.py
-└── training/                    # Legacy / high-level training loops
-    ├── cma_es_tuner.py
-    └── env.py
+└── tests/                       # Infrastructure health checks and PyTest suites
+    ├── test_cfc_dynamics.py
+    ├── test_drone_env.py
+    ├── test_optuna_search_space.py
+    └── test_policy.py
 ```
 
 ---
