@@ -1,6 +1,7 @@
 # Chong Fly: Biologically Grounded Drone Autopilot (Drosophila Connectome & CfC)
 
-Autonomous drone flight control architecture based on the biological connectome of the *Drosophila melanogaster* fruit fly. The project translates whole-brain connectomic pathways into high-frequency closed-loop flight reflex controllers deployable across edge devices, microcontrollers, and neural accelerators.
+Autonomous drone flight control architecture based on the biological connectome of the *Drosophila melanogaster* fruit fly.
+The project translates whole-brain connectomic pathways into high-frequency closed-loop flight reflex controllers deployable across edge devices, microcontrollers, and neural accelerators.
 
 ---
 
