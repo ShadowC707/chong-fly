@@ -1,0 +1,51 @@
+{
+  "reducer": "spectral",
+  "k": 32,
+  "sparse": false,
+  "w_file": "w_spectral_k32.npy",
+  "cmap_file": "cmap_spectral_k32.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      1,
+      3,
+      5,
+      9,
+      12,
+      14,
+      21,
+      22,
+      24,
+      25,
+      26,
+      31
+    ],
+    "lc_looming": [
+      3,
+      14
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      0
+    ],
+    "yaw": [
+      0,
+      10,
+      16
+    ],
+    "pitch_roll": [
+      0
+    ]
+  },
+  "metrics": {
+    "mem_mb": 0.00390625,
+    "nnz": 789,
+    "sparsity_pct": 22.94921875,
+    "spectral_rho": 1.0,
+    "step_us": 5.5276259990932886,
+    "mops": 370.5026353693139,
+    "stable_linear": true,
+    "reduce_sec": 0.174
+  },
+  "platform_hint": "MCU (ESP32 / Cortex-M4)"
+}

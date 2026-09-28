@@ -1,12 +1,61 @@
-﻿__pycache__/
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Virtual environments ───────────────────────────────────────────────────────
 .venv/
+.venv*/
+.venv-isaac
 venv/
+env/
+.env
+
+
+# ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
+# Ignore all dense .npy matrices and cluster maps in reduced_models/
 data/reduced_models/*.npy
+
+# Keep small sparse CSR matrices (.npz) — they are kilobytes and tracked
+# data/reduced_models/w_magnitude_*.npz   ← tracked
+
+# ── Raw connectome bulk data ───────────────────────────────────────────────────
 data/raw_connectome/*.parquet
 data/raw_connectome/*.csv
+
+# ── Explicitly keep lightweight JSON artefacts ────────────────────────────────
 !data/reduced_models/models_grid_manifest.json
 !data/reduced_models/matrix_benchmark_report.json
+!data/reduced_models/meta_*.json
 !data/raw_connectome/circuit_summary.json
+!data/filtered_models_manifest.json
+
+# ── Optuna & Local Databases ──────────────────────────────────────────────────
+*.db
+*.sqlite3
+.optuna/
+
+# ── Checkpoints & Training Artefacts ──────────────────────────────────────────
+*.pt
+*.pth
+checkpoints/
+runs/
+wandb/
+
+# ── IDE / OS / Test noise ─────────────────────────────────────────────────────
 .vscode/
 .idea/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+scratch/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+

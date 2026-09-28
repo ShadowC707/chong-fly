@@ -1,0 +1,53 @@
+{
+  "reducer": "spectral",
+  "k": 64,
+  "sparse": false,
+  "w_file": "w_spectral_k64.npy",
+  "cmap_file": "cmap_spectral_k64.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      1,
+      4,
+      7,
+      13,
+      15,
+      18,
+      29,
+      37,
+      43,
+      46,
+      47,
+      52,
+      57,
+      59,
+      61
+    ],
+    "lc_looming": [
+      7,
+      29
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      50
+    ],
+    "yaw": [
+      42,
+      50
+    ],
+    "pitch_roll": [
+      50
+    ]
+  },
+  "metrics": {
+    "mem_mb": 0.015625,
+    "nnz": 1756,
+    "sparsity_pct": 57.12890625,
+    "spectral_rho": 0.9999999403953552,
+    "step_us": 4.349844002717873,
+    "mops": 1883.2859281577612,
+    "stable_linear": true,
+    "reduce_sec": 0.17
+  },
+  "platform_hint": "SBC (RPi Zero / CM4)"
+}

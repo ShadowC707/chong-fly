@@ -1,0 +1,42 @@
+{
+  "reducer": "spectral_nocx",
+  "k": 32,
+  "sparse": false,
+  "ablate_cx": true,
+  "w_file": "w_spectral_k32_nocx.npy",
+  "cmap_file": "cmap_spectral_k32_nocx.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      4,
+      6,
+      7,
+      10,
+      16,
+      22,
+      24,
+      28,
+      29,
+      30
+    ],
+    "lc_looming": [
+      4,
+      14
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      25,
+      31
+    ],
+    "yaw": [
+      25,
+      31
+    ],
+    "pitch_roll": [
+      25,
+      31
+    ]
+  },
+  "metrics": {},
+  "platform_hint": "MCU (ESP32 / Cortex-M4) (Ablated CX)"
+}
