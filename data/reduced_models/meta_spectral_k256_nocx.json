@@ -1,0 +1,53 @@
+{
+  "reducer": "spectral_nocx",
+  "k": 256,
+  "sparse": false,
+  "ablate_cx": true,
+  "w_file": "w_spectral_k256_nocx.npy",
+  "cmap_file": "cmap_spectral_k256_nocx.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      15,
+      48,
+      52,
+      62,
+      64,
+      68,
+      69,
+      72,
+      74,
+      102,
+      128,
+      134,
+      155,
+      169,
+      174,
+      184,
+      212,
+      219,
+      243,
+      250,
+      253
+    ],
+    "lc_looming": [
+      15,
+      169
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      21,
+      136
+    ],
+    "yaw": [
+      21,
+      136
+    ],
+    "pitch_roll": [
+      21,
+      136
+    ]
+  },
+  "metrics": {},
+  "platform_hint": "Edge Embedded (Jetson Nano) (Ablated CX)"
+}

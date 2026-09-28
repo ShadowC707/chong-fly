@@ -1,0 +1,62 @@
+{
+  "reducer": "spectral",
+  "k": 256,
+  "sparse": false,
+  "w_file": "w_spectral_k256.npy",
+  "cmap_file": "cmap_spectral_k256.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      4,
+      42,
+      61,
+      63,
+      65,
+      77,
+      95,
+      114,
+      124,
+      130,
+      133,
+      140,
+      162,
+      163,
+      182,
+      185,
+      215,
+      222,
+      229
+    ],
+    "lc_looming": [
+      26,
+      63,
+      140
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      132,
+      177
+    ],
+    "yaw": [
+      67,
+      109,
+      153,
+      177
+    ],
+    "pitch_roll": [
+      153,
+      177
+    ]
+  },
+  "metrics": {
+    "mem_mb": 0.25,
+    "nnz": 3818,
+    "sparsity_pct": 94.1741943359375,
+    "spectral_rho": 0.9534110426902771,
+    "step_us": 18.653467999683926,
+    "mops": 7026.682652374398,
+    "stable_linear": true,
+    "reduce_sec": 0.666
+  },
+  "platform_hint": "Edge Embedded (Jetson Nano)"
+}

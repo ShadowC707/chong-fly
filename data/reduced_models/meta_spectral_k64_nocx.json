@@ -1,0 +1,51 @@
+{
+  "reducer": "spectral_nocx",
+  "k": 64,
+  "sparse": false,
+  "ablate_cx": true,
+  "w_file": "w_spectral_k64_nocx.npy",
+  "cmap_file": "cmap_spectral_k64_nocx.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      0,
+      6,
+      8,
+      9,
+      10,
+      13,
+      18,
+      26,
+      27,
+      31,
+      32,
+      36,
+      40,
+      45,
+      51,
+      53,
+      56,
+      58,
+      63
+    ],
+    "lc_looming": [
+      16,
+      18
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      22,
+      30
+    ],
+    "yaw": [
+      22,
+      30
+    ],
+    "pitch_roll": [
+      22,
+      30
+    ]
+  },
+  "metrics": {},
+  "platform_hint": "SBC (RPi Zero / CM4) (Ablated CX)"
+}

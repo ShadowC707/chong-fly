@@ -1,0 +1,78 @@
+{
+  "reducer": "centrality",
+  "k": 64,
+  "sparse": false,
+  "w_file": "w_centrality_k64.npy",
+  "cmap_file": "cmap_centrality_k64.npy",
+  "sensor_index_map": {
+    "lptc_flow": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25
+    ],
+    "lc_looming": [
+      23,
+      24,
+      56,
+      58
+    ]
+  },
+  "motor_index_map": {
+    "throttle": [
+      42,
+      59,
+      60,
+      61
+    ],
+    "yaw": [
+      21,
+      26,
+      27,
+      62
+    ],
+    "pitch_roll": [
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
+    ]
+  },
+  "metrics": {
+    "mem_mb": 0.015625,
+    "nnz": 4080,
+    "sparsity_pct": 0.390625,
+    "spectral_rho": 1.0000001192092896,
+    "step_us": 4.146120001678355,
+    "mops": 1975.8231784617587,
+    "stable_linear": true,
+    "reduce_sec": 0.004
+  },
+  "platform_hint": "SBC (RPi Zero / CM4)"
+}
