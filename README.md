@@ -156,7 +156,7 @@ chong-fly/
 ├── firmware/                    # Embedded real-time execution kernels (C/C++ & MicroPython)
 │   ├── esp32_main/
 │   └── cm3_daemon/
-├── simulation/                  # Sensor→PWM translation, SITL & Drone Environment
+├── simulation/                  # Sensor→PWM translation & Drone Environment
 │   ├── drone_env.py             # 6-DOF DroneSimulationEnv w/ Betaflight Cascaded PID & ToF/Flow Sensors
 │   ├── avionics_filter.py       # BetaflightCascadedPID (Angle P, Rate PID, PT1 filter, Quad-X mixer)
 │   ├── pmw3901_emulator.py      # PMW3901 optical flow sensor (surface velocity & gyro derotation)
@@ -285,7 +285,7 @@ while flying:
 
 ## 🎯 Optuna Architecture Search & Multi-Level Pareto Funnel
 
-[`training/optuna_tuner.py`](training/optuna_tuner.py) implements the automated architecture search and multi-objective Pareto optimization pipeline designed to discover energy-efficient, robust biological neural controllers.
+[`training/optuna_tuner.py`](OPTIMIZER/optuna_tuner.py) implements the automated architecture search and multi-objective Pareto optimization pipeline designed to discover energy-efficient, robust biological neural controllers.
 
 ### 1. Search Space (Section 4.1)
 
@@ -380,15 +380,16 @@ python bio_pipeline/graph_reducer.py
 ```
 
 ### 4. Load a Reduced Model Programmatically
+
 ```python
-from bio_pipeline.graph_reducer import ReducedModel
+from GENERATOR.graph_reducer import ReducedModel
 
 # Load spectral K=64 model
 model = ReducedModel.load("data/reduced_models/meta_spectral_k64.json")
 
-print(model.W.shape)                   # (64, 64)
-print(model.sensor_index_map)          # {'lptc_flow': [1,4,7,...], 'lc_looming': [7,29]}
-print(model.motor_index_map)           # {'throttle': [50], 'yaw': [42,50], 'pitch_roll': [50]}
+print(model.W.shape)  # (64, 64)
+print(model.sensor_index_map)  # {'lptc_flow': [1,4,7,...], 'lc_looming': [7,29]}
+print(model.motor_index_map)  # {'throttle': [50], 'yaw': [42,50], 'pitch_roll': [50]}
 
 # Load magnitude-pruned sparse model (p=90)
 sparse_model = ReducedModel.load("data/reduced_models/meta_magnitude_p90_k12942.json")

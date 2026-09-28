@@ -1,7 +1,7 @@
 """
 simulation/drone_env.py
 =======================
-High-Fidelity SITL Drone Simulation Environment with Betaflight Flight Controller
+High-Fidelity Isaac Drone Simulation Environment with Betaflight Flight Controller
 and Multi-Modal Sensor Emulation (NVIDIA Isaac Gym & 6-DOF Vectorized Engine).
 
 Quadcopter Specifications:
@@ -27,7 +27,7 @@ Quadcopter Specifications:
 3. Avionics & Flight Interface:
    - Cascaded Betaflight PID (Angle Mode outer loop + Rate PID inner loop)
    - Accepts high-level setpoints [Thrust, Roll, Pitch, YawRate] or RC PWM [1000..2000 µs]
-   - Fully modular SITL interface (SITLObservation, SITLAction, BaseSITLModel)
+   - Fully modular Isaac interface (IsaacObservation, IsaacAction, BaseIsaacModel)
    - Real-time 3D visualization in NVIDIA Isaac Gym with laser beam rendering & HUD
 """
 
@@ -63,12 +63,12 @@ if _ROOT not in sys.path:
 # Import avionics PID and optical flow sensor
 from simulation.avionics_filter import BetaflightCascadedPID, PIDConstants
 from simulation.pmw3901_emulator import PMW3901FlowSensor
-from simulation.sitl_interface import (
+from simulation.drone_interface import (
     DownwardLaserSensor,
     LaserHitResult,
-    SITLObservation,
-    SITLAction,
-    BaseSITLModel,
+    IsaacObservation,
+    IsaacAction,
+    BaseIsaacModel,
     ConnectomeModelAdapter,
     AutonomousLaserNavigatorModel,
 )
@@ -1165,6 +1165,7 @@ class DroneSimulationEnv:
         self.displacement_step = np.zeros(2, dtype=np.float32)
         self.displacement_total = np.zeros(2, dtype=np.float32)
         self.last_laser_result = None
+        self.zero_flow_time = 0.0
         self.pid.reset()
 
         if initial_pos is None:
@@ -1185,7 +1186,7 @@ class DroneSimulationEnv:
 
     def step(
         self,
-        action: Union[np.ndarray, Tuple[float, float, float, float], SITLAction],
+        action: Union[np.ndarray, Tuple[float, float, float, float], IsaacAction],
         action_type: str = "auto", # "auto", "setpoints", or "pwm"
     ) -> Tuple[np.ndarray, float, bool, Dict[str, Any]]:
         """
@@ -1195,7 +1196,7 @@ class DroneSimulationEnv:
         Instead, it sends flight setpoints (Angle Mode: Roll/Pitch, Rate Mode: Yaw Rate, Collective Thrust).
         
         Args:
-            action: 4-element array or SITLAction object:
+            action: 4-element array or IsaacAction object:
                 - If PWM: [throttle_pwm, roll_pwm, pitch_pwm, yaw_pwm] in [1000, 2000] µs
                 - If setpoints: [target_thrust (0..1), target_roll (rad), target_pitch (rad), target_yaw_rate (rad/s)]
             action_type: "auto" detects based on values (> 500 means PWM); or explicitly "pwm" / "setpoints".
@@ -1206,7 +1207,7 @@ class DroneSimulationEnv:
             done: boolean termination flag
             info: auxiliary metrics (altitude, laser distance, euler angles, motor commands, energy)
         """
-        if isinstance(action, SITLAction):
+        if isinstance(action, IsaacAction):
             if action.action_type == "pwm":
                 action = np.array([action.throttle_pwm, action.roll_pwm, action.pitch_pwm, action.yaw_pwm], dtype=np.float32)
                 action_type = "pwm"
@@ -1369,6 +1370,17 @@ class DroneSimulationEnv:
             omega_body=omega,
         )
 
+        # Generate Levy Noise (Cauchy distribution) if flow is 0 for > 2 seconds
+        if np.allclose(flow_xy, 0.0, atol=1e-5):
+            self.zero_flow_time += getattr(self, 'dt', 0.004)
+        else:
+            self.zero_flow_time = 0.0
+
+        if self.zero_flow_time > 2.0:
+            levy_noise = np.random.standard_cauchy(size=2) * 0.1
+            flow_xy += levy_noise.astype(np.float32)
+
+
         # 3. Optical Displacement Sensor (body translational displacement)
         v_body = rot_mat.T @ vel
         self.displacement_step = (v_body[:2] * self.dt).astype(np.float32)
@@ -1387,9 +1399,9 @@ class DroneSimulationEnv:
         obs = np.concatenate([flow_xy, tof_64], axis=0).astype(np.float32)
         return obs
 
-    def get_sitl_obs(self) -> SITLObservation:
+    def get_isaac_obs(self) -> IsaacObservation:
         """
-        Returns full structured SITLObservation object containing all sensors,
+        Returns full structured IsaacObservation object containing all sensors,
         IMU, displacement, attitude, and payload state.
         """
         if self.last_laser_result is None:
@@ -1416,7 +1428,7 @@ class DroneSimulationEnv:
         R = rot_mat
         a_body = R.T @ np.array([0.0, 0.0, self.params.g], dtype=np.float32)
 
-        return SITLObservation(
+        return IsaacObservation(
             laser_distance=float(self.last_laser_result.distance),
             laser_distance_norm=float(self.last_laser_result.distance_norm),
             laser_hit_point=self.last_laser_result.hit_point.copy(),
@@ -1514,7 +1526,7 @@ def run_flight_simulation(
     active_model_name = AVAILABLE_MODELS[active_model_idx]["name"]
 
     print("\n" + "=" * 80)
-    print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT SITL FLIGHT SIMULATION")
+    print("   🚀 CHONG-FLY 6-DOF BETAFLIGHT ISAAC FLIGHT SIMULATION")
     print("=" * 80)
     print(f"  • Physics Engine:       {engine_str}")
     print(f"  • Base Frame & Mass:    130 g (0.130 kg) | 15 cm x 15 cm Frame")
@@ -1716,8 +1728,8 @@ def run_flight_simulation(
             if control_mode == "auto":
                 if active_model_idx == 8:
                     # Autonomous Multi-Modal Laser + 8x8 Depth + Flow Navigator
-                    sitl_obs = env.get_sitl_obs()
-                    action_cmd = autonomous_model.step(sitl_obs)
+                    isaac_obs = env.get_isaac_obs()
+                    action_cmd = autonomous_model.step(isaac_obs)
                 else:
                     # Biological Neural Connectome Policy Step
                     pwm = policy.step_np(flow_xy, tof_8x8)
@@ -1933,7 +1945,7 @@ def interactive_menu() -> Tuple[str, float, str, float]:
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description="Chong-Fly 6-DOF Drone Betaflight SITL Simulation")
+    parser = argparse.ArgumentParser(description="Chong-Fly 6-DOF Drone Betaflight Isaac Simulation")
     parser.add_argument("--model", type=str, default=None,
                         help="Path to reduced model meta JSON or model name (default: meta_spectral_k64.json)")
     parser.add_argument("--duration", type=float, default=None,

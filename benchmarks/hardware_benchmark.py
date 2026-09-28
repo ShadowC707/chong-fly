@@ -58,7 +58,7 @@ class ProxyBenchmark:
         return x_new
 
 def run_benchmark():
-    models_dir = "data/reduced_models"
+    models_dir = "../data/reduced_models"
     manifest_path = os.path.join(models_dir, "models_grid_manifest.json")
     
     with open(manifest_path, "r") as f:

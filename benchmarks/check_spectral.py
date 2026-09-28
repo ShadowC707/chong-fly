@@ -12,7 +12,7 @@ def compute_spectral_radius(w):
     return np.max(np.abs(eigenvalues))
 
 def main():
-    model_dir = "data/reduced_models"
+    model_dir = "../data/reduced_models"
     files = glob.glob(os.path.join(model_dir, "w_*.*"))
     for file in sorted(files):
         if file.endswith('.npy'):
