@@ -1,22 +1,46 @@
 import numpy as np
+import torch
 
-def calculate_jitter_xy(pwm_history):
+# simulation/metrics.py
+import numpy as np
+
+
+def calculate_jitter_pr(pwm_history: np.ndarray) -> float:
     """
-    Розрахунок дисперсії ШІМ (PWM variance) тільки по осях Roll/Pitch.
-    pwm_history: список або масив форми (N, 4) [Throttle, Roll, Pitch, Yaw]
-                 або списки словників/об'єктів, але припускаємо, що це numpy array
+    Рахує дисперсію похідної (L2 норму різниці) ТІЛЬКИ для Pitch та Roll.
+    Штрафує модель за розгойдування горизонту.
     """
-    if len(pwm_history) == 0:
+    if len(pwm_history) < 2:
         return 0.0
-    pwm_array = np.array(pwm_history)
-    
-    # Check if shape is valid for [Throttle, Roll, Pitch, Yaw]
-    if len(pwm_array.shape) == 2 and pwm_array.shape[1] >= 3:
-        # Roll = index 1, Pitch = index 2
-        roll_pitch_pwm = pwm_array[:, 1:3]
-        variance = np.var(roll_pitch_pwm, axis=0)
-        return float(np.sum(variance))
-    return 0.0
+
+    pwm_array = np.asarray(pwm_history)
+    # Рахуємо різницю ШІМ між сусідніми кадрами
+    dpwm = pwm_array[1:] - pwm_array[:-1]
+
+    # Беремо квадрати змін тільки для Roll (idx 1) та Pitch (idx 2)
+    # і повертаємо середнє значення
+    jitter_pr = float(np.mean(dpwm[:, 1:3] ** 2))
+    return jitter_pr
+
+
+def calculate_saccades_yaw(pwm_history: np.ndarray, threshold: float = 150.0) -> int:
+    """
+    Рахує кількість різких ривків (сакад) по осі Yaw (L1 розрідженість).
+    Заохочує модель робити різкі маневри ухилення.
+    """
+    if len(pwm_history) < 2:
+        return 0
+
+    pwm_array = np.asarray(pwm_history)
+    # Зміна ШІМ по Yaw (idx 3) за модулем
+    dyaw = np.abs(pwm_array[1:, 3] - pwm_array[:-1, 3])
+
+    # Рахуємо, скільки разів зміна перевищила поріг
+    saccade_count = int(np.sum(dyaw > threshold))
+    return saccade_count
+
+
+# ... (Клас VoxelTracker залишаєш як був, він згодиться пізніше) ...
 
 class VoxelTracker:
     def __init__(self, voxel_size=0.5):
@@ -46,4 +70,4 @@ def calculate_area_coverage(trajectory, voxel_size=0.5):
     tracker = VoxelTracker(voxel_size)
     for pos in trajectory:
         tracker.update(pos)
-    return tracker.get_coverage_count()
+    return tracker.get_coverage_count()

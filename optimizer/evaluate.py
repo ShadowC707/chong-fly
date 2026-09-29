@@ -201,20 +201,25 @@ class DroneSimulationEnv:
         return obs, step_cost, done, info
 
 
+# Встав це в optimizer/evaluate.py (замість старої функції simulate_policy_rollout)
+from simulation.metrics import calculate_jitter_pr, calculate_saccades_yaw
+from typing import Any, Optional, Tuple
+import numpy as np
+
+
 def simulate_policy_rollout(
-    policy: Any,
-    env: Optional[DroneSimulationEnv] = None,
-    eval_steps: int = 100,
-    dt: Optional[float] = None,
-    seed: int = 42,
-) -> Tuple[float, dict[str, Any]]:
+        policy: Any,
+        env: Optional[Any] = None,  # Використовуй DroneSimulationEnv, але залишив Any для універсальності
+        eval_steps: int = 100,
+        dt: Optional[float] = None,
+        seed: int = 42,
+) -> Tuple[float, dict]:
     """
-    Runs closed-loop simulation of the policy in DroneSimulationEnv for O(N) Level 2 evaluation.
-    
-    Returns:
-        (composite_behavior_score: float, detailed_metrics: dict)
+    Runs closed-loop simulation with Math Signal Metrics and Physical Constraints.
     """
+    # Якщо env не передано, створюємо (але тут краще імпортувати DroneSimulationEnv)
     if env is None:
+        from simulation.drone_env import DroneSimulationEnv
         step_dt = 0.02 if getattr(policy, "default_dt", 0.004) == 0.02 else 0.004
         env = DroneSimulationEnv(dt=step_dt)
 
@@ -222,73 +227,78 @@ def simulate_policy_rollout(
         policy.reset_state()
 
     obs_flow, obs_tof = env.reset(seed=seed)
-    total_cost = 0.0
-    total_energy_j = 0.0
+
     steps_survived = 0
-    jitters = []
-    alt_errors = []
-    tilt_errors = []
+    total_energy_j = 0.0
+
+    # Масив для нашої математики
+    pwm_history = []
+
+    # Фізичний фільтр-вбивця
+    saturation_violations = 0
 
     for step in range(eval_steps):
-        # Policy step (O(N))
         if hasattr(policy, "step_np"):
             pwm = policy.step_np(obs_flow, obs_tof, dt=dt)
         else:
             pwm = np.array([1500.0, 1500.0, 1500.0, 1500.0], dtype=np.float32)
 
-        # Check for numerical NaN/Inf
+        # 1. Захист від математичного вибуху (Spectral Radius > 1)
         if np.isnan(pwm).any() or np.isinf(pwm).any():
-            return 999.0, {
-                "fatal_failure": True,
-                "failure_reason": "Policy generated NaN or Inf PWM actuators",
-                "survival_ratio": steps_survived / eval_steps,
-                "survival_time_s": steps_survived * env.dt,
-                "energy_cost_j": 999.0,
-            }
+            return 9999.0, {"fatal_failure": True, "failure_reason": "NaN generated"}
 
-        # Energy consumption calculation:
-        # Hover baseline is ~15W for a micro-quadrotor (at normalized throttle u_t=0.5)
+        # 2. ФІЗИЧНИЙ ФІЛЬТР: Якщо мотори виходять за [1100, 1900], вони задихаються
+        if np.any(pwm < 1100.0) or np.any(pwm > 1900.0):
+            saturation_violations += 1
+
+        pwm_history.append(pwm.copy())
+
+        # Енергетична модель (залишаємо як було в колеги)
         u_t = np.clip((pwm[0] - 1000.0) / 1000.0, 0.0, 1.0)
         u_r = np.clip((pwm[1] - 1500.0) / 500.0, -1.0, 1.0)
         u_p = np.clip((pwm[2] - 1500.0) / 500.0, -1.0, 1.0)
         u_y = np.clip((pwm[3] - 1500.0) / 500.0, -1.0, 1.0)
-        p_actuators = 15.0 * ((u_t / 0.5) ** 2) + 5.0 * (u_r**2 + u_p**2 + u_y**2)
+        p_actuators = 15.0 * ((u_t / 0.5) ** 2) + 5.0 * (u_r ** 2 + u_p ** 2 + u_y ** 2)
         total_energy_j += p_actuators * env.dt
 
         (obs_flow, obs_tof), cost, done, info = env.step(pwm, dt=dt)
-        total_cost += cost
         steps_survived += 1
-        jitters.append(info["jitter"])
-        alt_errors.append(info["alt_err"])
-        tilt_errors.append(info["tilt_err"])
 
         if done:
             break
 
+    # ── ПІСЛЯ ПОЛЬОТУ: Оцінка Метрик ──
     survival_ratio = steps_survived / eval_steps
     survival_time_s = steps_survived * env.dt
-    mean_cost = total_cost / max(1, steps_survived)
     mean_power_w = total_energy_j / max(1e-4, survival_time_s)
-    
-    # Crash penalty if drone did not survive full evaluation
-    crash_penalty = (1.0 - survival_ratio) * 10.0
-    composite_score = float(mean_cost + crash_penalty)
+
+    # Викликаємо твої нові метрики!
+    jitter_pr = calculate_jitter_pr(pwm_history)
+    saccades_yaw = calculate_saccades_yaw(pwm_history)
+
+    # Фізичний фільтр: якщо > 15% часу ШІМ був у насиченні — це шлюб
+    saturation_ratio = saturation_violations / max(1, steps_survived)
+    if survival_ratio < 0.20 or saturation_ratio > 0.15:
+        return 9999.0, {"fatal_failure": True, "failure_reason": "Crashed or Saturated"}
+
+    # ── ФУНКЦІЯ ПРИСТОСОВАНОСТІ (FITNESS) ──
+    # Optuna мінімізує це значення (тому це Cost Function)
+    crash_penalty = (1.0 - survival_ratio) * 1000.0
+    energy_penalty = mean_power_w * 2.0
+
+    # Твоя математика в дії: штраф за джитер, БОНУС (мінус) за сакади
+    signal_cost = (jitter_pr * 0.05) - (saccades_yaw * 10.0)
+
+    composite_cost = max(0.0, crash_penalty + energy_penalty + signal_cost)
 
     metrics = {
-        "fatal_failure": survival_ratio < 0.20,  # immediate fatal crash
-        "failure_reason": "Drone crashed or tumbled almost immediately" if survival_ratio < 0.20 else "",
-        "composite_score": composite_score,
-        "survival_ratio": float(survival_ratio),
+        "fatal_failure": False,
+        "composite_score": composite_cost,
         "survival_time_s": float(survival_time_s),
-        "energy_cost_j": float(total_energy_j),
-        "mean_power_w": float(mean_power_w),
-        "steps_survived": int(steps_survived),
-        "mean_altitude_error": float(np.mean(alt_errors)) if alt_errors else 0.0,
-        "mean_tilt_error": float(np.mean(tilt_errors)) if tilt_errors else 0.0,
-        "mean_pwm_jitter": float(np.mean(jitters)) if jitters else 0.0,
-        "final_obstacle_dist": float(env.obstacle_dist),
+        "saturation_ratio": float(saturation_ratio),
+        "jitter_pr_l2": jitter_pr,
+        "saccades_yaw_count": saccades_yaw,
     }
 
-    return composite_score, metrics
-
+    return composite_cost, metrics
 
