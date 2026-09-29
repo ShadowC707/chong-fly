@@ -29,6 +29,8 @@ _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+from configs.flight_config import PWM_MID, PWM_HALF
+
 
 def pretrain_policy(
     policy: Any,
@@ -133,9 +135,8 @@ def pretrain_policy(
             pwm_pred = out[0] if isinstance(out, tuple) else out  # [B, T, 4]
 
             # Normalized MSE Loss on [-1, 1] range:
-            # PWM in [1000, 2000] -> (PWM - 1500) / 500
-            pred_norm = (pwm_pred - 1500.0) / 500.0
-            target_norm = (Y_batch - 1500.0) / 500.0
+            pred_norm = (pwm_pred - PWM_MID) / PWM_HALF
+            target_norm = (Y_batch - PWM_MID) / PWM_HALF
 
             loss = F.mse_loss(pred_norm, target_norm)
 
@@ -156,6 +157,11 @@ def pretrain_policy(
             loss_history.append(float(np.mean(epoch_losses)))
 
     policy.eval()
+
+    if len(loss_history) > 1:
+        print(f"    [BC Pretrain] Initial Loss: {loss_history[0]:.4f} | Final Loss: {loss_history[-1]:.4f}")
+    elif len(loss_history) == 1:
+        print(f"    [BC Pretrain] Final Loss: {loss_history[0]:.4f}")
 
     # Store metadata for introspection / debugging
     setattr(

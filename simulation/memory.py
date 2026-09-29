@@ -30,6 +30,15 @@ import math
 from typing import Any, Optional, Sequence, Union
 import numpy as np
 
+from configs.flight_config import (
+    MEMORY_NUM_SECTORS,
+    MEMORY_DECAY_RATE,
+    MEMORY_DEFAULT_DISTANCE,
+    TOF_DIM,
+    TOF_ROWS,
+    TOF_COLS,
+    SENSORS,
+)
 
 # Directional Sector Indices
 SECTOR_FRONT = 0
@@ -47,14 +56,14 @@ class EgocentricMemoryWrapper:
     Egocentric 8-sector Ring Buffer for spatial obstacle tracking.
     """
 
-    NUM_SECTORS: int = 8
+    NUM_SECTORS: int = MEMORY_NUM_SECTORS
     SECTOR_ANGLE_RAD: float = math.pi / 4.0  # 45 degrees
 
     def __init__(
         self,
-        num_sectors: int = 8,
-        decay_rate: float = 0.02,
-        default_distance: float = 1.0,
+        num_sectors: int = MEMORY_NUM_SECTORS,
+        decay_rate: float = MEMORY_DECAY_RATE,
+        default_distance: float = MEMORY_DEFAULT_DISTANCE,
     ):
         self.num_sectors = int(num_sectors)
         self.sector_angle = (2.0 * math.pi) / float(self.num_sectors)
@@ -89,9 +98,9 @@ class EgocentricMemoryWrapper:
         if arr.size == 0:
             return 1.0
 
-        if arr.size == 64:
-            grid = arr.reshape((8, 8))
-            center = grid[2:6, 2:6]
+        if arr.size == TOF_DIM:
+            grid = arr.reshape((TOF_ROWS, TOF_COLS))
+            center = grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end]
             valid = center[np.isfinite(center)]
             if valid.size > 0:
                 return float(np.clip(np.min(valid), 0.0, 1.0))

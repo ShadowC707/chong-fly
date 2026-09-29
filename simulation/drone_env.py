@@ -73,6 +73,40 @@ from simulation.drone_interface import (
     AutonomousLaserNavigatorModel,
 )
 from simulation.isaac_hud import IsaacGymHUD
+from configs.flight_config import (
+    DEFAULT_DT,
+    GRAVITY,
+    DRONE_MASS_ISAAC_KG,
+    TARGET_ALTITUDE_M,
+    ROOM_X_MIN,
+    ROOM_X_MAX,
+    ROOM_Y_MIN,
+    ROOM_Y_MAX,
+    ROOM_Z_MIN,
+    ROOM_Z_MAX,
+    TOF_ROWS,
+    TOF_COLS,
+    TOF_RAYCASTER_MAX_RANGE_M,
+    PWM_MIN,
+    PWM_MID,
+    PWM_MAX,
+    PWM_HALF,
+    PWM_HOVER,
+    PWM_LEVEL_ROLL,
+    PWM_NEUTRAL_YAW,
+    FLOW_DIM,
+    TOF_DIM,
+    SENSOR_DIM_BASE,
+    LASER_MIN_RANGE_M,
+    LASER_MAX_RANGE_M,
+    LASER_NOISE_STD,
+    FLOW_MIN_ALTITUDE_M,
+    FLOW_MAX_ALTITUDE_M,
+    GROUND_CRASH_ALT_M,
+    TUMBLE_ANGLE_THRESHOLD_RAD,
+    SENSORS,
+    PHYSICS,
+)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -176,7 +210,7 @@ class IsaacGymDroneSim:
     def __init__(
         self,
         num_envs: int = 1,
-        dt: float = 0.004,
+        dt: float = DEFAULT_DT,
         headless: bool = False,
         compute_device_id: int = 0,
         graphics_device_id: int = 0,
@@ -216,7 +250,7 @@ class IsaacGymDroneSim:
         self.sim_params.dt = self.dt
         self.sim_params.substeps = 2
         self.sim_params.up_axis = gymapi.UP_AXIS_Z
-        self.sim_params.gravity = gymapi.Vec3(0.0, 0.0, -9.81)
+        self.sim_params.gravity = gymapi.Vec3(0.0, 0.0, -GRAVITY)
 
         self.sim_params.physx.solver_type = 1  # TGS
         self.sim_params.physx.num_position_iterations = 4
@@ -562,12 +596,12 @@ class IsaacGymDroneSim:
 @dataclass
 class RoomBoundaries:
     """3D bounding box of the flight arena."""
-    x_min: float = -4.0
-    x_max: float = 4.0
-    y_min: float = -4.0
-    y_max: float = 4.0
-    z_min: float = 0.0
-    z_max: float = 5.0
+    x_min: float = ROOM_X_MIN
+    x_max: float = ROOM_X_MAX
+    y_min: float = ROOM_Y_MIN
+    y_max: float = ROOM_Y_MAX
+    z_min: float = ROOM_Z_MIN
+    z_max: float = ROOM_Z_MAX
 
 
 @dataclass
@@ -605,11 +639,11 @@ class ToFRaycaster:
 
     def __init__(
         self,
-        rows: int = 8,
-        cols: int = 8,
-        fov_h_deg: float = 45.0,
-        fov_v_deg: float = 45.0,
-        max_range: float = 3.5,
+        rows: int = TOF_ROWS,
+        cols: int = TOF_COLS,
+        fov_h_deg: float = SENSORS.tof_fov_h_deg,
+        fov_v_deg: float = SENSORS.tof_fov_v_deg,
+        max_range: float = TOF_RAYCASTER_MAX_RANGE_M,
         mount_pitch_deg: float = 0.0,    # forward-facing (0 deg) or tilted down
     ):
         self.rows = rows
@@ -779,10 +813,10 @@ class ToFRaycaster:
 
 @dataclass
 class DroneDynamicsParams:
-    mass: float = 0.130                     # 130g base micro-quadcopter (0.130 kg dry weight)
+    mass: float = DRONE_MASS_ISAAC_KG       # 130g base micro-quadcopter (0.130 kg dry weight)
     payload_mass: float = 0.0               # Attached cargo payload mass in [0.0, 1.5] kg
     arm_length: float = 0.075               # 75 mm motor radius (150 mm diagonal wheelbase, 15x15cm frame)
-    g: float = 9.81                         # gravity [m/s^2]
+    g: float = GRAVITY                      # gravity [m/s^2]
     # Base moments of inertia [kg*m^2] for 130g 15x15cm quadcopter
     ixx: float = 3.5e-4
     iyy: float = 3.5e-4
@@ -806,7 +840,7 @@ class QuadcopterDynamics:
     first-order brushless motor lag, and dynamic cargo payload physics.
     """
 
-    def __init__(self, params: DroneDynamicsParams, dt: float = 0.004):
+    def __init__(self, params: DroneDynamicsParams, dt: float = DEFAULT_DT):
         self.params = params
         self.dt = dt
 
@@ -1015,8 +1049,8 @@ class DroneSimulationEnv:
 
     def __init__(
         self,
-        dt: float = 0.004,                      # 250 Hz control loop
-        target_altitude: float = 1.0,           # nominal hover altitude (m)
+        dt: float = DEFAULT_DT,                 # 250 Hz control loop
+        target_altitude: float = TARGET_ALTITUDE_M, # nominal hover altitude (m)
         room: Optional[RoomBoundaries] = None,
         dynamics_params: Optional[DroneDynamicsParams] = None,
         pid_constants: Optional[BetaflightCascadedPID] = None,
@@ -1051,9 +1085,23 @@ class DroneSimulationEnv:
         self.pid = pid_constants or BetaflightCascadedPID(dt=dt)
 
         # Sensors: Downward Laser + 8x8 Depth Matrix + PMW3901 Optical Flow/Displacement
-        self.downward_laser = DownwardLaserSensor(min_range=0.02, max_range=6.0)
-        self.tof = ToFRaycaster(rows=8, cols=8, fov_h_deg=45.0, fov_v_deg=45.0, max_range=3.5)
-        self.flow_sensor = PMW3901FlowSensor(min_altitude=0.02, max_altitude=3.5, derotate_with_gyro=True)
+        self.downward_laser = DownwardLaserSensor(
+            min_range=LASER_MIN_RANGE_M,
+            max_range=LASER_MAX_RANGE_M,
+            noise_std=LASER_NOISE_STD,
+        )
+        self.tof = ToFRaycaster(
+            rows=TOF_ROWS,
+            cols=TOF_COLS,
+            fov_h_deg=SENSORS.tof_fov_h_deg,
+            fov_v_deg=SENSORS.tof_fov_v_deg,
+            max_range=TOF_RAYCASTER_MAX_RANGE_M,
+        )
+        self.flow_sensor = PMW3901FlowSensor(
+            min_altitude=FLOW_MIN_ALTITUDE_M,
+            max_altitude=FLOW_MAX_ALTITUDE_M,
+            derotate_with_gyro=True,
+        )
 
         # Optical displacement trackers
         self.displacement_step = np.zeros(2, dtype=np.float32)
@@ -1121,13 +1169,13 @@ class DroneSimulationEnv:
             cylinders=self.cylinders,
             boxes=self.boxes,
         )
-        depth_8x8 = tof_64.reshape(8, 8)
+        depth_8x8 = tof_64.reshape(self.tof.rows, self.tof.cols)
         laser_alt = float(self.last_laser_result.distance) if self.last_laser_result else float(self.physics.pos[2])
         laser_hit = self.last_laser_result.hit_point if self.last_laser_result else None
         flow_xy = self.flow_sensor.compute_flow(
             v_world=self.physics.vel,
             rot_matrix=rot_mat,
-            altitude_above_surface=max(0.02, laser_alt),
+            altitude_above_surface=max(LASER_MIN_RANGE_M, laser_alt),
             omega_body=self.physics.omega,
         )
 
@@ -1226,10 +1274,10 @@ class DroneSimulationEnv:
             pitch_pwm = float(action[2])
             yaw_pwm = float(action[3])
 
-            target_thrust = (throttle_pwm - 1000.0) / 1000.0
-            target_roll = ((roll_pwm - 1500.0) / 500.0) * self.params.max_angle_rad
-            target_pitch = ((pitch_pwm - 1500.0) / 500.0) * self.params.max_angle_rad
-            target_yaw_rate = ((yaw_pwm - 1500.0) / 500.0) * self.params.max_yaw_rate_rads
+            target_thrust = (throttle_pwm - PWM_MIN) / (PWM_MAX - PWM_MIN)
+            target_roll = ((roll_pwm - PWM_MID) / PWM_HALF) * self.params.max_angle_rad
+            target_pitch = ((pitch_pwm - PWM_MID) / PWM_HALF) * self.params.max_angle_rad
+            target_yaw_rate = ((yaw_pwm - PWM_MID) / PWM_HALF) * self.params.max_yaw_rate_rads
         else:
             # Direct setpoint format: [thrust, roll_cmd, pitch_cmd, yaw_rate_cmd]
             target_thrust = float(action[0])
@@ -1362,7 +1410,7 @@ class DroneSimulationEnv:
         laser_alt = self.last_laser_result.distance
 
         # 2. Optical Flow (PMW3901) - scaled by actual Downward Laser reading!
-        altitude_surface = max(0.02, float(laser_alt))
+        altitude_surface = max(SENSORS.laser_min_range_m, float(laser_alt))
         flow_xy = self.flow_sensor.compute_flow(
             v_world=vel,
             rot_matrix=rot_mat,
@@ -1372,7 +1420,7 @@ class DroneSimulationEnv:
 
         # Generate Levy Noise (Cauchy distribution) if flow is 0 for > 2 seconds
         if np.allclose(flow_xy, 0.0, atol=1e-5):
-            self.zero_flow_time += getattr(self, 'dt', 0.004)
+            self.zero_flow_time += getattr(self, 'dt', DEFAULT_DT)
         else:
             self.zero_flow_time = 0.0
 
@@ -1416,11 +1464,11 @@ class DroneSimulationEnv:
             cylinders=self.cylinders,
             boxes=self.boxes,
         )
-        depth_8x8 = tof_64.reshape(8, 8)
+        depth_8x8 = tof_64.reshape(self.tof.rows, self.tof.cols)
         flow_xy = self.flow_sensor.compute_flow(
             v_world=self.physics.vel,
             rot_matrix=rot_mat,
-            altitude_above_surface=max(0.02, self.last_laser_result.distance),
+            altitude_above_surface=max(LASER_MIN_RANGE_M, self.last_laser_result.distance),
             omega_body=self.physics.omega,
         )
 
@@ -1456,8 +1504,8 @@ class DroneSimulationEnv:
         directly consumable by `ChongFlyMSPPolicy.step_np(flow_xy, tof_8x8)`.
         """
         obs = self._get_observation()
-        flow_xy = obs[0:2]
-        tof_8x8 = obs[2:66]
+        flow_xy = obs[0:FLOW_DIM]
+        tof_8x8 = obs[FLOW_DIM:(FLOW_DIM + TOF_DIM)]
         return flow_xy, tof_8x8
 
 
@@ -1495,7 +1543,7 @@ def run_flight_simulation(
     # Initialize Dynamics & Environment with requested payload
     dyn_params = DroneDynamicsParams(payload_mass=payload_kg)
     env = DroneSimulationEnv(
-        dt=0.004,
+        dt=DEFAULT_DT,
         target_altitude=target_altitude,
         dynamics_params=dyn_params,
         engine=engine,
@@ -1510,7 +1558,7 @@ def run_flight_simulation(
         realtime = True
 
     is_infinite = (duration_s is None or duration_s <= 0.0)
-    dur_str = "Continuous (Infinite / Press Esc to exit)" if is_infinite else f"{duration_s:.1f} s ({int(duration_s / 0.004)} steps @ 250 Hz)"
+    dur_str = "Continuous (Infinite / Press Esc to exit)" if is_infinite else f"{duration_s:.1f} s ({int(duration_s / DEFAULT_DT)} steps @ 250 Hz)"
 
     # Locate initial model in registry
     active_model_idx = 0
@@ -1559,7 +1607,7 @@ def run_flight_simulation(
         policy = ChongFlyMSPPolicy.from_meta(
             meta_path=meta_path,
             mode="fixed",
-            dt=0.004,
+            dt=DEFAULT_DT,
             solver_type=solver_type,
             pruning_sparsity=pruning_sparsity,
             ablate_cx=ablate_cx,
@@ -1582,7 +1630,7 @@ def run_flight_simulation(
                 policy = ChongFlyMSPPolicy.from_meta(
                     meta_path=new_meta,
                     mode="fixed",
-                    dt=0.004,
+                    dt=DEFAULT_DT,
                     solver_type=solver_type,
                 )
                 policy.reset_state()
@@ -1736,11 +1784,11 @@ def run_flight_simulation(
                     action_cmd = pwm
             else:
                 # Manual Flight Control via Keyboard
-                hover_th_pwm = 1000.0 + env.physics.hover_throttle * 1000.0
+                hover_th_pwm = PWM_MIN + env.physics.hover_throttle * (PWM_MAX - PWM_MIN)
                 th = hover_th_pwm
-                roll = 1500.0
-                pitch = 1500.0
-                yaw = 1500.0
+                roll = PWM_LEVEL_ROLL
+                pitch = PWM_MID
+                yaw = PWM_NEUTRAL_YAW
 
                 if key_states.get("pitch_fwd"):
                     pitch += 140.0
@@ -2012,3 +2060,80 @@ def main():
 if __name__ == "__main__":
     main()
 
+
+class OpticalFlowOUWrapper:
+    """
+    Observation Wrapper that injects Ornstein-Uhlenbeck (OU) noise into 
+    the Optical Flow observations (FlowX, FlowY) when the drone is far 
+    from obstacles. This induces a smooth, deterministic Levy-like 
+    exploration flight pattern without breaking ONNX determinism.
+    """
+    def __init__(
+        self, 
+        env: Any,
+        theta: float = 0.15,
+        mu: float = 0.0,
+        sigma: float = 0.3,
+        dt: float = DEFAULT_DT,
+        clearance_threshold: float = 1.0,
+        seed: int = 42
+    ):
+        self.env = env
+        self.theta = theta
+        self.mu = mu
+        self.sigma = sigma
+        self.dt = dt
+        self.clearance_threshold = clearance_threshold
+        self.rng = np.random.default_rng(seed)
+        self.state = np.zeros(2, dtype=np.float32)
+        
+    def _ou_step(self) -> np.ndarray:
+        # OU process: dx = theta * (mu - x) * dt + sigma * sqrt(dt) * noise
+        noise = self.rng.normal(size=2).astype(np.float32)
+        dx = self.theta * (self.mu - self.state) * self.dt + self.sigma * np.sqrt(self.dt) * noise
+        self.state += dx
+        return self.state.copy()
+
+    def reset(self, **kwargs) -> Any:
+        self.state = np.zeros(2, dtype=np.float32)
+        result = self.env.reset(**kwargs)
+        # Handle cases where reset returns just obs, or (obs, info)
+        if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
+            obs, info = result
+            return self._inject_noise(obs), info
+        else:
+            return self._inject_noise(result)
+
+    def step(self, action: Any, **kwargs) -> Tuple[Any, float, bool, Dict[str, Any]]:
+        # Fast evaluator env step returns: (obs_flow, obs_tof), cost, done, info
+        # Standard gym env step returns: obs, reward, done, info
+        result = self.env.step(action, **kwargs)
+        
+        if len(result) == 4:
+            obs, reward_or_cost, done, info = result
+            return self._inject_noise(obs), reward_or_cost, done, info
+        elif len(result) == 5: # terminated, truncated
+            obs, reward, term, trunc, info = result
+            return self._inject_noise(obs), reward, term, trunc, info
+        return result
+
+    def _inject_noise(self, obs: Any) -> Any:
+        if isinstance(obs, tuple) and len(obs) == 2:
+            obs_flow, obs_tof = obs
+            tof = np.asarray(obs_tof).ravel()
+            min_dist = np.min(tof) if tof.size > 0 else 1.0
+            if min_dist > self.clearance_threshold:
+                ou_noise = self._ou_step()
+                obs_flow = obs_flow + ou_noise
+            return (obs_flow, obs_tof)
+        else:
+            obs_np = np.asarray(obs, dtype=np.float32).copy()
+            tof = obs_np[FLOW_DIM:(FLOW_DIM + TOF_DIM)] if obs_np.size >= SENSOR_DIM_BASE else np.ones(TOF_DIM, dtype=np.float32)
+            min_dist = np.min(tof) if tof.size > 0 else 1.0
+            if min_dist > self.clearance_threshold:
+                ou_noise = self._ou_step()
+                obs_np[0:FLOW_DIM] += ou_noise
+            return obs_np
+
+    def __getattr__(self, name):
+        return getattr(self.env, name)

@@ -3,6 +3,14 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import numpy as np
 import torch
 
+from configs.flight_config import (
+    SACCADE_YAW_THRESHOLD_PWM,
+    VOXEL_SIZE_M,
+    MIN_SPEED_HOVER_MPS,
+    THRESHOLD_CRAB,
+    DRONE_MASS_ISAAC_KG,
+)
+
 
 def calculate_jitter_pr(pwm_history: np.ndarray) -> float:
     """
@@ -22,7 +30,7 @@ def calculate_jitter_pr(pwm_history: np.ndarray) -> float:
     return jitter_pr
 
 
-def calculate_saccades_yaw(pwm_history: np.ndarray, threshold: float = 150.0) -> int:
+def calculate_saccades_yaw(pwm_history: np.ndarray, threshold: float = SACCADE_YAW_THRESHOLD_PWM) -> int:
     """
     Рахує кількість різких ривків (сакад) по осі Yaw (L1 розрідженість).
     Заохочує модель робити різкі маневри ухилення.
@@ -47,7 +55,7 @@ class VoxelTracker:
     Discretizes continuous R^3 positions into Z^3 grid cells.
     """
 
-    def __init__(self, voxel_size: float = 0.5):
+    def __init__(self, voxel_size: float = VOXEL_SIZE_M):
         if voxel_size <= 0.0 or not np.isfinite(voxel_size):
             raise ValueError(f"voxel_size must be a positive finite number (> 0), got {voxel_size}")
         self.voxel_size = float(voxel_size)
@@ -89,7 +97,7 @@ class VoxelTracker:
     def get_coverage_count(self) -> int:
         return len(self.visited_voxels)
 
-def calculate_area_coverage(trajectory, voxel_size=0.5):
+def calculate_area_coverage(trajectory, voxel_size: float = VOXEL_SIZE_M):
     """
     Трекінг 3D-вокселів для покриття площі.
     trajectory: список або масив позицій [x, y, z]
@@ -107,7 +115,7 @@ def calculate_area_coverage(trajectory, voxel_size=0.5):
 def calculate_forward_ratio(
     vx: float,
     vy: float,
-    min_speed: float = 0.05,
+    min_speed: float = MIN_SPEED_HOVER_MPS,
     eps: float = 1e-6,
 ) -> Optional[float]:
     """
@@ -168,9 +176,9 @@ def calculate_impact_energy(
     try:
         m = float(mass)
         if not (np.isfinite(m) and m > 0.0):
-            m = 0.130
+            m = DRONE_MASS_ISAAC_KG
     except (TypeError, ValueError):
-        m = 0.130
+        m = DRONE_MASS_ISAAC_KG
 
     v_sq = vx * vx + vy * vy + vz * vz
     return float(0.5 * m * v_sq)
@@ -200,9 +208,9 @@ class PhysicsTelemetryTracker:
 
     def __init__(
         self,
-        min_speed_hover: float = 0.05,
-        threshold_crab: float = 0.5,
-        default_mass: float = 0.130,
+        min_speed_hover: float = MIN_SPEED_HOVER_MPS,
+        threshold_crab: float = THRESHOLD_CRAB,
+        default_mass: float = DRONE_MASS_ISAAC_KG,
     ):
         self.min_speed_hover = float(min_speed_hover)
         self.threshold_crab = float(threshold_crab)

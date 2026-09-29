@@ -34,6 +34,8 @@ from dataclasses import dataclass
 from typing import Tuple, Union
 import numpy as np
 
+from configs.flight_config import DEFAULT_DT
+
 
 class PT1Filter:
     """
@@ -119,7 +121,7 @@ class BetaflightCascadedPID:
 
     def __init__(
         self,
-        dt: float = 0.004,
+        dt: float = DEFAULT_DT,
         angle_p_gain: float = 5.0,
         max_rate_rads: float = 8.72,       # ~500 deg/s max target rate
         roll_pid: PIDConstants = PIDConstants(kp=0.08, ki=0.15, kd=0.003, iterm_limit=0.3, dterm_lpf_hz=60.0),

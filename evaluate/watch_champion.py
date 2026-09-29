@@ -35,6 +35,33 @@ if _ROOT not in sys.path:
 from optimizer.evaluate import create_model, DroneSimulationEnv as LightDroneEnv
 from optimizer.pretrain import pretrain_policy
 from simulation.memory import EgocentricMemoryWrapper
+from configs.flight_config import (
+    SENSOR_DIM,
+    FLOW_DIM,
+    TOF_DIM,
+    MEMORY_DIM,
+    TOF_ROWS,
+    TOF_COLS,
+    TOF_MAX_RANGE_M,
+    TOF_RAYCASTER_MAX_RANGE_M,
+    APF_DISTANCE_THRESHOLD_M,
+    APF_NOISE_STD_PWM,
+    DEFAULT_DT,
+    PWM_MIN,
+    PWM_MID,
+    PWM_MAX,
+    PWM_HOVER,
+    PWM_LEVEL_ROLL,
+    PWM_CRUISE_PITCH,
+    PWM_BRAKE_PITCH,
+    PWM_NEUTRAL_YAW,
+    SACCADE_YAW_THRESHOLD_PWM,
+    MEMORY_DEFAULT_DISTANCE,
+    MEMORY_DECAY_RATE,
+    OBSTACLE_CRASH_DIST_M,
+    ARENA,
+    SENSORS,
+)
 
 
 # ── ANSI Terminal Colors ───────────────────────────────────────────────────────
@@ -120,7 +147,7 @@ def run_light_simulation(
     steps: int,
     delay: float,
     print_interval: int,
-    dt: float = 0.004,
+    dt: float = DEFAULT_DT,
     seed: int = 42,
 ) -> Dict[str, Any]:
     """
@@ -128,11 +155,11 @@ def run_light_simulation(
     """
     env = LightDroneEnv(dt=dt)
     obs_flow, obs_tof = env.reset(seed=seed)
-    # Start with obstacle ahead at 1.5 - 2.0 m
+    # Start with obstacle ahead
     rng = np.random.default_rng(seed)
-    env.obstacle_dist = float(rng.uniform(1.8, 2.5))
+    env.obstacle_dist = float(rng.uniform(ARENA.obstacle_initial_dist_min_m, ARENA.obstacle_initial_dist_max_m))
 
-    memory = EgocentricMemoryWrapper(decay_rate=0.02)
+    memory = EgocentricMemoryWrapper(decay_rate=MEMORY_DECAY_RATE)
     last_yaw = float(env.att[2])
 
     steps_survived = 0
@@ -164,9 +191,9 @@ def run_light_simulation(
 
             mem_8 = memory.update(obs_tof, delta_yaw_rad=dyaw)
             obs_74 = np.concatenate([
-                np.asarray(obs_flow, dtype=np.float32).ravel()[:2],
-                np.asarray(obs_tof, dtype=np.float32).ravel()[:64],
-                np.asarray(mem_8, dtype=np.float32).ravel()[:8],
+                np.asarray(obs_flow, dtype=np.float32).ravel()[:FLOW_DIM],
+                np.asarray(obs_tof, dtype=np.float32).ravel()[:TOF_DIM],
+                np.asarray(mem_8, dtype=np.float32).ravel()[:MEMORY_DIM],
             ])
 
             # Policy forward step
@@ -179,7 +206,7 @@ def run_light_simulation(
                 pwm_t = policy.step(torch.from_numpy(obs_74).unsqueeze(0).float(), dt=dt)
                 pwm = pwm_t.squeeze(0).detach().cpu().numpy()
             else:
-                pwm = np.array([1500.0, 1500.0, 1500.0, 1500.0], dtype=np.float32)
+                pwm = np.array([PWM_HOVER, PWM_LEVEL_ROLL, PWM_HOVER, PWM_NEUTRAL_YAW], dtype=np.float32)
 
             # Advance physics
             (obs_flow, obs_tof), cost, done, info = env.step(pwm, dt=dt)
@@ -192,16 +219,16 @@ def run_light_simulation(
             pitch_pwm = float(pwm[2])
             yaw_pwm = float(pwm[3])
 
-            if pitch_pwm < 1400:
+            if pitch_pwm < PWM_BRAKE_PITCH + 100.0:
                 pitch_state = f"{C_RED}BRAKE{C_RESET}"
-            elif pitch_pwm > 1550:
+            elif pitch_pwm > PWM_CRUISE_PITCH - 50.0:
                 pitch_state = f"{C_GREEN}CRUISE{C_RESET}"
             else:
                 pitch_state = "LEVEL"
 
-            if yaw_pwm > 1650:
+            if yaw_pwm > PWM_NEUTRAL_YAW + 150.0:
                 yaw_state = f"{C_CYAN}TURN-R{C_RESET}"
-            elif yaw_pwm < 1350:
+            elif yaw_pwm < PWM_NEUTRAL_YAW - 150.0:
                 yaw_state = f"{C_CYAN}TURN-L{C_RESET}"
             else:
                 yaw_state = "AHEAD"
@@ -209,8 +236,8 @@ def run_light_simulation(
             maneuver_tag = f"[{pitch_state}|{yaw_state}]"
 
             # ── Wall Avoidance & Continuous Respawn Logic ─────────────────────
-            # If obstacle approaches within threshold (< 0.8m)
-            if dist < 0.80 and not in_evasion:
+            # If obstacle approaches within threshold
+            if dist < APF_DISTANCE_THRESHOLD_M and not in_evasion:
                 in_evasion = True
                 turn_steps_counter = 0
                 evasion_yaw_initial = curr_yaw
@@ -219,20 +246,17 @@ def run_light_simulation(
                 turn_steps_counter += 1
                 yaw_deflection = abs((curr_yaw - evasion_yaw_initial + math.pi) % (2.0 * math.pi) - math.pi)
 
-                # Successful avoidance trigger: drone turned > 25° (0.44 rad) or completed 35 evasion steps
-                # without crashing, and distance is safely managed
-                if (yaw_deflection > 0.40) and dist >= 0.15:
+                # Successful avoidance trigger: drone turned beyond cleared threshold without crashing
+                if (yaw_deflection > ARENA.obstacle_cleared_yaw_threshold_rad) and dist >= ARENA.turn_clearance_dist_m:
                     walls_avoided += 1
                     in_evasion = False
                     turn_steps_counter = 0
 
                     # Spawn next wall in new flight path
-                    env.obstacle_dist = float(rng.uniform(1.8, 2.8))
-                    obs_tof = np.ones(64, dtype=np.float32)
-                    norm_new = min(1.0, env.obstacle_dist / 3.0)
-                    obs_tof = np.ones(64, dtype=np.float32)
-                    grid = np.ones((8, 8), dtype=np.float32)
-                    grid[2:6, 2:6] = norm_new
+                    env.obstacle_dist = float(rng.uniform(ARENA.obstacle_respawn_dist_min_m, ARENA.obstacle_respawn_dist_max_m))
+                    norm_new = min(1.0, env.obstacle_dist / TOF_MAX_RANGE_M)
+                    grid = np.ones((TOF_ROWS, TOF_COLS), dtype=np.float32)
+                    grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end] = norm_new
                     obs_tof = grid.ravel().astype(np.float32)
 
                     print(f"  {C_BOLD}{C_GREEN}🏆 [WALL #{walls_avoided:02d} AVOIDED]{C_RESET} "
@@ -241,16 +265,16 @@ def run_light_simulation(
 
             if done:
                 crashed = True
-                crash_reason = "Obstacle Collision" if dist <= 0.05 else "Tumbled / Out of Bounds"
+                crash_reason = "Obstacle Collision" if dist <= OBSTACLE_CRASH_DIST_M else "Tumbled / Out of Bounds"
                 print(f"\n{C_BOLD}{C_RED}💥 CRASH at step {step}! Reason: {crash_reason} (dist={dist:.2f}m){C_RESET}")
                 break
 
             # ── Telemetry Printing ─────────────────────────────────────────────
             if step % print_interval == 0 or step == 1 or in_evasion and step % 2 == 0:
-                dist_bar = format_distance_bar(dist, max_dist=3.0)
+                dist_bar = format_distance_bar(dist, max_dist=TOF_MAX_RANGE_M)
                 sim_time = step * dt
                 pwm_str = f"[{pwm[0]:.0f},{pwm[1]:.0f},{pwm[2]:.0f},{pwm[3]:.0f}]"
-                status_icon = "⚠️ " if dist < 0.8 else "✈️ "
+                status_icon = "⚠️ " if dist < APF_DISTANCE_THRESHOLD_M else "✈️ "
                 print(f"  {status_icon}{step:5d}/{steps}   {sim_time:6.2f}s    {dist_bar}  {pwm_str:<24}  {maneuver_tag}")
 
             # Sleep to match desired viewing rate
@@ -282,7 +306,7 @@ def run_3d_simulation(
     delay: float,
     print_interval: int,
     gui: bool = False,
-    dt: float = 0.004,
+    dt: float = DEFAULT_DT,
     seed: int = 42,
 ) -> Dict[str, Any]:
     """
@@ -296,7 +320,7 @@ def run_3d_simulation(
         headless=not gui,
     )
     obs = env.reset(seed=seed)
-    memory = EgocentricMemoryWrapper(decay_rate=0.02)
+    memory = EgocentricMemoryWrapper(decay_rate=MEMORY_DECAY_RATE)
     last_yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
 
     steps_survived = 0
@@ -326,17 +350,17 @@ def run_3d_simulation(
             steps_survived += 1
 
             laser_alt = float(info.get("laser_alt", env.physics.pos[2]))
-            min_tof = float(np.min(tof_64)) * 3.5  # max range 3.5m
+            min_tof = float(np.min(tof_64)) * TOF_RAYCASTER_MAX_RANGE_M
             min_clearance = min(min_clearance, min_tof)
 
-            if min_tof < 0.8:
-                if pwm[2] < 1400 or abs(pwm[3] - 1500) > 100:
+            if min_tof < APF_DISTANCE_THRESHOLD_M:
+                if pwm[2] < PWM_BRAKE_PITCH + 100.0 or abs(pwm[3] - PWM_NEUTRAL_YAW) > (SACCADE_YAW_THRESHOLD_PWM - 50.0):
                     walls_avoided += 1
 
             if step % print_interval == 0 or step == 1:
                 pos = env.physics.pos
                 vel = env.physics.vel
-                tof_bar = format_distance_bar(min_tof, max_dist=3.5)
+                tof_bar = format_distance_bar(min_tof, max_dist=TOF_RAYCASTER_MAX_RANGE_M)
                 pwm_str = f"[{pwm[0]:.0f},{pwm[1]:.0f},{pwm[2]:.0f},{pwm[3]:.0f}]"
                 print(f"  ✈️  Step {step:5d}/{steps} (t={step*dt:5.2f}s) | Pos: ({pos[0]:+4.1f},{pos[1]:+4.1f},{pos[2]:4.2f})m | Min ToF: {tof_bar} | PWM: {pwm_str}")
 
@@ -388,9 +412,11 @@ def print_summary_report(results: Dict[str, Any], meta: Dict[str, Any], params: 
     print(f"  • Real-Time Ratio:   {results['flight_time_s'] / max(1e-4, results['real_time_s']):.2f}x speed")
     print(f"{C_BOLD}{'-'*86}{C_RESET}")
 
-    if not crashed and steps >= total:
-        print(f"  {C_BOLD}{C_GREEN}VERDICT: PASSED ✓ — CHAMPION MODEL ACTIVELY AVOIDS WALLS OVER 5000 STEPS!{C_RESET}")
-        print(f"  {C_DIM}The model proved high temporal resilience, sustained obstacle avoidance, and dynamic stability.{C_RESET}")
+    if not crashed and steps >= total and avoided > 0:
+        print(f"  {C_BOLD}{C_GREEN}VERDICT: PASSED ✓ — CHAMPION MODEL ACTIVELY AVOIDS WALLS OVER {total} STEPS!{C_RESET}")
+        print(f"  {C_DIM}The model proved high temporal resilience, sustained obstacle avoidance ({avoided} walls), and dynamic stability.{C_RESET}")
+    elif not crashed and steps >= total and avoided == 0:
+        print(f"  {C_BOLD}{C_YELLOW}VERDICT: INCONCLUSIVE ⚠ — Model survived {steps} steps but avoided 0 walls (idle / hover flight).{C_RESET}")
     elif avoided > 0:
         print(f"  {C_BOLD}{C_YELLOW}VERDICT: PARTIAL ✓ — Model avoided {avoided} walls before termination at step {steps}.{C_RESET}")
     else:
@@ -418,12 +444,12 @@ def main():
         from generator.generate_reflex_dataset import ExpertReflexPolicy
         class ExpertFlightWrapper:
             def __init__(self, seed: int):
-                self.expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=10.0, seed=seed)
+                self.expert = ExpertReflexPolicy(distance_threshold_m=APF_DISTANCE_THRESHOLD_M, noise_std_pwm=APF_NOISE_STD_PWM, seed=seed)
             def step_np(self, flow_xy, tof_8x8, memory_ring=None, dt=None):
                 obs_74 = np.concatenate([
-                    np.asarray(flow_xy, dtype=np.float32).ravel()[:2],
-                    np.asarray(tof_8x8, dtype=np.float32).ravel()[:64],
-                    np.asarray(memory_ring if memory_ring is not None else np.ones(8), dtype=np.float32).ravel()[:8],
+                    np.asarray(flow_xy, dtype=np.float32).ravel()[:FLOW_DIM],
+                    np.asarray(tof_8x8, dtype=np.float32).ravel()[:TOF_DIM],
+                    np.asarray(memory_ring if memory_ring is not None else np.ones(MEMORY_DIM), dtype=np.float32).ravel()[:MEMORY_DIM],
                 ])
                 return self.expert.step(obs_74)
             def reset_state(self):
@@ -431,7 +457,7 @@ def main():
 
         policy = ExpertFlightWrapper(seed=args.seed)
         meta = {"trial_number": "EXPERT", "source": "ExpertReflexPolicy (Rule-Based Baseline)"}
-        params = {"type": "Rule-Based Reflex Expert", "threshold_m": 0.8, "noise_std_pwm": 10.0}
+        params = {"type": "Rule-Based Reflex Expert", "threshold_m": APF_DISTANCE_THRESHOLD_M, "noise_std_pwm": APF_NOISE_STD_PWM}
         print(f"\n{C_BOLD}Loaded Rule-Based Expert Evasion Policy Baseline{C_RESET}")
     else:
         # 1. Retrieve champion parameters
@@ -441,7 +467,7 @@ def main():
         print(f"  Hyperparameters: {params}")
 
         # 2. Build model architecture
-        policy = create_model(params, sensor_dim=74)
+        policy = create_model(params, sensor_dim=SENSOR_DIM)
 
         # 3. Pretrain policy on demonstration dataset
         dataset_path = os.path.join(_ROOT, args.dataset) if not os.path.isabs(args.dataset) else args.dataset

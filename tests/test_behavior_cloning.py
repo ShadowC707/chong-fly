@@ -22,6 +22,16 @@ if _ROOT not in sys.path:
 
 from generator.generate_reflex_dataset import ExpertReflexPolicy, generate_reflex_dataset
 from optimizer.pretrain import pretrain_policy
+from configs.flight_config import (
+    PWM_MIN,
+    PWM_MID,
+    PWM_MAX,
+    PWM_HOVER,
+    PWM_LEVEL_ROLL,
+    PWM_CRUISE_PITCH,
+    PWM_NEUTRAL_YAW,
+    DEFAULT_DT,
+)
 
 
 def test_expert_policy_straight_flight():
@@ -40,82 +50,87 @@ def test_expert_policy_straight_flight():
     pwm = expert.step(obs)
 
     # [Throttle, Roll, Pitch, Yaw]
-    assert np.isclose(pwm[0], 1500.0)
-    assert np.isclose(pwm[1], 1500.0)
-    assert np.isclose(pwm[2], 1600.0), f"Expected forward pitch 1600, got {pwm[2]}"
-    assert np.isclose(pwm[3], 1500.0), f"Expected neutral yaw 1500, got {pwm[3]}"
+    assert np.isclose(pwm[0], PWM_HOVER)
+    assert np.isclose(pwm[1], PWM_LEVEL_ROLL)
+    assert np.isclose(pwm[2], PWM_CRUISE_PITCH), f"Expected forward pitch {PWM_CRUISE_PITCH}, got {pwm[2]}"
+    assert np.isclose(pwm[3], PWM_NEUTRAL_YAW), f"Expected neutral yaw {PWM_NEUTRAL_YAW}, got {pwm[3]}"
 
 
-def test_expert_policy_braking_and_turning():
+def test_expert_policy_apf_smoothness():
     """
-    Тест на реакцію на стіну: коли відстань < 0.8 м (0.5 / 3.0 ~ 0.167),
-    експерт гальмує (Pitch = 1300) та різко повертає (Yaw = 1900 або 1100).
+    Тест на неперервність (smoothness) Штучних Потенційних Піль (APF).
+    При плавному наближенні до стіни Pitch має змінюватися диференційовано (плавно),
+    а не стрибком.
     """
-    expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0, seed=42)
+    expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0)
 
-    # Спереду перешкода 0.5 м -> 0.5 / 3.0 ~ 0.167
-    obs = np.ones(74, dtype=np.float32)
-    obs[2:66] = 0.167
-    obs[66] = 0.167
+    # Імітуємо плавне наближення від 1.0 (чисто) до 0.1 (краш)
+    distances = np.linspace(1.0, 0.1, 50)
+    pitches = []
 
-    pwm = expert.step(obs)
+    for d in distances:
+        obs = np.ones(74, dtype=np.float32)
+        obs[2:66] = d  # Фронтальна стіна
+        pwm = expert.step(obs)
+        pitches.append(pwm[2])
 
-    assert np.isclose(pwm[2], 1300.0), f"Expected braking pitch 1300, got {pwm[2]}"
-    assert np.isclose(pwm[3], 1900.0) or np.isclose(pwm[3], 1100.0), (
-        f"Expected sharp turn Yaw in {{1100, 1900}}, got {pwm[3]}"
-    )
+    pitches = np.array(pitches)
+    diffs = np.abs(np.diff(pitches))
+
+    # Максимальний стрибок не повинен бути "сходинкою" (у старій версії був стрибок 300)
+    max_jump = np.max(diffs)
+    assert max_jump < 50.0, f"Expected smooth pitch changes, but found jump of {max_jump} PWM"
+    
+    # Pitch має зменшуватися (гальмувати сильніше) в міру наближення стіни
+    # Допускаємо невеликі похибки обчислень (< 1e-5), але тренд має бути вниз
+    assert np.all(np.diff(pitches) <= 1e-5), "Pitch should monotonically decrease (brake harder) as obstacle gets closer"
 
 
-def test_expert_policy_state_latching():
+def test_expert_policy_apf_directional_repulsion():
     """
-    Тест на уникнення деренчання (State Latching / Hysteresis):
-    Під час одного маневру ухилення експерт фіксує напрямок повороту і
-    НЕ перемикає його між ліво/право щокроку, доки перешкода не зникне.
+    Тест на просторове відштовхування (Directional Repulsion).
+    Якщо стіна знаходиться більше зліва — експерт має плавно повертати вправо (Yaw > 1500).
+    Якщо справа — вліво (Yaw < 1500).
     """
-    expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0, seed=123)
+    expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0)
 
-    obs_obstacle = np.ones(74, dtype=np.float32)
-    obs_obstacle[66] = 0.15  # Стіна
+    # 1. Перешкода зліва (ToF сітка 8x8, ліва половина: стовпці 0..3)
+    obs_left = np.ones(74, dtype=np.float32)
+    tof_left = np.ones((8, 8))
+    tof_left[:, 0:4] = 0.2  # Близько
+    obs_left[2:66] = tof_left.flatten()
+    
+    pwm_left = expert.step(obs_left)
+    assert pwm_left[3] > 1550.0, f"Obstacle on left, expected Yaw > 1550 (turn right), got {pwm_left[3]}"
 
-    # Крок 1: виявлено стіну, обирається початковий поворот
-    pwm_step1 = expert.step(obs_obstacle)
-    latched_yaw = pwm_step1[3]
+    # 2. Перешкода справа (стовпці 4..7)
+    obs_right = np.ones(74, dtype=np.float32)
+    tof_right = np.ones((8, 8))
+    tof_right[:, 4:8] = 0.2
+    obs_right[2:66] = tof_right.flatten()
 
-    # Кроки 2-10: стіна все ще спереду, напрямок повороту МАЄ бути незмінним
-    for step in range(2, 11):
-        pwm = expert.step(obs_obstacle)
-        assert np.isclose(pwm[3], latched_yaw), (
-            f"Step {step}: Yaw switched unexpectedly from {latched_yaw} to {pwm[3]} during latched evasion!"
-        )
-
-    # Крок 11: перешкоду облетіли, спереду чисто (1.0 м)
-    obs_clear = np.ones(74, dtype=np.float32)
-    obs_clear[66] = 1.0
-    pwm_clear = expert.step(obs_clear)
-    assert np.isclose(pwm_clear[3], 1500.0)
-    assert expert.latched_turn is None
+    pwm_right = expert.step(obs_right)
+    assert pwm_right[3] < 1450.0, f"Obstacle on right, expected Yaw < 1450 (turn left), got {pwm_right[3]}"
 
 
-def test_expert_policy_stochastic_distribution():
+def test_expert_policy_apf_symmetric_braking():
     """
-    Тест на стохастичність (50/50 ліворуч/праворуч):
-    Зі 100 незалежних зустрічей зі стіною приблизно половина поворотів
-    здійснюється праворуч (1900), а половина — ліворуч (1100).
+    Тест на симетричне гальмування (APF Local Minimum).
+    Якщо перешкода ідеально симетрична по центру (ToF = 0.15),
+    вектори відштовхування зліва і справа компенсують один одного.
+    Yaw має залишатися біля 1500, а Pitch жорстко гальмувати.
     """
-    right_turns = 0
-    total_encounters = 100
-
-    for i in range(total_encounters):
-        expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0, seed=i)
-        obs_obstacle = np.ones(74, dtype=np.float32)
-        obs_obstacle[66] = 0.15
-
-        pwm = expert.step(obs_obstacle)
-        if np.isclose(pwm[3], 1900.0):
-            right_turns += 1
-
-    ratio = right_turns / total_encounters
-    assert 0.35 <= ratio <= 0.65, f"Expected 50/50 balance, got {ratio * 100:.1f}% right turns"
+    expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0)
+    
+    obs_wall = np.ones(74, dtype=np.float32)
+    obs_wall[2:66] = 0.15  # Плоска стіна
+    
+    pwm = expert.step(obs_wall)
+    
+    # Pitch гальмує
+    assert pwm[2] < 1400.0, f"Expected strong braking (Pitch < 1400), got {pwm[2]}"
+    # Yaw залишається нейтральним (+- невеликі похибки обчислень)
+    assert np.isclose(pwm[3], 1500.0, atol=1.0), f"Expected straight braking (Yaw ~ 1500), got {pwm[3]}"
 
 
 def test_generate_dataset_structure_and_bounds():
@@ -240,7 +255,7 @@ def test_optuna_objective_end_to_end():
     # Компактний датасет для швидкого тесту
     dataset = generate_reflex_dataset(num_episodes=4, seq_len=15, seed=123)
 
-    study = optuna.create_study(direction="minimize")
+    study = optuna.create_study(directions=["minimize", "minimize", "maximize"])
 
     study.optimize(
         lambda trial: objective(
@@ -258,8 +273,9 @@ def test_optuna_objective_end_to_end():
     assert len(study.trials) == 1
     trial = study.trials[0]
     assert trial.state == optuna.trial.TrialState.COMPLETE
-    assert isinstance(trial.value, float)
-    assert not math.isnan(trial.value)
+    assert isinstance(trial.values, (list, tuple))
+    assert len(trial.values) == 3
+    assert not any(math.isnan(v) for v in trial.values)
     assert "mean_clearance" in trial.user_attrs
     assert "is_crab_flight" in trial.user_attrs
     assert "fatal_failure" in trial.user_attrs

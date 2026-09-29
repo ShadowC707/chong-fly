@@ -9,6 +9,20 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 
+from configs.flight_config import (
+    DEFAULT_DT,
+    TARGET_ALTITUDE_M,
+    MAX_TILT_ANGLE_RAD,
+    LASER_MIN_RANGE_M,
+    LASER_MAX_RANGE_M,
+    LASER_NOISE_STD,
+    PWM_HOVER,
+    PWM_LEVEL_ROLL,
+    PWM_MID,
+    PWM_NEUTRAL_YAW,
+    SENSORS,
+)
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. Laser Sensor & Raycasting Data Structures
@@ -43,9 +57,9 @@ class DownwardLaserSensor:
 
     def __init__(
         self,
-        min_range: float = 0.02,        # 2 cm minimum sensing distance
-        max_range: float = 6.0,         # 6 meters maximum laser range
-        noise_std: float = 0.003,       # 3 mm standard measurement noise
+        min_range: float = LASER_MIN_RANGE_M,        # 2 cm minimum sensing distance
+        max_range: float = LASER_MAX_RANGE_M,        # 6 meters maximum laser range
+        noise_std: float = LASER_NOISE_STD,          # 3 mm standard measurement noise
         mount_offset: Optional[np.ndarray] = None, # position relative to drone COM [x, y, z]
     ):
         self.min_range = min_range
@@ -288,10 +302,10 @@ class IsaacAction:
     roll: float = 0.0
     pitch: float = 0.0
     yaw_rate: float = 0.0
-    throttle_pwm: float = 1500.0
-    roll_pwm: float = 1500.0
-    pitch_pwm: float = 1500.0
-    yaw_pwm: float = 1500.0
+    throttle_pwm: float = PWM_HOVER
+    roll_pwm: float = PWM_LEVEL_ROLL
+    pitch_pwm: float = PWM_MID
+    yaw_pwm: float = PWM_NEUTRAL_YAW
 
     @classmethod
     def from_setpoints(
@@ -313,10 +327,10 @@ class IsaacAction:
     @classmethod
     def from_pwm(
         cls,
-        throttle: float = 1500.0,
-        roll: float = 1500.0,
-        pitch: float = 1500.0,
-        yaw: float = 1500.0,
+        throttle: float = PWM_HOVER,
+        roll: float = PWM_LEVEL_ROLL,
+        pitch: float = PWM_MID,
+        yaw: float = PWM_NEUTRAL_YAW,
     ) -> IsaacAction:
         """Creates an action using standard RC PWM microseconds [1000, 2000]."""
         return cls(
@@ -369,7 +383,7 @@ class ConnectomeModelAdapter(BaseIsaacModel):
         pol = ChongFlyMSPPolicy.from_meta(
             meta_path=meta_path,
             mode="fixed",
-            dt=0.004,
+            dt=DEFAULT_DT,
             solver_type=solver_type,
             pruning_sparsity=pruning_sparsity,
             ablate_cx=ablate_cx,
@@ -399,7 +413,7 @@ class AutonomousLaserNavigatorModel(BaseIsaacModel):
 
     def __init__(
         self,
-        target_altitude: float = 1.0,
+        target_altitude: float = TARGET_ALTITUDE_M,
         kp_alt: float = 0.40,
         kd_alt: float = 0.15,
         avoidance_gain: float = 0.35,
@@ -418,7 +432,7 @@ class AutonomousLaserNavigatorModel(BaseIsaacModel):
     def step(self, obs: IsaacObservation) -> IsaacAction:
         laser_alt = obs.laser_distance
         alt_err = self.target_altitude - laser_alt
-        alt_rate = (laser_alt - self.last_laser_alt) / 0.004
+        alt_rate = (laser_alt - self.last_laser_alt) / DEFAULT_DT
         self.last_laser_alt = laser_alt
 
         base_th = obs.hover_throttle
@@ -426,9 +440,10 @@ class AutonomousLaserNavigatorModel(BaseIsaacModel):
         thrust_cmd = float(np.clip(thrust_cmd, 0.05, 0.95))
 
         depth_mat = obs.depth_8x8
-        left_threat = float(1.0 - np.mean(depth_mat[:, :4]))
-        right_threat = float(1.0 - np.mean(depth_mat[:, 4:]))
-        center_threat = float(1.0 - np.mean(depth_mat[2:6, 2:6]))
+        mid_col = depth_mat.shape[1] // 2 if depth_mat.ndim == 2 else TOF_COLS // 2
+        left_threat = float(1.0 - np.mean(depth_mat[:, :mid_col]))
+        right_threat = float(1.0 - np.mean(depth_mat[:, mid_col:]))
+        center_threat = float(1.0 - np.mean(depth_mat[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end]))
 
         target_roll = (left_threat - right_threat) * self.avoidance_gain
         target_pitch = -center_threat * self.avoidance_gain
@@ -436,7 +451,7 @@ class AutonomousLaserNavigatorModel(BaseIsaacModel):
         target_roll -= obs.optical_flow[1] * self.flow_damping_gain
         target_pitch -= obs.optical_flow[0] * self.flow_damping_gain
 
-        max_angle = math.radians(25.0)
+        max_angle = MAX_TILT_ANGLE_RAD
         target_roll = float(np.clip(target_roll, -max_angle, max_angle))
         target_pitch = float(np.clip(target_pitch, -max_angle, max_angle))
 

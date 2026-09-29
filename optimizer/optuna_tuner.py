@@ -43,12 +43,12 @@ def create_study(
     if not HAS_OPTUNA:
         raise ImportError("Optuna is not installed. Install via pip install optuna.")
 
-    sampler = optuna.samplers.TPESampler(seed=seed)
+    sampler = optuna.samplers.NSGAIISampler(seed=seed)
     study = optuna.create_study(
         study_name=study_name,
         storage="sqlite:///chong_optuna.db", # was storage.
         sampler=sampler,
-        direction="minimize",
+        directions=["minimize", "minimize", "maximize"],
         load_if_exists=True,
     )
     return study
@@ -103,11 +103,16 @@ if __name__ == "__main__":
         seed=args.seed,
     )
 
-    print("\n" + "═" * 60)
+    print("\n" + "=" * 60)
     print("Optimization Completed!")
-    print(f"Best Trial #{study.best_trial.number}")
-    print(f"Best Composite Cost: {study.best_value:.4f}")
-    print("Best Hyperparameters:")
-    for k, v in study.best_params.items():
-        print(f"  • {k}: {v}")
-    print("═" * 60)
+    if len(study.directions) > 1:
+        print(f"Number of Pareto-optimal trials: {len(study.best_trials)}")
+        for t in study.best_trials:
+            print(f"  Trial #{t.number}: values={t.values}, params={t.params}")
+    else:
+        print(f"Best Trial #{study.best_trial.number}")
+        print(f"Best Composite Cost: {study.best_value:.4f}")
+        print("Best Hyperparameters:")
+        for k, v in study.best_params.items():
+            print(f"  * {k}: {v}")
+    print("=" * 60)
