@@ -202,6 +202,8 @@ class DroneSimulationEnv:
 
 
 # Встав це в optimizer/evaluate.py (замість старої функції simulate_policy_rollout)
+import os
+import torch
 from simulation.metrics import (
     calculate_jitter_pr,
     calculate_saccades_yaw,
@@ -209,7 +211,8 @@ from simulation.metrics import (
     PhysicsTelemetryTracker,
 )
 from simulation.memory import EgocentricMemoryWrapper
-from typing import Any, Optional, Tuple
+from optimizer.pretrain import pretrain_policy
+from typing import Any, Optional, Tuple, Dict, Union
 import numpy as np
 
 
@@ -252,16 +255,25 @@ def simulate_policy_rollout(
     """
     Runs closed-loop simulation with Math Signal Metrics and Physical Constraints.
     """
-    # Якщо env не передано, створюємо (але тут краще імпортувати DroneSimulationEnv)
+    # Якщо env не передано, створюємо локальний швидкий симулятор для Optuna
     if env is None:
-        from simulation.drone_env import DroneSimulationEnv
         step_dt = 0.02 if getattr(policy, "default_dt", 0.004) == 0.02 else 0.004
         env = DroneSimulationEnv(dt=step_dt)
 
     if hasattr(policy, "reset_state"):
         policy.reset_state()
 
-    obs_flow, obs_tof = env.reset(seed=seed)
+    reset_res = env.reset(seed=seed)
+    if isinstance(reset_res, tuple) and len(reset_res) == 2:
+        obs_flow, obs_tof = reset_res
+    elif hasattr(env, "get_chong_fly_obs"):
+        obs_flow, obs_tof = env.get_chong_fly_obs()
+    elif isinstance(reset_res, np.ndarray) and reset_res.shape[0] >= 66:
+        obs_flow = reset_res[:2]
+        obs_tof = reset_res[2:66]
+    else:
+        obs_flow = np.zeros(2, dtype=np.float32)
+        obs_tof = np.ones(64, dtype=np.float32)
 
     steps_survived = 0
     total_energy_j = 0.0
@@ -280,7 +292,12 @@ def simulate_policy_rollout(
 
     # Йогоцентричний буфер просторової пам'яті (8 секторів, 74-D простір сенсорів)
     memory_wrapper = EgocentricMemoryWrapper(decay_rate=0.02)
-    last_yaw = float(env.att[2]) if hasattr(env, "att") else 0.0
+    if hasattr(env, "att"):
+        last_yaw = float(env.att[2])
+    elif hasattr(env, "physics") and hasattr(env.physics, "quaternion_to_euler"):
+        last_yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
+    else:
+        last_yaw = 0.0
     memory_8 = memory_wrapper.get_memory()
 
     for step in range(eval_steps):
@@ -288,6 +305,8 @@ def simulate_policy_rollout(
         pos = getattr(env, "pos", None)
         if pos is None and hasattr(env, "get_position"):
             pos = env.get_position()
+        elif pos is None and hasattr(env, "physics"):
+            pos = getattr(env.physics, "pos", None)
         if pos is not None:
             voxel_tracker.update(pos)
 
@@ -295,10 +314,17 @@ def simulate_policy_rollout(
         vel = getattr(env, "vel", None)
         if vel is None and hasattr(env, "get_velocity"):
             vel = env.get_velocity()
+        elif vel is None and hasattr(env, "physics"):
+            vel = getattr(env.physics, "vel", None)
         telemetry_tracker.update_step(obs_tof, vel)
 
         # Оновлюємо егоцентричну пам'ять (8 секторів) за кутом курсу (Yaw)
-        current_yaw = float(env.att[2]) if hasattr(env, "att") else 0.0
+        if hasattr(env, "att"):
+            current_yaw = float(env.att[2])
+        elif hasattr(env, "physics") and hasattr(env.physics, "quaternion_to_euler"):
+            current_yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
+        else:
+            current_yaw = 0.0
         delta_yaw = current_yaw - last_yaw
         delta_yaw = (delta_yaw + math.pi) % (2.0 * math.pi) - math.pi
         last_yaw = current_yaw
@@ -348,7 +374,20 @@ def simulate_policy_rollout(
         p_actuators = 15.0 * ((u_t / 0.5) ** 2) + 5.0 * (u_r ** 2 + u_p ** 2 + u_y ** 2)
         total_energy_j += p_actuators * env.dt
 
-        (obs_flow, obs_tof), cost, done, info = env.step(pwm, dt=dt)
+        try:
+            step_res = env.step(pwm, dt=dt)
+        except TypeError:
+            step_res = env.step(pwm)
+
+        next_obs, step_cost, done, info = step_res
+        if isinstance(next_obs, tuple) and len(next_obs) == 2:
+            obs_flow, obs_tof = next_obs
+        elif hasattr(env, "get_chong_fly_obs"):
+            obs_flow, obs_tof = env.get_chong_fly_obs()
+        elif isinstance(next_obs, np.ndarray) and next_obs.shape[0] >= 66:
+            obs_flow = next_obs[:2]
+            obs_tof = next_obs[2:66]
+
         steps_survived += 1
 
         if done:
@@ -356,6 +395,8 @@ def simulate_policy_rollout(
             final_vel = getattr(env, "vel", None)
             if final_vel is None and hasattr(env, "get_velocity"):
                 final_vel = env.get_velocity()
+            elif final_vel is None and hasattr(env, "physics"):
+                final_vel = getattr(env.physics, "vel", None)
             mass_obj = getattr(getattr(env, "physics", None), "total_mass", getattr(env, "mass", 0.130))
             drone_mass = float(mass_obj() if callable(mass_obj) else mass_obj)
             telemetry_tracker.register_crash(final_vel, mass=drone_mass)
@@ -433,7 +474,167 @@ def simulate_policy_rollout(
         "memory_sectors": memory_8.copy(),
     }
 
+
     return composite_cost, metrics
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Default Trainable Policy (Fallback / Agile Recurrent Controller)
+# ─────────────────────────────────────────────────────────────────────────────
 
+class DefaultFlightPolicy(torch.nn.Module):
+    """
+    Agile 74-D recurrent flight policy using GRU temporal integration.
+    Used for Optuna trials or when specific connectome ReducedModel artifacts
+    are being synthesized.
+    """
+
+    def __init__(self, sensor_dim: int = 74, hidden_dim: int = 32):
+        super().__init__()
+        self.sensor_dim = sensor_dim
+        self.hidden_dim = hidden_dim
+        self.fc_in = torch.nn.Linear(sensor_dim, hidden_dim)
+        self.gru = torch.nn.GRU(hidden_dim, hidden_dim, batch_first=True)
+        self.fc_out = torch.nn.Linear(hidden_dim, 4)
+        torch.nn.init.constant_(self.fc_out.bias, 1500.0)
+        self._hx: Optional[torch.Tensor] = None
+
+    def reset_state(self) -> None:
+        """Resets recurrent hidden state."""
+        self._hx = None
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        hx: Optional[torch.Tensor] = None,
+        dt: Optional[float] = None,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        squeeze_batch = False
+        if x.dim() == 2:
+            x = x.unsqueeze(1)  # [B, 1, 74]
+            squeeze_batch = True
+
+        h_feat = torch.tanh(self.fc_in(x))
+        out, h_last = self.gru(h_feat, hx)
+        pwm = self.fc_out(out)
+        pwm = torch.clamp(pwm, 1000.0, 2000.0)
+
+        if squeeze_batch:
+            return pwm.squeeze(1), h_last
+        return pwm, h_last
+
+    @torch.no_grad()
+    def step_np(
+        self,
+        flow_xy: np.ndarray,
+        tof_8x8: np.ndarray,
+        memory_ring: Optional[np.ndarray] = None,
+        dt: Optional[float] = None,
+    ) -> np.ndarray:
+        parts = [np.asarray(flow_xy).ravel()[:2], np.asarray(tof_8x8).ravel()[:64]]
+        if memory_ring is not None:
+            parts.append(np.asarray(memory_ring).ravel()[:8])
+        elif self.sensor_dim == 74:
+            parts.append(np.ones(8, dtype=np.float32))
+
+        raw = np.concatenate(parts).astype(np.float32)
+        t_in = torch.from_numpy(raw).unsqueeze(0).unsqueeze(0)  # [1, 1, 74]
+        pwm_t, self._hx = self.forward(t_in, self._hx, dt=dt)
+        return pwm_t.squeeze().cpu().numpy()
+
+    def post_step(self) -> None:
+        pass
+
+
+def create_model(
+    trial_or_params: Any = None,
+    sensor_dim: int = 74,
+    base_dir: str = "data/reduced_models",
+) -> Any:
+    """
+    Constructs a flight policy from an Optuna Trial or dictionary parameters.
+    Attempts ChongFlyMSPPolicy.from_meta if metadata is available,
+    otherwise falls back to DefaultFlightPolicy.
+    """
+    params: Dict[str, Any] = {}
+    if trial_or_params is not None:
+        if hasattr(trial_or_params, "suggest_categorical"):
+            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [32, 64, 128])
+            params["pruning_sparsity"] = trial_or_params.suggest_float("pruning_sparsity", 0.50, 0.90)
+            params["solver_type"] = trial_or_params.suggest_categorical("solver_type", ["CfC", "Euler_dt_0.02"])
+            params["ablate_cx"] = trial_or_params.suggest_categorical("ablate_cx", [False, True])
+        elif isinstance(trial_or_params, dict):
+            params = dict(trial_or_params)
+
+    k = params.get("k_clusters", 64)
+    sparsity = params.get("pruning_sparsity", 0.60)
+    solver = params.get("solver_type", "CfC")
+    ablate_cx = params.get("ablate_cx", False)
+
+    _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    suffix = "_nocx" if ablate_cx else ""
+    meta_name = f"meta_spectral_k{k}{suffix}.json"
+    meta_path = os.path.join(_ROOT_DIR, base_dir, meta_name)
+
+    if os.path.exists(meta_path):
+        try:
+            from simulation.policy import ChongFlyMSPPolicy
+            dt = 0.02 if solver == "Euler_dt_0.02" else 0.004
+            return ChongFlyMSPPolicy.from_meta(
+                meta_path=meta_path,
+                sensor_dim=sensor_dim,
+                solver_type=solver,
+                pruning_sparsity=sparsity,
+                ablate_cx=ablate_cx,
+                dt=dt,
+            )
+        except Exception:
+            pass
+
+    return DefaultFlightPolicy(sensor_dim=sensor_dim)
+
+
+def objective(
+    trial: Any = None,
+    dataset_path: str = "data/reflex_dataset.pt",
+    pretrain: bool = True,
+    pretrain_epochs: int = 3,
+    subset_ratio: float = 0.7,
+    eval_steps: int = 100,
+    seed: int = 42,
+) -> float:
+    """
+    Optuna Objective Function:
+    1. Proposes hyperparameters & builds policy (create_model).
+    2. Rapid Behavioral Cloning pretraining (pretrain_policy).
+    3. Closed-loop arena simulation rollout (simulate_policy_rollout).
+    4. Records trial telemetry and returns composite cost.
+    """
+    policy = create_model(trial, sensor_dim=74)
+
+    if pretrain:
+        trial_seed = getattr(trial, "number", seed) if trial is not None else seed
+        policy = pretrain_policy(
+            policy=policy,
+            dataset_path=dataset_path,
+            epochs=pretrain_epochs,
+            subset_ratio=subset_ratio,
+            seed=trial_seed,
+        )
+
+    cost, metrics = simulate_policy_rollout(
+        policy=policy,
+        eval_steps=eval_steps,
+        seed=seed,
+    )
+
+    if trial is not None and hasattr(trial, "set_user_attr"):
+        trial.set_user_attr("composite_score", float(cost))
+        trial.set_user_attr("mean_clearance", float(metrics.get("mean_clearance", 0.0)))
+        trial.set_user_attr("impact_energy_j", float(metrics.get("impact_energy_j", 0.0)))
+        trial.set_user_attr("forward_ratio_median", float(metrics.get("forward_ratio_median", 0.0)))
+        trial.set_user_attr("is_crab_flight", bool(metrics.get("is_crab_flight", False)))
+        trial.set_user_attr("fatal_failure", bool(metrics.get("fatal_failure", False)))
+        trial.set_user_attr("failure_reason", str(metrics.get("failure_reason", "None")))
+
+    return float(cost)

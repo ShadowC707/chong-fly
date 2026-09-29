@@ -57,7 +57,9 @@ def section(title):
 
 
 META_PATH = os.path.join(_ROOT, "data", "reduced_models", "meta_spectral_k64.json")
-HAS_META  = os.path.exists(META_PATH)
+W_PATH    = os.path.join(_ROOT, "data", "reduced_models", "w_spectral_k64.npy")
+HAS_META  = os.path.exists(META_PATH) and os.path.exists(W_PATH)
+policy    = None
 
 BATCH = 4
 
@@ -186,7 +188,7 @@ else:
 
 section("5. step_np() — numpy flight-loop interface")
 
-if HAS_META:
+if HAS_META and policy is not None:
     policy.reset_state()
     flow_xy = np.array([0.05, -0.02], dtype=np.float32)
     tof_grid = np.random.rand(64).astype(np.float32) * 0.5
@@ -212,7 +214,7 @@ else:
 
 section("6. Sequence forward (batch, T, 66) → (batch, T, 4)")
 
-if HAS_META:
+if HAS_META and policy is not None:
     T  = 15
     obs_seq = torch.randn(BATCH, T, SENSOR_DIM)
     pwm_seq, h_last = policy(obs_seq)
@@ -229,7 +231,7 @@ else:
 
 section("7. Stateful inference — hidden state propagation")
 
-if HAS_META:
+if HAS_META and policy is not None:
     policy.reset_state()
     obs1 = torch.randn(1, SENSOR_DIM)
     obs2 = torch.randn(1, SENSOR_DIM)
@@ -253,7 +255,7 @@ else:
 
 section("8. post_step() — W_macro mask enforcement")
 
-if HAS_META:
+if HAS_META and policy is not None:
     opt = torch.optim.Adam(policy.parameters(), lr=1e-3)
     obs = torch.randn(BATCH, SENSOR_DIM)
     pwm_t, _ = policy(obs)
@@ -270,7 +272,7 @@ else:
 
 section("9. Gradient flow through all policy parameters")
 
-if HAS_META:
+if HAS_META and policy is not None:
     policy.zero_grad()
     obs  = torch.randn(BATCH, SENSOR_DIM)
     hx_0 = torch.randn(BATCH, policy.cfc_network.cell.hidden_size)
