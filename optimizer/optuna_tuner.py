@@ -46,7 +46,7 @@ def create_study(
     sampler = optuna.samplers.TPESampler(seed=seed)
     study = optuna.create_study(
         study_name=study_name,
-        storage=storage,
+        storage="sqlite:///chong_optuna.db", # was storage.
         sampler=sampler,
         direction="minimize",
         load_if_exists=True,

@@ -145,11 +145,13 @@ def generate_reflex_dataset(
         ep_seed = int(rng.integers(0, 1_000_000))
         env = DroneSimulationEnv(dt=dt)
         obs_flow, obs_tof = env.reset(seed=ep_seed)
+        env.obstacle_dist = float(rng.uniform(0.6, 1.4))
 
         memory_wrapper = EgocentricMemoryWrapper(decay_rate=0.02)
         expert.reset()
 
         last_yaw = float(env.att[2])
+        turn_steps = 0
         ep_x: List[np.ndarray] = []
         ep_y: List[np.ndarray] = []
 
@@ -178,16 +180,28 @@ def generate_reflex_dataset(
             # 4. Advance physics simulation
             (obs_flow, obs_tof), cost, done, info = env.step(pwm_expert, dt=dt)
 
-            # Continuous reflex environment: respawn obstacle ahead if avoided or cleared
-            if env.obstacle_dist <= 0.20 or (expert.latched_turn is None and env.obstacle_dist < 0.8):
-                # Reposition obstacle ahead for another encounter
-                env.obstacle_dist = float(rng.uniform(1.8, 2.8))
+            # Continuous reflex environment: complete turn maneuver and respawn next obstacle
+            if expert.latched_turn is not None:
+                turn_steps += 1
+                if turn_steps >= 35 or env.obstacle_dist <= 0.15:
+                    expert.latched_turn = None
+                    turn_steps = 0
+                    env.obstacle_dist = float(rng.uniform(1.2, 2.0))
+                    # Clear front ToF for new path ahead
+                    obs_tof = np.ones(64, dtype=np.float32)
+            else:
+                turn_steps = 0
+                if env.obstacle_dist <= 0.20:
+                    env.obstacle_dist = float(rng.uniform(1.2, 2.0))
+                    obs_tof = np.ones(64, dtype=np.float32)
 
             if done:
                 # If crashed or tumbled, reset state to maintain full sequence length
                 obs_flow, obs_tof = env.reset(seed=ep_seed + step + 1)
+                env.obstacle_dist = float(rng.uniform(0.6, 1.4))
                 last_yaw = float(env.att[2])
                 expert.reset()
+                turn_steps = 0
 
         all_x.append(np.array(ep_x, dtype=np.float32))
         all_y.append(np.array(ep_y, dtype=np.float32))

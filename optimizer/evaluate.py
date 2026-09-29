@@ -132,13 +132,36 @@ class DroneSimulationEnv:
 
         # 2. Translational Dynamics
         # Vertical thrust: 0.5 throttle gives exactly gravity compensation
+        # Vertical acceleration with altitude hold stabilization
+        throttle_norm = (pwm[0] - 1000.0) / 1000.0
         vertical_thrust_acc = throttle_norm * (2.0 * self.g)
-        a_z = vertical_thrust_acc - self.g - (self.drag * self.vel[2])
+        a_z = (
+            vertical_thrust_acc
+            - self.g
+            - (self.drag * self.vel[2])
+            + 8.0 * (self.target_altitude - self.pos[2])
+        )
 
-        # Horizontal acceleration coupled to roll (phi) and pitch (theta)
+        # Attitude dynamics: Angle mode tracking (target angle proportional to stick)
+        target_phi = roll_cmd * 0.44    # max ~25 deg
+        target_theta = pitch_cmd * 0.44  # max ~25 deg
+        att_tau = 0.05  # 50 ms time constant
+
+        self.att[0] += (target_phi - self.att[0]) * min(1.0, step_dt / att_tau)
+        self.att[1] += (target_theta - self.att[1]) * min(1.0, step_dt / att_tau)
+        self.att[2] += (yaw_cmd * 3.0) * step_dt
+
+        self.omega[0] = (target_phi - self.att[0]) / att_tau
+        self.omega[1] = (target_theta - self.att[1]) / att_tau
+        self.omega[2] = yaw_cmd * 3.0
+
         phi, theta, psi = self.att
-        a_x = self.g * math.sin(theta) - (self.drag * self.vel[0])
-        a_y = -self.g * math.sin(phi)  - (self.drag * self.vel[1])
+
+        # Horizontal acceleration in world frame (rotated by yaw psi)
+        ax_body = self.g * math.sin(theta)
+        ay_body = -self.g * math.sin(phi)
+        a_x = ax_body * math.cos(psi) - ay_body * math.sin(psi) - (self.drag * self.vel[0])
+        a_y = ax_body * math.sin(psi) + ay_body * math.cos(psi) - (self.drag * self.vel[1])
 
         # Integrate translation
         self.vel[0] += a_x * step_dt
@@ -149,27 +172,10 @@ class DroneSimulationEnv:
         self.pos[1] += self.vel[1] * step_dt
         self.pos[2] = max(0.0, self.pos[2] + self.vel[2] * step_dt)
 
-        # 3. Rotational Dynamics
-        torque_roll  = roll_cmd * 12.0
-        torque_pitch = pitch_cmd * 12.0
-        torque_yaw   = yaw_cmd * 8.0
-
-        # Angular acceleration with damping
-        alpha_p = torque_roll  - (self.damping * self.omega[0])
-        alpha_q = torque_pitch - (self.damping * self.omega[1])
-        alpha_r = torque_yaw   - (self.damping * self.omega[2])
-
-        self.omega[0] += alpha_p * step_dt
-        self.omega[1] += alpha_q * step_dt
-        self.omega[2] += alpha_r * step_dt
-
-        self.att[0] += self.omega[0] * step_dt
-        self.att[1] += self.omega[1] * step_dt
-        self.att[2] += self.omega[2] * step_dt
-
         # 4. Obstacle relative movement
-        # Obstacle approaches as drone moves along +x
-        self.obstacle_dist = max(0.0, self.obstacle_dist - self.vel[0] * step_dt)
+        # Obstacle approaches along body forward axis
+        v_forward = self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi)
+        self.obstacle_dist = max(0.0, self.obstacle_dist - v_forward * step_dt)
 
         # 5. Cost / Performance evaluation
         alt_err = abs(float(self.pos[2]) - self.target_altitude)
@@ -235,13 +241,13 @@ def compute_composite_cost(
     """
     crash_penalty = (1.0 - float(survival_ratio)) * 1000.0
     energy_penalty = float(mean_power_w) * 2.0
-    signal_cost = (float(jitter_pr) * 0.05) - (float(saccades_yaw) * 10.0)
+    signal_cost = (float(jitter_pr) * 0.05) - (float(saccades_yaw) * 1.0)
 
     # Варіант 2: нелінійне шлюзування виживанням + жорстка стеля (cap)
     raw_coverage_bonus = min(float(coverage_count) * float(coverage_weight), float(coverage_cap))
     coverage_bonus = raw_coverage_bonus * (float(survival_ratio) ** 3)
 
-    composite_cost = max(0.0, crash_penalty + energy_penalty + signal_cost - coverage_bonus)
+    composite_cost = crash_penalty + energy_penalty + signal_cost - coverage_bonus
     return float(composite_cost), float(coverage_bonus)
 
 
@@ -559,7 +565,7 @@ def create_model(
     params: Dict[str, Any] = {}
     if trial_or_params is not None:
         if hasattr(trial_or_params, "suggest_categorical"):
-            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [32, 64, 128])
+            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [16, 32, 64, 128, 256])
             params["pruning_sparsity"] = trial_or_params.suggest_float("pruning_sparsity", 0.50, 0.90)
             params["solver_type"] = trial_or_params.suggest_categorical("solver_type", ["CfC", "Euler_dt_0.02"])
             params["ablate_cx"] = trial_or_params.suggest_categorical("ablate_cx", [False, True])
@@ -629,12 +635,11 @@ def objective(
     )
 
     if trial is not None and hasattr(trial, "set_user_attr"):
-        trial.set_user_attr("composite_score", float(cost))
-        trial.set_user_attr("mean_clearance", float(metrics.get("mean_clearance", 0.0)))
-        trial.set_user_attr("impact_energy_j", float(metrics.get("impact_energy_j", 0.0)))
-        trial.set_user_attr("forward_ratio_median", float(metrics.get("forward_ratio_median", 0.0)))
-        trial.set_user_attr("is_crab_flight", bool(metrics.get("is_crab_flight", False)))
-        trial.set_user_attr("fatal_failure", bool(metrics.get("fatal_failure", False)))
-        trial.set_user_attr("failure_reason", str(metrics.get("failure_reason", "None")))
+        # Автоматично зберігаємо ВСІ метрики, які зібрав симулятор
+        for key, value in metrics.items():
+            # Optuna не вміє зберігати масиви в БД, тому переводимо пам'ять у рядок
+            if key == "memory_sectors":
+                value = str(value)
+            trial.set_user_attr(key, value)
 
     return float(cost)
