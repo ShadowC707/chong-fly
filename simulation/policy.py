@@ -350,6 +350,7 @@ class ChongFlyMSPPolicy(nn.Module):
         self.cfc_network   = cfc_network
         self.dn_head       = DNProjectionHead(cell.hidden_size, cell.motor_indices)
         self.pwm_layer     = PWMOutputLayer()
+        self.default_dt    = getattr(cell, "default_dt", 0.004)
 
         # Cache for stateful inference
         self._hx: Optional[torch.Tensor] = None

@@ -128,9 +128,9 @@ def run_light_simulation(
     """
     env = LightDroneEnv(dt=dt)
     obs_flow, obs_tof = env.reset(seed=seed)
-    # Start with obstacle ahead at 1.5 - 2.0 m
+    # Start with obstacle ahead at 0.6 - 1.0 m (was 1.5 - 2.0 m)
     rng = np.random.default_rng(seed)
-    env.obstacle_dist = float(rng.uniform(1.8, 2.5))
+    env.obstacle_dist = float(rng.uniform(0.6, 1.0))
 
     memory = EgocentricMemoryWrapper(decay_rate=0.02)
     last_yaw = float(env.att[2])
@@ -388,9 +388,11 @@ def print_summary_report(results: Dict[str, Any], meta: Dict[str, Any], params: 
     print(f"  • Real-Time Ratio:   {results['flight_time_s'] / max(1e-4, results['real_time_s']):.2f}x speed")
     print(f"{C_BOLD}{'-'*86}{C_RESET}")
 
-    if not crashed and steps >= total:
-        print(f"  {C_BOLD}{C_GREEN}VERDICT: PASSED ✓ — CHAMPION MODEL ACTIVELY AVOIDS WALLS OVER 5000 STEPS!{C_RESET}")
-        print(f"  {C_DIM}The model proved high temporal resilience, sustained obstacle avoidance, and dynamic stability.{C_RESET}")
+    if not crashed and steps >= total and avoided > 0:
+        print(f"  {C_BOLD}{C_GREEN}VERDICT: PASSED ✓ — CHAMPION MODEL ACTIVELY AVOIDS WALLS OVER {total} STEPS!{C_RESET}")
+        print(f"  {C_DIM}The model proved high temporal resilience, sustained obstacle avoidance ({avoided} walls), and dynamic stability.{C_RESET}")
+    elif not crashed and steps >= total and avoided == 0:
+        print(f"  {C_BOLD}{C_YELLOW}VERDICT: INCONCLUSIVE ⚠ — Model survived {steps} steps but avoided 0 walls (idle / hover flight).{C_RESET}")
     elif avoided > 0:
         print(f"  {C_BOLD}{C_YELLOW}VERDICT: PARTIAL ✓ — Model avoided {avoided} walls before termination at step {steps}.{C_RESET}")
     else:

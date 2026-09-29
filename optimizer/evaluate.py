@@ -79,7 +79,7 @@ class DroneSimulationEnv:
         self.att = rng.uniform(-0.02, 0.02, size=3).astype(np.float32)
         self.omega = np.zeros(3, dtype=np.float32)
 
-        self.obstacle_dist = float(rng.uniform(1.8, 2.5))
+        self.obstacle_dist = float(rng.uniform(0.50, 0.9))
         self.last_pwm = np.full(4, 1500.0, dtype=np.float32)
 
         return self._get_observations()
@@ -88,10 +88,13 @@ class DroneSimulationEnv:
         """
         Synthesize FlowX/Y and 8x8 ToF grid from physical state.
         """
-        # Optical Flow: horizontal velocity relative to ground altitude
+        # Optical Flow: horizontal velocity relative to ground altitude in body frame
         z_safe = max(0.2, float(self.pos[2]))
-        flow_x = np.clip(self.vel[0] / z_safe, -1.0, 1.0)
-        flow_y = np.clip(self.vel[1] / z_safe, -1.0, 1.0)
+        psi = float(self.att[2])
+        v_fwd = float(self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi))
+        v_lat = float(-self.vel[0] * math.sin(psi) + self.vel[1] * math.cos(psi))
+        flow_x = np.clip(v_fwd / z_safe, -1.0, 1.0)
+        flow_y = np.clip(v_lat / z_safe, -1.0, 1.0)
         flow_xy = np.array([flow_x, flow_y], dtype=np.float32)
 
         # ToF 8x8 Grid: distance normalized to [0, 1] (max range 3.0 m)
@@ -187,10 +190,11 @@ class DroneSimulationEnv:
         step_cost = alt_err + 2.0 * tilt_err + 0.5 * vel_err + 0.001 * jitter
 
         # 6. Termination condition
-        tumbled = abs(self.att[0]) > 1.2 or abs(self.att[1]) > 1.2  # ~70 deg
+        tumbled = abs(self.att[0]) > 1.2 or abs(self.att[1]) > 1.2 # ~70 deg
         ground_crash = self.pos[2] <= 0.02
         obstacle_crash = self.obstacle_dist <= 0.05
-        done = tumbled or ground_crash or obstacle_crash
+        hit_back_wall = self.obstacle_dist >= 3.5  # <--- НОВЕ: Заборона летіти назад
+        done = tumbled or ground_crash or obstacle_crash or hit_back_wall
 
         info = {
             "alt_err": alt_err,
@@ -223,31 +227,45 @@ import numpy as np
 
 
 def compute_composite_cost(
-    survival_ratio: float,
-    mean_power_w: float,
-    jitter_pr: float,
-    saccades_yaw: int,
-    coverage_count: int = 0,
-    coverage_weight: float = 1.0,
-    coverage_cap: float = 50.0,
+        survival_ratio: float,
+        mean_power_w: float,
+        jitter_pr: float,
+        saccades_yaw: int,
+        coverage_count: int = 0,
+        walls_avoided: int = 0,
+        is_crash: bool = False,
+        mean_fwd_speed: float = 0.0,
+        coverage_weight: float = 1.0,
+        coverage_cap: float = 50.0,
+        **kwargs
 ) -> Tuple[float, float]:
-    """
-    Computes composite fitness cost for Optuna optimization.
-    Applies Variant 2 gating: exploration coverage bonus is non-linearly gated
-    by (survival_ratio ** 3) and capped, ensuring crash penalties can NEVER be outweighed.
+    # 1. Штраф за краш
+    crash_penalty = (1.0 - float(survival_ratio)) * 2000.0
 
-    Returns:
-        (composite_cost, coverage_bonus)
-    """
-    crash_penalty = (1.0 - float(survival_ratio)) * 1000.0
+    # 2. АБСОЛЮТНИЙ ЗАХИСТ ВІД "MOONWALK" ТА ЗАВИСАННЯ
+    passivity_penalty = 0.0
+    if mean_fwd_speed < 0.20:
+        passivity_penalty += 3000.0  # Жорсткий штраф за політ назад або дрейф
+    if walls_avoided == 0:
+        passivity_penalty += 1000.0
+
+    # 3. Енерговитрати
     energy_penalty = float(mean_power_w) * 2.0
-    signal_cost = (float(jitter_pr) * 0.05) - (float(saccades_yaw) * 1.0)
 
-    # Варіант 2: нелінійне шлюзування виживанням + жорстка стеля (cap)
+    # 4. Квадратичне покарання за вібрацію по Yaw
+    if saccades_yaw <= 4:
+        saccades_cost = -1.0 * saccades_yaw
+    else:
+        saccades_cost = 2.0 * ((saccades_yaw - 4) ** 2)
+
+    signal_cost = (float(jitter_pr) * 0.05) + saccades_cost
+
+    # 5. Бонус за дослідження
     raw_coverage_bonus = min(float(coverage_count) * float(coverage_weight), float(coverage_cap))
     coverage_bonus = raw_coverage_bonus * (float(survival_ratio) ** 3)
 
-    composite_cost = crash_penalty + energy_penalty + signal_cost - coverage_bonus
+    composite_cost = crash_penalty + energy_penalty + signal_cost + passivity_penalty - coverage_bonus
+
     return float(composite_cost), float(coverage_bonus)
 
 
@@ -263,7 +281,10 @@ def simulate_policy_rollout(
     """
     # Якщо env не передано, створюємо локальний швидкий симулятор для Optuna
     if env is None:
-        step_dt = 0.02 if getattr(policy, "default_dt", 0.004) == 0.02 else 0.004
+        policy_dt = getattr(policy, "default_dt", None)
+        if policy_dt is None and hasattr(policy, "cfc_network"):
+            policy_dt = getattr(getattr(policy.cfc_network, "cell", None), "default_dt", 0.004)
+        step_dt = float(policy_dt) if policy_dt is not None else 0.004
         env = DroneSimulationEnv(dt=step_dt)
 
     if hasattr(policy, "reset_state"):
@@ -293,6 +314,11 @@ def simulate_policy_rollout(
     # Фізичний фільтр-вбивця
     saturation_violations = 0
 
+    rng = np.random.default_rng(seed)
+    walls_avoided = 0
+    in_evasion = False
+    fwd_speeds = []
+
     # Трекер фізичної телеметрії (Mean Clearance, Kinetic Energy, Crab Flight)
     telemetry_tracker = PhysicsTelemetryTracker(min_speed_hover=0.10, threshold_crab=0.5)
 
@@ -304,6 +330,7 @@ def simulate_policy_rollout(
         last_yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
     else:
         last_yaw = 0.0
+    evasion_yaw_initial = last_yaw
     memory_8 = memory_wrapper.get_memory()
 
     for step in range(eval_steps):
@@ -316,21 +343,33 @@ def simulate_policy_rollout(
         if pos is not None:
             voxel_tracker.update(pos)
 
-        # Оновлюємо фізичну телеметрію (кліренс ToF та вектор швидкості)
-        vel = getattr(env, "vel", None)
-        if vel is None and hasattr(env, "get_velocity"):
-            vel = env.get_velocity()
-        elif vel is None and hasattr(env, "physics"):
-            vel = getattr(env.physics, "vel", None)
-        telemetry_tracker.update_step(obs_tof, vel)
-
-        # Оновлюємо егоцентричну пам'ять (8 секторів) за кутом курсу (Yaw)
+        # Отримуємо поточний кут курсу (Yaw)
         if hasattr(env, "att"):
             current_yaw = float(env.att[2])
         elif hasattr(env, "physics") and hasattr(env.physics, "quaternion_to_euler"):
             current_yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
         else:
             current_yaw = 0.0
+
+        # Отримуємо швидкість і трансформуємо її у зв'язану систему координат (Body Frame)
+        vel = getattr(env, "vel", None)
+        if vel is None and hasattr(env, "get_velocity"):
+            vel = env.get_velocity()
+        elif vel is None and hasattr(env, "physics"):
+            vel = getattr(env.physics, "vel", None)
+
+        vx_w = float(vel[0]) if vel is not None else 0.0
+        vy_w = float(vel[1]) if vel is not None else 0.0
+        vz_w = float(vel[2]) if vel is not None else 0.0
+        v_fwd = vx_w * math.cos(current_yaw) + vy_w * math.sin(current_yaw)
+        v_lat = -vx_w * math.sin(current_yaw) + vy_w * math.cos(current_yaw)
+        vel_body = np.array([v_fwd, v_lat, vz_w], dtype=np.float32)
+        fwd_speeds.append(v_fwd)
+
+        # Оновлюємо фізичну телеметрію ТІЛЬКИ в Body Frame (запобігає хибному crab flight на поворотах)
+        telemetry_tracker.update_step(obs_tof, vel_body)
+
+        # Оновлюємо егоцентричну пам'ять (8 секторів) за кутом курсу (Yaw)
         delta_yaw = current_yaw - last_yaw
         delta_yaw = (delta_yaw + math.pi) % (2.0 * math.pi) - math.pi
         last_yaw = current_yaw
@@ -372,7 +411,7 @@ def simulate_policy_rollout(
 
         pwm_history.append(pwm.copy())
 
-        # Енергетична модель (залишаємо як було в колеги)
+        # Енергетична модель
         u_t = np.clip((pwm[0] - 1000.0) / 1000.0, 0.0, 1.0)
         u_r = np.clip((pwm[1] - 1500.0) / 500.0, -1.0, 1.0)
         u_p = np.clip((pwm[2] - 1500.0) / 500.0, -1.0, 1.0)
@@ -385,6 +424,14 @@ def simulate_policy_rollout(
         except TypeError:
             step_res = env.step(pwm)
 
+        # Безперервний респавн стіни під час rollout ???????
+        if hasattr(env, "obstacle_dist"):
+            if env.obstacle_dist < 0.8 and abs(delta_yaw) > 0.40:
+                walls_avoided += 1
+                env.obstacle_dist = float(np.random.uniform(1.0, 1.5))
+            elif env.obstacle_dist <= 0.10:  # Якщо не встиг і майже врізався
+                pass  # Краш відпрацює нижче
+
         next_obs, step_cost, done, info = step_res
         if isinstance(next_obs, tuple) and len(next_obs) == 2:
             obs_flow, obs_tof = next_obs
@@ -393,6 +440,24 @@ def simulate_policy_rollout(
         elif isinstance(next_obs, np.ndarray) and next_obs.shape[0] >= 66:
             obs_flow = next_obs[:2]
             obs_tof = next_obs[2:66]
+
+        # ── Неперервне середовище: ухилення від перешкод та їх респавн ──
+        dist = float(getattr(env, "obstacle_dist", 99.0))
+        if dist < 0.80 and not in_evasion:
+            in_evasion = True
+            evasion_yaw_initial = current_yaw
+
+        if in_evasion:
+            yaw_deflection = abs((current_yaw - evasion_yaw_initial + math.pi) % (2.0 * math.pi) - math.pi)
+            if (yaw_deflection > 0.40) and dist >= 0.15:
+                walls_avoided += 1
+                in_evasion = False
+                # Респавн наступної перешкоди попереду за новим курсом
+                new_dist = float(rng.uniform(1.2, 2.0))
+                env.obstacle_dist = new_dist
+                grid = np.ones((8, 8), dtype=np.float32)
+                grid[2:6, 2:6] = min(1.0, new_dist / 3.0)
+                obs_tof = grid.ravel().astype(np.float32)
 
         steps_survived += 1
 
@@ -412,6 +477,7 @@ def simulate_policy_rollout(
     survival_ratio = steps_survived / eval_steps
     survival_time_s = steps_survived * env.dt
     mean_power_w = total_energy_j / max(1e-4, survival_time_s)
+    mean_fwd_speed = float(np.mean(fwd_speeds)) if fwd_speeds else 0.0
 
     # Просторове покриття
     coverage_count = voxel_tracker.get_coverage_count()
@@ -420,20 +486,18 @@ def simulate_policy_rollout(
     # Фізична телеметрія
     telemetry_summary = telemetry_tracker.compute_summary()
 
-    # Викликаємо твої нові метрики!
+    # Викликаємо метрики сигналу
     jitter_pr = calculate_jitter_pr(pwm_history)
     saccades_yaw = calculate_saccades_yaw(pwm_history)
 
     # Фізичний фільтр / Kill-Switches:
     saturation_ratio = saturation_violations / max(1, steps_survived)
-    is_crashed = survival_ratio < 0.20
     is_saturated = saturation_ratio > 0.15
     is_crab = bool(telemetry_summary["is_crab_flight"])
+    is_crash = bool(telemetry_summary["is_crash"]) or (steps_survived < eval_steps)
 
-    if is_crashed or is_saturated or is_crab:
+    if is_saturated or is_crab:
         failure_reasons = []
-        if is_crashed:
-            failure_reasons.append("Crashed")
         if is_saturated:
             failure_reasons.append("PWM Saturated")
         if is_crab:
@@ -441,18 +505,21 @@ def simulate_policy_rollout(
                 f"Crab Flight (median {telemetry_summary['forward_ratio_median']:.2f} < 0.50)"
             )
 
-        return 9999.0, {
-            "fatal_failure": True,
-            "failure_reason": ", ".join(failure_reasons),
-            "coverage_count": coverage_count,
-            "coverage_volume": float(coverage_volume),
-            "coverage_bonus": 0.0,
-            "mean_clearance": float(telemetry_summary["mean_clearance"]),
-            "impact_energy_j": float(telemetry_summary["impact_energy_j"]),
-            "forward_ratio_median": float(telemetry_summary["forward_ratio_median"]),
-            "is_crab_flight": is_crab,
-            "memory_sectors": memory_8.copy(),
-        }
+        #return 9999.0, {
+        #    "fatal_failure": True,
+        #    "failure_reason": ", ".join(failure_reasons),
+        #    "crashed": is_crash,
+        #    "walls_avoided": walls_avoided,
+        #    "mean_fwd_speed": mean_fwd_speed,
+        #    "coverage_count": coverage_count,
+        #    "coverage_volume": float(coverage_volume),
+        #    "coverage_bonus": 0.0,
+        #    "mean_clearance": float(telemetry_summary["mean_clearance"]),
+        #    "impact_energy_j": float(telemetry_summary["impact_energy_j"]),
+        #    "forward_ratio_median": float(telemetry_summary["forward_ratio_median"]),
+        #    "is_crab_flight": is_crab,
+        #    "memory_sectors": memory_8.copy(),
+        #}
 
     # ── ФУНКЦІЯ ПРИСТОСОВАНОСТІ (FITNESS) ──
     composite_cost, coverage_bonus = compute_composite_cost(
@@ -461,10 +528,16 @@ def simulate_policy_rollout(
         jitter_pr=jitter_pr,
         saccades_yaw=saccades_yaw,
         coverage_count=coverage_count,
+        walls_avoided=walls_avoided,
+        mean_fwd_speed=mean_fwd_speed,
+        is_crash=is_crash,
     )
 
     metrics = {
         "fatal_failure": False,
+        "crashed": is_crash,
+        "walls_avoided": walls_avoided,
+        "mean_fwd_speed": mean_fwd_speed,
         "composite_score": composite_cost,
         "survival_time_s": float(survival_time_s),
         "saturation_ratio": float(saturation_ratio),
@@ -479,7 +552,6 @@ def simulate_policy_rollout(
         "is_crab_flight": False,
         "memory_sectors": memory_8.copy(),
     }
-
 
     return composite_cost, metrics
 
@@ -556,19 +628,20 @@ def create_model(
     trial_or_params: Any = None,
     sensor_dim: int = 74,
     base_dir: str = "data/reduced_models",
+    allow_fallback: bool = False,
 ) -> Any:
     """
     Constructs a flight policy from an Optuna Trial or dictionary parameters.
-    Attempts ChongFlyMSPPolicy.from_meta if metadata is available,
-    otherwise falls back to DefaultFlightPolicy.
+    Attempts ChongFlyMSPPolicy.from_meta if metadata and weight matrices are available.
+    If allow_fallback is False, raises FileNotFoundError if metadata or weights are missing.
     """
     params: Dict[str, Any] = {}
     if trial_or_params is not None:
         if hasattr(trial_or_params, "suggest_categorical"):
-            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [16, 32, 64, 128, 256])
+            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [32, 64])
             params["pruning_sparsity"] = trial_or_params.suggest_float("pruning_sparsity", 0.50, 0.90)
-            params["solver_type"] = trial_or_params.suggest_categorical("solver_type", ["CfC", "Euler_dt_0.02"])
-            params["ablate_cx"] = trial_or_params.suggest_categorical("ablate_cx", [False, True])
+            params["solver_type"] = trial_or_params.suggest_categorical("solver_type", ["CfC"]) # cut off , "Euler_dt_0.02"
+            params["ablate_cx"] = trial_or_params.suggest_categorical("ablate_cx", [False])
         elif isinstance(trial_or_params, dict):
             params = dict(trial_or_params)
 
@@ -582,20 +655,37 @@ def create_model(
     meta_name = f"meta_spectral_k{k}{suffix}.json"
     meta_path = os.path.join(_ROOT_DIR, base_dir, meta_name)
 
-    if os.path.exists(meta_path):
-        try:
-            from simulation.policy import ChongFlyMSPPolicy
-            dt = 0.02 if solver == "Euler_dt_0.02" else 0.004
-            return ChongFlyMSPPolicy.from_meta(
-                meta_path=meta_path,
-                sensor_dim=sensor_dim,
-                solver_type=solver,
-                pruning_sparsity=sparsity,
-                ablate_cx=ablate_cx,
-                dt=dt,
-            )
-        except Exception:
-            pass
+    if not os.path.exists(meta_path):
+        if not allow_fallback:
+            raise FileNotFoundError(f"Connectome metadata file '{meta_path}' not found for k={k}, ablate_cx={ablate_cx}")
+        return DefaultFlightPolicy(sensor_dim=sensor_dim)
+
+    # Валідація наявності бінарної матриці ваг на диску (без мовчазного проковтування)
+    import json
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta_dict = json.load(f)
+    w_file = meta_dict.get("w_file")
+    w_path = os.path.join(os.path.dirname(meta_path), w_file) if w_file else ""
+    if not os.path.exists(w_path):
+        if not allow_fallback:
+            raise FileNotFoundError(f"Weight matrix file '{w_path}' referenced in '{meta_name}' not found on disk")
+        return DefaultFlightPolicy(sensor_dim=sensor_dim)
+
+    try:
+        from simulation.policy import ChongFlyMSPPolicy
+        dt = 0.02 if solver == "Euler_dt_0.02" else 0.004
+        return ChongFlyMSPPolicy.from_meta(
+            meta_path=meta_path,
+            sensor_dim=sensor_dim,
+            solver_type=solver,
+            pruning_sparsity=sparsity,
+            ablate_cx=ablate_cx,
+            dt=dt,
+        )
+    except Exception as e:
+        if not allow_fallback:
+            raise
+        pass
 
     return DefaultFlightPolicy(sensor_dim=sensor_dim)
 
@@ -604,7 +694,7 @@ def objective(
     trial: Any = None,
     dataset_path: str = "data/reflex_dataset.pt",
     pretrain: bool = True,
-    pretrain_epochs: int = 3,
+    pretrain_epochs: int = 15,
     subset_ratio: float = 0.7,
     eval_steps: int = 100,
     seed: int = 42,
