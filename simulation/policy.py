@@ -67,17 +67,23 @@ _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from core.models import BiologicalCfCCell, BiologicalCfCNetwork
+try:
+    from core.models import BiologicalCfCCell, BiologicalCfCNetwork
+except (ImportError, AttributeError):
+    BiologicalCfCCell = Any  # type: ignore
+    BiologicalCfCNetwork = Any  # type: ignore
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Constants
 # ─────────────────────────────────────────────────────────────────────────────
 
-SENSOR_DIM    = 66          # 2 flow + 64 ToF
-FLOW_DIM      = 2           # FlowX, FlowY
-TOF_DIM       = 64          # 8×8 ToF grid
-N_CONTROLS    = 4           # throttle, roll, pitch, yaw
+SENSOR_DIM_BASE = 66        # 2 flow + 64 ToF
+MEMORY_DIM      = 8         # 8-sector egocentric ring buffer
+SENSOR_DIM      = 74        # 2 flow + 64 ToF + 8 memory (was 66)
+FLOW_DIM        = 2         # FlowX, FlowY
+TOF_DIM         = 64        # 8×8 ToF grid
+N_CONTROLS      = 4         # throttle, roll, pitch, yaw
 
 # RC PWM limits (µs)
 PWM_MIN       = 1000.0
@@ -98,10 +104,11 @@ CH_YAW        = 3
 
 class SensorInputLayer(nn.Module):
     """
-    Normalise and optionally scale the 66-D sensor vector.
+    Normalise and optionally scale the 74-D (or 66-D legacy) sensor vector.
 
-    FlowX/Y  : expected range ±1 (already normalised by caller)
-    ToF 8×8  : expected range [0, 1] (distance / max_range)
+    FlowX/Y       : expected range ±1 (already normalised by caller)
+    ToF 8×8       : expected range [0, 1] (distance / max_range)
+    Memory Ring 8 : expected range [0, 1] (egocentric obstacle distance)
 
     An optional learnable affine rescaling (per-channel gain + bias) is
     applied after normalisation so the network can adapt to sensor offsets.
@@ -121,27 +128,45 @@ class SensorInputLayer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        x : (batch, 66) — raw sensor vector
-            x[:, 0:2]   = [FlowX, FlowY]   ∈ [-1, 1]
+        x : (batch, 74) or (batch, 66) — raw sensor vector
+            x[:, 0:2]   = [FlowX, FlowY]    ∈ [-1, 1]
             x[:, 2:66]  = ToF pixels        ∈ [0, 1]
-        Returns normalised (batch, 66).
+            x[:, 66:74] = Egocentric Memory ∈ [0, 1]
+        Returns normalised (batch, sensor_dim).
         """
+        if x.shape[-1] == SENSOR_DIM_BASE and self.sensor_dim == SENSOR_DIM:
+            # Legacy 66-D passed to 74-D layer -> pad with safe default memory (1.0)
+            pad = torch.ones(*x.shape[:-1], MEMORY_DIM, dtype=x.dtype, device=x.device)
+            x = torch.cat([x, pad], dim=-1)
+        elif x.shape[-1] == SENSOR_DIM and self.sensor_dim == SENSOR_DIM_BASE:
+            # 74-D passed to 66-D layer -> drop memory suffix
+            x = x[..., :SENSOR_DIM_BASE]
+
         return x * self.gain + self.bias
 
-    def from_numpy(self, flow_xy: np.ndarray, tof_8x8: np.ndarray) -> torch.Tensor:
+    def from_numpy(
+        self,
+        flow_xy: np.ndarray,
+        tof_8x8: np.ndarray,
+        memory_ring: Optional[np.ndarray] = None,
+    ) -> torch.Tensor:
         """
-        Convenience: pack numpy arrays → (1, 66) tensor.
+        Convenience: pack numpy arrays → (1, sensor_dim) tensor.
 
         Parameters
         ----------
-        flow_xy : (2,) float32  [FlowX, FlowY] normalised ±1
-        tof_8x8 : (64,) float32  ToF pixels normalised [0,1]
+        flow_xy     : (2,) float32  [FlowX, FlowY] normalised ±1
+        tof_8x8     : (64,) float32  ToF pixels normalised [0,1]
+        memory_ring : optional (8,) float32 egocentric spatial memory
         """
-        raw = np.concatenate([
-            np.asarray(flow_xy,  dtype=np.float32).ravel()[:FLOW_DIM],
-            np.asarray(tof_8x8,  dtype=np.float32).ravel()[:TOF_DIM],
-        ])
-        return torch.from_numpy(raw).unsqueeze(0)   # (1, 66)
+        flow_part = np.asarray(flow_xy, dtype=np.float32).ravel()[:FLOW_DIM]
+        tof_part = np.asarray(tof_8x8, dtype=np.float32).ravel()[:TOF_DIM]
+        parts = [flow_part, tof_part]
+        if memory_ring is not None:
+            parts.append(np.asarray(memory_ring, dtype=np.float32).ravel()[:MEMORY_DIM])
+
+        raw = np.concatenate(parts)
+        return torch.from_numpy(raw).unsqueeze(0)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -415,15 +440,16 @@ class ChongFlyMSPPolicy(nn.Module):
     @torch.no_grad()
     def step_np(
         self,
-        flow_xy: np.ndarray,               # (2,)   FlowX, FlowY  ∈ [-1, 1]
-        tof_8x8: np.ndarray,               # (64,)  ToF pixels     ∈ [0, 1]
+        flow_xy: np.ndarray,                         # (2,)   FlowX, FlowY  ∈ [-1, 1]
+        tof_8x8: np.ndarray,                         # (64,)  ToF pixels     ∈ [0, 1]
+        memory_ring: Optional[np.ndarray] = None,   # (8,)   Egocentric memory ∈ [0, 1]
         dt: Optional[float] = None,
     ) -> np.ndarray:
         """
         Numpy convenience wrapper for the flight-control loop.
         Returns pwm : (4,) float32 numpy array [throttle, roll, pitch, yaw] µs.
         """
-        obs_t = self.sensor_layer.from_numpy(flow_xy, tof_8x8)
+        obs_t = self.sensor_layer.from_numpy(flow_xy, tof_8x8, memory_ring=memory_ring)
         pwm_t = self.step(obs_t, dt=dt)
         return pwm_t.cpu().numpy()
 

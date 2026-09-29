@@ -202,9 +202,44 @@ class DroneSimulationEnv:
 
 
 # Встав це в optimizer/evaluate.py (замість старої функції simulate_policy_rollout)
-from simulation.metrics import calculate_jitter_pr, calculate_saccades_yaw
+from simulation.metrics import (
+    calculate_jitter_pr,
+    calculate_saccades_yaw,
+    VoxelTracker,
+    PhysicsTelemetryTracker,
+)
+from simulation.memory import EgocentricMemoryWrapper
 from typing import Any, Optional, Tuple
 import numpy as np
+
+
+def compute_composite_cost(
+    survival_ratio: float,
+    mean_power_w: float,
+    jitter_pr: float,
+    saccades_yaw: int,
+    coverage_count: int = 0,
+    coverage_weight: float = 1.0,
+    coverage_cap: float = 50.0,
+) -> Tuple[float, float]:
+    """
+    Computes composite fitness cost for Optuna optimization.
+    Applies Variant 2 gating: exploration coverage bonus is non-linearly gated
+    by (survival_ratio ** 3) and capped, ensuring crash penalties can NEVER be outweighed.
+
+    Returns:
+        (composite_cost, coverage_bonus)
+    """
+    crash_penalty = (1.0 - float(survival_ratio)) * 1000.0
+    energy_penalty = float(mean_power_w) * 2.0
+    signal_cost = (float(jitter_pr) * 0.05) - (float(saccades_yaw) * 10.0)
+
+    # Варіант 2: нелінійне шлюзування виживанням + жорстка стеля (cap)
+    raw_coverage_bonus = min(float(coverage_count) * float(coverage_weight), float(coverage_cap))
+    coverage_bonus = raw_coverage_bonus * (float(survival_ratio) ** 3)
+
+    composite_cost = max(0.0, crash_penalty + energy_penalty + signal_cost - coverage_bonus)
+    return float(composite_cost), float(coverage_bonus)
 
 
 def simulate_policy_rollout(
@@ -234,12 +269,64 @@ def simulate_policy_rollout(
     # Масив для нашої математики
     pwm_history = []
 
+    # Трекер просторового покриття (дискретизація R^3 -> Z^3)
+    voxel_tracker = VoxelTracker(voxel_size=0.5)
+
     # Фізичний фільтр-вбивця
     saturation_violations = 0
 
+    # Трекер фізичної телеметрії (Mean Clearance, Kinetic Energy, Crab Flight)
+    telemetry_tracker = PhysicsTelemetryTracker(min_speed_hover=0.10, threshold_crab=0.5)
+
+    # Йогоцентричний буфер просторової пам'яті (8 секторів, 74-D простір сенсорів)
+    memory_wrapper = EgocentricMemoryWrapper(decay_rate=0.02)
+    last_yaw = float(env.att[2]) if hasattr(env, "att") else 0.0
+    memory_8 = memory_wrapper.get_memory()
+
     for step in range(eval_steps):
+        # Відстежуємо позицію дрона
+        pos = getattr(env, "pos", None)
+        if pos is None and hasattr(env, "get_position"):
+            pos = env.get_position()
+        if pos is not None:
+            voxel_tracker.update(pos)
+
+        # Оновлюємо фізичну телеметрію (кліренс ToF та вектор швидкості)
+        vel = getattr(env, "vel", None)
+        if vel is None and hasattr(env, "get_velocity"):
+            vel = env.get_velocity()
+        telemetry_tracker.update_step(obs_tof, vel)
+
+        # Оновлюємо егоцентричну пам'ять (8 секторів) за кутом курсу (Yaw)
+        current_yaw = float(env.att[2]) if hasattr(env, "att") else 0.0
+        delta_yaw = current_yaw - last_yaw
+        delta_yaw = (delta_yaw + math.pi) % (2.0 * math.pi) - math.pi
+        last_yaw = current_yaw
+        memory_8 = memory_wrapper.update(obs_tof, delta_yaw_rad=delta_yaw)
+
+        # Формуємо розширене 74-D спостереження [FlowX, FlowY, ToF_64, Mem_8]
+        obs_74 = np.concatenate([
+            np.asarray(obs_flow, dtype=np.float32).ravel(),
+            np.asarray(obs_tof, dtype=np.float32).ravel(),
+            np.asarray(memory_8, dtype=np.float32).ravel(),
+        ])
+
         if hasattr(policy, "step_np"):
-            pwm = policy.step_np(obs_flow, obs_tof, dt=dt)
+            try:
+                pwm = policy.step_np(obs_flow, obs_tof, memory_ring=memory_8, dt=dt)
+            except TypeError:
+                pwm = policy.step_np(obs_flow, obs_tof, dt=dt)
+        elif hasattr(policy, "step"):
+            pwm = policy.step(obs_74, dt=dt)
+            if hasattr(pwm, "cpu"):
+                pwm = pwm.cpu().numpy()
+        elif callable(policy):
+            try:
+                pwm = policy(obs_74)
+            except TypeError:
+                pwm = policy(obs_flow, obs_tof)
+            if hasattr(pwm, "cpu"):
+                pwm = pwm.cpu().numpy()
         else:
             pwm = np.array([1500.0, 1500.0, 1500.0, 1500.0], dtype=np.float32)
 
@@ -265,6 +352,13 @@ def simulate_policy_rollout(
         steps_survived += 1
 
         if done:
+            # Якщо краш настав до завершення часу — фіксуємо кінетичну енергію удару
+            final_vel = getattr(env, "vel", None)
+            if final_vel is None and hasattr(env, "get_velocity"):
+                final_vel = env.get_velocity()
+            mass_obj = getattr(getattr(env, "physics", None), "total_mass", getattr(env, "mass", 0.130))
+            drone_mass = float(mass_obj() if callable(mass_obj) else mass_obj)
+            telemetry_tracker.register_crash(final_vel, mass=drone_mass)
             break
 
     # ── ПІСЛЯ ПОЛЬОТУ: Оцінка Метрик ──
@@ -272,24 +366,55 @@ def simulate_policy_rollout(
     survival_time_s = steps_survived * env.dt
     mean_power_w = total_energy_j / max(1e-4, survival_time_s)
 
+    # Просторове покриття
+    coverage_count = voxel_tracker.get_coverage_count()
+    coverage_volume = voxel_tracker.get_coverage_volume()
+
+    # Фізична телеметрія
+    telemetry_summary = telemetry_tracker.compute_summary()
+
     # Викликаємо твої нові метрики!
     jitter_pr = calculate_jitter_pr(pwm_history)
     saccades_yaw = calculate_saccades_yaw(pwm_history)
 
-    # Фізичний фільтр: якщо > 15% часу ШІМ був у насиченні — це шлюб
+    # Фізичний фільтр / Kill-Switches:
     saturation_ratio = saturation_violations / max(1, steps_survived)
-    if survival_ratio < 0.20 or saturation_ratio > 0.15:
-        return 9999.0, {"fatal_failure": True, "failure_reason": "Crashed or Saturated"}
+    is_crashed = survival_ratio < 0.20
+    is_saturated = saturation_ratio > 0.15
+    is_crab = bool(telemetry_summary["is_crab_flight"])
+
+    if is_crashed or is_saturated or is_crab:
+        failure_reasons = []
+        if is_crashed:
+            failure_reasons.append("Crashed")
+        if is_saturated:
+            failure_reasons.append("PWM Saturated")
+        if is_crab:
+            failure_reasons.append(
+                f"Crab Flight (median {telemetry_summary['forward_ratio_median']:.2f} < 0.50)"
+            )
+
+        return 9999.0, {
+            "fatal_failure": True,
+            "failure_reason": ", ".join(failure_reasons),
+            "coverage_count": coverage_count,
+            "coverage_volume": float(coverage_volume),
+            "coverage_bonus": 0.0,
+            "mean_clearance": float(telemetry_summary["mean_clearance"]),
+            "impact_energy_j": float(telemetry_summary["impact_energy_j"]),
+            "forward_ratio_median": float(telemetry_summary["forward_ratio_median"]),
+            "is_crab_flight": is_crab,
+            "memory_sectors": memory_8.copy(),
+        }
 
     # ── ФУНКЦІЯ ПРИСТОСОВАНОСТІ (FITNESS) ──
-    # Optuna мінімізує це значення (тому це Cost Function)
-    crash_penalty = (1.0 - survival_ratio) * 1000.0
-    energy_penalty = mean_power_w * 2.0
-
-    # Твоя математика в дії: штраф за джитер, БОНУС (мінус) за сакади
-    signal_cost = (jitter_pr * 0.05) - (saccades_yaw * 10.0)
-
-    composite_cost = max(0.0, crash_penalty + energy_penalty + signal_cost)
+    composite_cost, coverage_bonus = compute_composite_cost(
+        survival_ratio=survival_ratio,
+        mean_power_w=mean_power_w,
+        jitter_pr=jitter_pr,
+        saccades_yaw=saccades_yaw,
+        coverage_count=coverage_count,
+    )
 
     metrics = {
         "fatal_failure": False,
@@ -298,7 +423,17 @@ def simulate_policy_rollout(
         "saturation_ratio": float(saturation_ratio),
         "jitter_pr_l2": jitter_pr,
         "saccades_yaw_count": saccades_yaw,
+        "coverage_count": coverage_count,
+        "coverage_volume": coverage_volume,
+        "coverage_bonus": coverage_bonus,
+        "mean_clearance": float(telemetry_summary["mean_clearance"]),
+        "impact_energy_j": float(telemetry_summary["impact_energy_j"]),
+        "forward_ratio_median": float(telemetry_summary["forward_ratio_median"]),
+        "is_crab_flight": False,
+        "memory_sectors": memory_8.copy(),
     }
 
     return composite_cost, metrics
+
+
 
