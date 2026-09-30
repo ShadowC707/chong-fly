@@ -168,7 +168,7 @@ class SensorInputLayer(nn.Module):
             parts.append(np.asarray(memory_ring, dtype=np.float32).ravel()[:MEMORY_DIM])
 
         raw = np.concatenate(parts)
-        return torch.from_numpy(raw).unsqueeze(0)
+        return torch.from_numpy(raw).unsqueeze(0).to(self.gain.device)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

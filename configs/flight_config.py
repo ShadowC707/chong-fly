@@ -101,9 +101,12 @@ class PhysicsConfig:
     attitude_tau: float = 0.05              # 50 ms attitude tracking time constant
     yaw_rate_gain: float = 3.0              # Body yaw angular rate multiplier (rad/s per norm cmd)
 
+    max_sim_time_s: float = 30.0  # Скільки секунд має вижити муха, щоб вважатися переможцем
+    control_dt: float = 0.02  # 50 Hz - Частота прийняття рішень нейромережею (ESP32 target)
+
     # Termination / Crash conditions
     tumble_angle_threshold_rad: float = 1.2 # ~70 degrees tumble limit
-    ground_crash_alt_m: float = 0.02        # Altitude threshold for ground collision (m)
+    ground_crash_alt_m: float = 0.1        # Altitude threshold for ground collision (m)
     obstacle_crash_dist_m: float = 0.05     # Distance threshold for obstacle impact (m)
     back_wall_dist_m: float = 3.5           # Max backward drift limit (m)
 
@@ -180,6 +183,8 @@ class MetricsConfig:
     saccade_yaw_threshold_pwm: float = 150.0# Min PWM change on Yaw to classify as a saccade
     min_speed_hover_mps: float = 0.10       # Minimum horizontal velocity for forward ratio tracking
     threshold_crab: float = 0.50            # Threshold below which flight is classified as crab flight
+
+    stagnation_time_limit_s: float = 1.5  # Скільки секунд дрону дозволено висіти/тупити перед Kill-Switch
     
     # Cost function weights in DroneSimulationEnv
     cost_weight_alt: float = 1.0
@@ -318,3 +323,8 @@ COST_WEIGHT_JITTER = METRICS.cost_weight_jitter
 POWER_THROTTLE_COEFF = METRICS.power_throttle_coeff
 POWER_ATTITUDE_COEFF = METRICS.power_attitude_coeff
 HOVER_THROTTLE_NORMALIZED = METRICS.hover_throttle_normalized
+
+
+MAX_SIM_TIME_S = PHYSICS.max_sim_time_s
+CONTROL_DT = PHYSICS.control_dt
+STAGNATION_TIME_LIMIT_S = METRICS.stagnation_time_limit_s

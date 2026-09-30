@@ -87,188 +87,193 @@ from configs.flight_config import (
     FLOW_Z_SAFE_M,
     SENSORS,
     PHYSICS,
+
+    MAX_SIM_TIME_S,
+    CONTROL_DT,
+    STAGNATION_TIME_LIMIT_S,
+    MIN_SPEED_HOVER_MPS,
 )
 
 
-class DroneSimulationEnv:
-    """
-    Fast closed-loop drone flight simulator for Level 2 behavioral evaluation.
-    """
-
-    def __init__(
-        self,
-        dt: float = DEFAULT_DT,
-        target_altitude: float = TARGET_ALTITUDE_M,
-        gravity: float = GRAVITY,
-        mass: float = DRONE_MASS_KG,
-        drag_coeff: float = DRAG_COEFF,
-        angular_damping: float = ANGULAR_DAMPING,
-        thrust_gain: float = THRUST_GAIN,
-    ):
-        self.dt = dt
-        self.target_altitude = target_altitude
-        self.g = gravity
-        self.mass = mass
-        self.drag = drag_coeff
-        self.damping = angular_damping
-        self.max_thrust_acc = gravity * thrust_gain
-
-        # State vectors:
-        # pos = [x, y, z]
-        # vel = [vx, vy, vz]
-        # att = [phi (roll), theta (pitch), psi (yaw)] in radians
-        # omega = [p, q, r] angular velocities in rad/s
-        self.pos = np.zeros(3, dtype=np.float32)
-        self.vel = np.zeros(3, dtype=np.float32)
-        self.att = np.zeros(3, dtype=np.float32)
-        self.omega = np.zeros(3, dtype=np.float32)
-
-        # Obstacle state
-        self.obstacle_dist = OBSTACLE_DEFAULT_DIST_M
-        self.obstacle_active = True
-
-        # Last PWM for jitter measurement
-        self.last_pwm = np.full(N_CONTROLS, PWM_HOVER, dtype=np.float32)
-
-    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Reset simulation state to hover baseline with small random noise.
-        """
-        rng = np.random.default_rng(seed)
-        self.pos = np.array([0.0, 0.0, self.target_altitude + rng.uniform(-PHYSICS.reset_alt_noise_m, PHYSICS.reset_alt_noise_m)], dtype=np.float32)
-        self.vel = rng.uniform(-PHYSICS.reset_vel_noise_mps, PHYSICS.reset_vel_noise_mps, size=3).astype(np.float32)
-        self.att = rng.uniform(-PHYSICS.reset_att_noise_rad, PHYSICS.reset_att_noise_rad, size=3).astype(np.float32)
-        self.omega = np.zeros(3, dtype=np.float32)
-
-        self.obstacle_dist = float(rng.uniform(PHYSICS.reset_obstacle_dist_min_m, PHYSICS.reset_obstacle_dist_max_m))
-        self.last_pwm = np.full(N_CONTROLS, PWM_HOVER, dtype=np.float32)
-
-        return self._get_observations()
-
-    def _get_observations(self) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Synthesize FlowX/Y and 8x8 ToF grid from physical state.
-        """
-        # Optical Flow: horizontal velocity relative to ground altitude in body frame
-        z_safe = max(FLOW_Z_SAFE_M, float(self.pos[2]))
-        psi = float(self.att[2])
-        v_fwd = float(self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi))
-        v_lat = float(-self.vel[0] * math.sin(psi) + self.vel[1] * math.cos(psi))
-        flow_x = np.clip(v_fwd / z_safe, -1.0, 1.0)
-        flow_y = np.clip(v_lat / z_safe, -1.0, 1.0)
-        flow_xy = np.array([flow_x, flow_y], dtype=np.float32)
-
-        # ToF 8x8 Grid: distance normalized to [0, 1]
-        # Looming obstacle projects onto central pixels
-        max_range = TOF_MAX_RANGE_M
-        grid = np.ones((TOF_ROWS, TOF_COLS), dtype=np.float32)
-        norm_dist = np.clip(self.obstacle_dist / max_range, 0.0, 1.0)
-
-        # Central 4x4 pixels represent forward looming zone
-        grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end] = norm_dist
-        tof_8x8 = grid.ravel().astype(np.float32)
-
-        return flow_xy, tof_8x8
-
-    def step(
-        self,
-        pwm: np.ndarray,
-        dt: Optional[float] = None,
-    ) -> Tuple[Tuple[np.ndarray, np.ndarray], float, bool, dict[str, Any]]:
-        """
-        Advance physics by one time step with given PWM actuators.
-        
-        Args:
-            pwm: (4,) array [throttle, roll, pitch, yaw] in [1000, 2000] µs.
-            dt: optional timestep override.
-            
-        Returns:
-            ((flow_xy, tof_8x8), step_cost, done, info)
-        """
-        step_dt = self.dt if dt is None else dt
-        pwm = np.asarray(pwm, dtype=np.float32)
-
-        # 1. Normalize PWM to control inputs [-1, 1] or [0, 1]
-        throttle_norm = np.clip((pwm[CH_THROTTLE] - PWM_MIN) / (PWM_MAX - PWM_MIN), 0.0, 1.0)
-        roll_cmd      = np.clip((pwm[CH_ROLL] - PWM_MID) / PWM_HALF, -1.0, 1.0)
-        pitch_cmd     = np.clip((pwm[CH_PITCH] - PWM_MID) / PWM_HALF, -1.0, 1.0)
-        yaw_cmd       = np.clip((pwm[CH_YAW] - PWM_MID) / PWM_HALF, -1.0, 1.0)
-
-        # 2. Translational Dynamics
-        # Vertical thrust: 0.5 throttle gives exactly gravity compensation
-        # Vertical acceleration with altitude hold stabilization
-        vertical_thrust_acc = throttle_norm * self.max_thrust_acc
-        a_z = (
-            vertical_thrust_acc
-            - self.g
-            - (self.drag * self.vel[2])
-            + ALTITUDE_HOLD_GAIN * (self.target_altitude - self.pos[2])
-        )
-
-        # Attitude dynamics: Angle mode tracking (target angle proportional to stick)
-        target_phi = roll_cmd * MAX_TILT_ANGLE_RAD
-        target_theta = pitch_cmd * MAX_TILT_ANGLE_RAD
-        att_tau = ATTITUDE_TAU
-
-        self.att[0] += (target_phi - self.att[0]) * min(1.0, step_dt / att_tau)
-        self.att[1] += (target_theta - self.att[1]) * min(1.0, step_dt / att_tau)
-        self.att[2] += (yaw_cmd * YAW_RATE_GAIN) * step_dt
-
-        self.omega[0] = (target_phi - self.att[0]) / att_tau
-        self.omega[1] = (target_theta - self.att[1]) / att_tau
-        self.omega[2] = yaw_cmd * YAW_RATE_GAIN
-
-        phi, theta, psi = self.att
-
-        # Horizontal acceleration in world frame (rotated by yaw psi)
-        ax_body = self.g * math.sin(theta)
-        ay_body = -self.g * math.sin(phi)
-        a_x = ax_body * math.cos(psi) - ay_body * math.sin(psi) - (self.drag * self.vel[0])
-        a_y = ax_body * math.sin(psi) + ay_body * math.cos(psi) - (self.drag * self.vel[1])
-
-        # Integrate translation
-        self.vel[0] += a_x * step_dt
-        self.vel[1] += a_y * step_dt
-        self.vel[2] += a_z * step_dt
-
-        self.pos[0] += self.vel[0] * step_dt
-        self.pos[1] += self.vel[1] * step_dt
-        self.pos[2] = max(0.0, self.pos[2] + self.vel[2] * step_dt)
-
-        # 4. Obstacle relative movement
-        # Obstacle approaches along body forward axis
-        v_forward = self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi)
-        self.obstacle_dist = max(0.0, self.obstacle_dist - v_forward * step_dt)
-
-        # 5. Cost / Performance evaluation
-        alt_err = abs(float(self.pos[2]) - self.target_altitude)
-        tilt_err = float(self.att[0]**2 + self.att[1]**2)
-        vel_err = float(self.vel[0]**2 + self.vel[1]**2)
-        jitter = float(np.mean(np.abs(pwm - self.last_pwm)))
-        self.last_pwm = pwm.copy()
-
-        step_cost = COST_WEIGHT_ALT * alt_err + COST_WEIGHT_TILT * tilt_err + COST_WEIGHT_VEL * vel_err + COST_WEIGHT_JITTER * jitter
-
-        # 6. Termination condition
-        tumbled = abs(self.att[0]) > TUMBLE_ANGLE_THRESHOLD_RAD or abs(self.att[1]) > TUMBLE_ANGLE_THRESHOLD_RAD
-        ground_crash = self.pos[2] <= GROUND_CRASH_ALT_M
-        obstacle_crash = self.obstacle_dist <= OBSTACLE_CRASH_DIST_M
-        hit_back_wall = self.obstacle_dist >= BACK_WALL_DIST_M
-        done = tumbled or ground_crash or obstacle_crash or hit_back_wall
-
-        info = {
-            "alt_err": alt_err,
-            "tilt_err": tilt_err,
-            "vel_err": vel_err,
-            "jitter": jitter,
-            "obstacle_dist": self.obstacle_dist,
-            "tumbled": tumbled,
-            "ground_crash": ground_crash,
-            "obstacle_crash": obstacle_crash,
-        }
-
-        obs = self._get_observations()
-        return obs, step_cost, done, info
+#class DroneSimulationEnv:
+#    """
+#    Fast closed-loop drone flight simulator for Level 2 behavioral evaluation.
+#    """
+#
+#    def __init__(
+#        self,
+#        dt: float = DEFAULT_DT,
+#        target_altitude: float = TARGET_ALTITUDE_M,
+#        gravity: float = GRAVITY,
+#        mass: float = DRONE_MASS_KG,
+#        drag_coeff: float = DRAG_COEFF,
+#        angular_damping: float = ANGULAR_DAMPING,
+#        thrust_gain: float = THRUST_GAIN,
+#    ):
+#        self.dt = dt
+#        self.target_altitude = target_altitude
+#        self.g = gravity
+#        self.mass = mass
+#        self.drag = drag_coeff
+#        self.damping = angular_damping
+#        self.max_thrust_acc = gravity * thrust_gain
+#
+#        # State vectors:
+#        # pos = [x, y, z]
+#        # vel = [vx, vy, vz]
+#        # att = [phi (roll), theta (pitch), psi (yaw)] in radians
+#        # omega = [p, q, r] angular velocities in rad/s
+#        self.pos = np.zeros(3, dtype=np.float32)
+#        self.vel = np.zeros(3, dtype=np.float32)
+#        self.att = np.zeros(3, dtype=np.float32)
+#        self.omega = np.zeros(3, dtype=np.float32)
+#
+#        # Obstacle state
+#        self.obstacle_dist = OBSTACLE_DEFAULT_DIST_M
+#        self.obstacle_active = True
+#
+#        # Last PWM for jitter measurement
+#        self.last_pwm = np.full(N_CONTROLS, PWM_HOVER, dtype=np.float32)
+#
+#    def reset(self, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+#        """
+#        Reset simulation state to hover baseline with small random noise.
+#        """
+#        rng = np.random.default_rng(seed)
+#        self.pos = np.array([0.0, 0.0, self.target_altitude + rng.uniform(-PHYSICS.reset_alt_noise_m, PHYSICS.reset_alt_noise_m)], dtype=np.float32)
+#        self.vel = rng.uniform(-PHYSICS.reset_vel_noise_mps, PHYSICS.reset_vel_noise_mps, size=3).astype(np.float32)
+#        self.att = rng.uniform(-PHYSICS.reset_att_noise_rad, PHYSICS.reset_att_noise_rad, size=3).astype(np.float32)
+#        self.omega = np.zeros(3, dtype=np.float32)
+#
+#        self.obstacle_dist = float(rng.uniform(PHYSICS.reset_obstacle_dist_min_m, PHYSICS.reset_obstacle_dist_max_m))
+#        self.last_pwm = np.full(N_CONTROLS, PWM_HOVER, dtype=np.float32)
+#
+#        return self._get_observations()
+#
+#    def _get_observations(self) -> Tuple[np.ndarray, np.ndarray]:
+#        """
+#        Synthesize FlowX/Y and 8x8 ToF grid from physical state.
+#        """
+#        # Optical Flow: horizontal velocity relative to ground altitude in body frame
+#        z_safe = max(FLOW_Z_SAFE_M, float(self.pos[2]))
+#        psi = float(self.att[2])
+#        v_fwd = float(self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi))
+#        v_lat = float(-self.vel[0] * math.sin(psi) + self.vel[1] * math.cos(psi))
+#        flow_x = np.clip(v_fwd / z_safe, -1.0, 1.0)
+#        flow_y = np.clip(v_lat / z_safe, -1.0, 1.0)
+#        flow_xy = np.array([flow_x, flow_y], dtype=np.float32)
+#
+#        # ToF 8x8 Grid: distance normalized to [0, 1]
+#        # Looming obstacle projects onto central pixels
+#        max_range = TOF_MAX_RANGE_M
+#        grid = np.ones((TOF_ROWS, TOF_COLS), dtype=np.float32)
+#        norm_dist = np.clip(self.obstacle_dist / max_range, 0.0, 1.0)
+#
+#        # Central 4x4 pixels represent forward looming zone
+#        grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end] = norm_dist
+#        tof_8x8 = grid.ravel().astype(np.float32)
+#
+#        return flow_xy, tof_8x8
+#
+#    def step(
+#        self,
+#        pwm: np.ndarray,
+#        dt: Optional[float] = None,
+#    ) -> Tuple[Tuple[np.ndarray, np.ndarray], float, bool, dict[str, Any]]:
+#        """
+#        Advance physics by one time step with given PWM actuators.
+#
+#        Args:
+#            pwm: (4,) array [throttle, roll, pitch, yaw] in [1000, 2000] µs.
+#            dt: optional timestep override.
+#
+#        Returns:
+#            ((flow_xy, tof_8x8), step_cost, done, info)
+#        """
+#        step_dt = self.dt if dt is None else dt
+#        pwm = np.asarray(pwm, dtype=np.float32)
+#
+#        # 1. Normalize PWM to control inputs [-1, 1] or [0, 1]
+#        throttle_norm = np.clip((pwm[CH_THROTTLE] - PWM_MIN) / (PWM_MAX - PWM_MIN), 0.0, 1.0)
+#        roll_cmd      = np.clip((pwm[CH_ROLL] - PWM_MID) / PWM_HALF, -1.0, 1.0)
+#        pitch_cmd     = np.clip((pwm[CH_PITCH] - PWM_MID) / PWM_HALF, -1.0, 1.0)
+#        yaw_cmd       = np.clip((pwm[CH_YAW] - PWM_MID) / PWM_HALF, -1.0, 1.0)
+#
+#        # 2. Translational Dynamics
+#        # Vertical thrust: 0.5 throttle gives exactly gravity compensation
+#        # Vertical acceleration with altitude hold stabilization
+#        vertical_thrust_acc = throttle_norm * self.max_thrust_acc
+#        a_z = (
+#            vertical_thrust_acc
+#            - self.g
+#            - (self.drag * self.vel[2])
+#            + ALTITUDE_HOLD_GAIN * (self.target_altitude - self.pos[2])
+#        )
+#
+#        # Attitude dynamics: Angle mode tracking (target angle proportional to stick)
+#        target_phi = roll_cmd * MAX_TILT_ANGLE_RAD
+#        target_theta = pitch_cmd * MAX_TILT_ANGLE_RAD
+#        att_tau = ATTITUDE_TAU
+#
+#        self.att[0] += (target_phi - self.att[0]) * min(1.0, step_dt / att_tau)
+#        self.att[1] += (target_theta - self.att[1]) * min(1.0, step_dt / att_tau)
+#        self.att[2] += (yaw_cmd * YAW_RATE_GAIN) * step_dt
+#
+#        self.omega[0] = (target_phi - self.att[0]) / att_tau
+#        self.omega[1] = (target_theta - self.att[1]) / att_tau
+#        self.omega[2] = yaw_cmd * YAW_RATE_GAIN
+#
+#        phi, theta, psi = self.att
+#
+#        # Horizontal acceleration in world frame (rotated by yaw psi)
+#        ax_body = self.g * math.sin(theta)
+#        ay_body = -self.g * math.sin(phi)
+#        a_x = ax_body * math.cos(psi) - ay_body * math.sin(psi) - (self.drag * self.vel[0])
+#        a_y = ax_body * math.sin(psi) + ay_body * math.cos(psi) - (self.drag * self.vel[1])
+#
+#        # Integrate translation
+#        self.vel[0] += a_x * step_dt
+#        self.vel[1] += a_y * step_dt
+#        self.vel[2] += a_z * step_dt
+#
+#        self.pos[0] += self.vel[0] * step_dt
+#        self.pos[1] += self.vel[1] * step_dt
+#        self.pos[2] = max(0.0, self.pos[2] + self.vel[2] * step_dt)
+#
+#        # 4. Obstacle relative movement
+#        # Obstacle approaches along body forward axis
+#        v_forward = self.vel[0] * math.cos(psi) + self.vel[1] * math.sin(psi)
+#        self.obstacle_dist = max(0.0, self.obstacle_dist - v_forward * step_dt)
+#
+#        # 5. Cost / Performance evaluation
+#        alt_err = abs(float(self.pos[2]) - self.target_altitude)
+#        tilt_err = float(self.att[0]**2 + self.att[1]**2)
+#        vel_err = float(self.vel[0]**2 + self.vel[1]**2)
+#        jitter = float(np.mean(np.abs(pwm - self.last_pwm)))
+#        self.last_pwm = pwm.copy()
+#
+#        step_cost = COST_WEIGHT_ALT * alt_err + COST_WEIGHT_TILT * tilt_err + COST_WEIGHT_VEL * vel_err + COST_WEIGHT_JITTER * jitter
+#
+#        # 6. Termination condition
+#        tumbled = abs(self.att[0]) > TUMBLE_ANGLE_THRESHOLD_RAD or abs(self.att[1]) > TUMBLE_ANGLE_THRESHOLD_RAD
+#        ground_crash = self.pos[2] <= GROUND_CRASH_ALT_M
+#        obstacle_crash = self.obstacle_dist <= OBSTACLE_CRASH_DIST_M
+#        hit_back_wall = self.obstacle_dist >= BACK_WALL_DIST_M
+#        done = tumbled or ground_crash or obstacle_crash or hit_back_wall
+#
+#        info = {
+#            "alt_err": alt_err,
+#            "tilt_err": tilt_err,
+#            "vel_err": vel_err,
+#            "jitter": jitter,
+#            "obstacle_dist": self.obstacle_dist,
+#            "tumbled": tumbled,
+#            "ground_crash": ground_crash,
+#            "obstacle_crash": obstacle_crash,
+#        }
+#
+#        obs = self._get_observations()
+#        return obs, step_cost, done, info
 
 
 # Встав це в optimizer/evaluate.py (замість старої функції simulate_policy_rollout)
@@ -284,8 +289,6 @@ from simulation.memory import EgocentricMemoryWrapper
 from optimizer.pretrain import pretrain_policy
 from typing import Any, Optional, Tuple, Dict, Union
 import numpy as np
-
-
 
 
 def simulate_policy_rollout(
@@ -306,6 +309,7 @@ def simulate_policy_rollout(
         step_dt = float(policy_dt) if policy_dt is not None else DEFAULT_DT
         
         from simulation.drone_env import OpticalFlowOUWrapper
+        from simulation.drone_env import DroneSimulationEnv
         raw_env = DroneSimulationEnv(dt=step_dt)
         env = OpticalFlowOUWrapper(raw_env, seed=seed)
 
@@ -387,6 +391,16 @@ def simulate_policy_rollout(
         v_lat = -vx_w * math.sin(current_yaw) + vy_w * math.cos(current_yaw)
         vel_body = np.array([v_fwd, v_lat, vz_w], dtype=np.float32)
         fwd_speeds.append(v_fwd)
+
+        # ─── ПРАВИЛО АКУЛИ (Kill-Switch за пасивність) ───
+        # Скільки кроків становить наш ліміт стагнації (напр. 1.5 сек / 0.02 = 75 кроків)
+        stagnation_steps = int(STAGNATION_TIME_LIMIT_S / step_dt)
+        if steps_survived > stagnation_steps:
+            # Дивимось середню швидкість ТІЛЬКИ за останні 1.5 секунди
+            recent_speed = sum(fwd_speeds[-stagnation_steps:]) / stagnation_steps
+            if recent_speed < MIN_SPEED_HOVER_MPS:
+                print(f"KILLED AT {steps_survived * step_dt:.2f}s: Stagnation (Zombie detected)")
+                break  # Вбиваємо симуляцію достроково!
 
         # Оновлюємо фізичну телеметрію ТІЛЬКИ в Body Frame (запобігає хибному crab flight на поворотах)
         telemetry_tracker.update_step(obs_tof, vel_body)
@@ -574,7 +588,10 @@ def simulate_policy_rollout(
     jitter_obj = float(jitter_pr)
     
     # 3. Exploration / Survival (Maximize unique voxels visited)
-    exploration_obj = float(coverage_count)
+    if survival_time_s < 2.0: # HYPERPARAMETER??????
+        exploration_obj = 0.0
+    else:
+        exploration_obj = float(coverage_count)
 
     pareto_vector = (hardware_obj, jitter_obj, exploration_obj)
 
@@ -661,7 +678,7 @@ class DefaultFlightPolicy(torch.nn.Module):
             parts.append(np.full(MEMORY_DIM, MEMORY_DEFAULT_DISTANCE, dtype=np.float32))
 
         raw = np.concatenate(parts).astype(np.float32)
-        t_in = torch.from_numpy(raw).unsqueeze(0).unsqueeze(0)  # [1, 1, 74]
+        t_in = torch.from_numpy(raw).unsqueeze(0).unsqueeze(0).to(next(self.parameters()).device)  # [1, 1, 74]
         pwm_t, self._hx = self.forward(t_in, self._hx, dt=dt)
         return pwm_t.squeeze().cpu().numpy()
 
@@ -741,8 +758,9 @@ def objective(
     pretrain: bool = True,
     pretrain_epochs: int = 15,
     subset_ratio: float = 0.7,
-    eval_steps: int = 100,
+    #eval_steps: int = 100,
     seed: int = 42,
+    device: str = "auto",
 ) -> Tuple[float, float, float]:
     """
     Optuna Multi-Objective Function:
@@ -753,6 +771,23 @@ def objective(
     """
     policy = create_model(trial, sensor_dim=SENSOR_DIM, allow_fallback=False)
 
+
+    import torch
+    
+    if device == "auto":
+        target_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    else:
+        target_device = torch.device(device)
+        if target_device.type == "cuda" and not torch.cuda.is_available():
+            print(f"WARNING: CUDA not available, falling back to CPU.")
+            target_device = torch.device("cpu")
+            
+    # Move policy to device
+    try:
+        policy = policy.to(target_device)
+    except Exception as e:
+        print(f"WARNING: Could not move policy to {target_device}: {e}")
+        
     if pretrain:
         trial_seed = getattr(trial, "number", seed) if trial is not None else seed
         policy = pretrain_policy(
@@ -761,11 +796,15 @@ def objective(
             epochs=pretrain_epochs,
             subset_ratio=subset_ratio,
             seed=trial_seed,
+            device=target_device,
         )
+
+    total_eval_steps = int(MAX_SIM_TIME_S / CONTROL_DT)
 
     pareto_vector, metrics = simulate_policy_rollout(
         policy=policy,
-        eval_steps=eval_steps,
+        eval_steps=total_eval_steps,
+        dt=CONTROL_DT,
         seed=seed,
     )
 

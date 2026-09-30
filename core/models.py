@@ -107,7 +107,7 @@ class _SparseTopologyHook:
         self.mask = mask          # (k, k) bool tensor on same device as param
 
     def __call__(self, grad: torch.Tensor) -> torch.Tensor:
-        return grad * self.mask
+        return grad * self.mask.to(grad.device)
 
 
 # ---------------------------------------------------------------------------

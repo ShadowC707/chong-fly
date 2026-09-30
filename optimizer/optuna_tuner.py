@@ -34,7 +34,7 @@ from optimizer.pretrain import pretrain_policy
 
 def create_study(
     study_name: str = "chong_reflex_tuning",
-    storage: Optional[str] = None,
+    storage: Optional[str] = "sqlite:///chong_optuna.db", # was drone_optimization.db
     seed: int = 42,
 ) -> Any:
     """
@@ -46,7 +46,7 @@ def create_study(
     sampler = optuna.samplers.NSGAIISampler(seed=seed)
     study = optuna.create_study(
         study_name=study_name,
-        storage="sqlite:///chong_optuna.db", # was storage.
+        storage=storage, # was storage.
         sampler=sampler,
         directions=["minimize", "minimize", "maximize"],
         load_if_exists=True,
@@ -58,9 +58,10 @@ def run_optuna_study(
     n_trials: int = 15,
     dataset_path: str = "data/reflex_dataset.pt",
     pretrain: bool = True,
-    eval_steps: int = 100,
     seed: int = 42,
-    study_name: str = "chong_reflex_tuning",
+    study_name: str = "pareto_search",
+    storage: str = "sqlite:///drone_optimization.db",
+    device: str = "auto",
 ) -> Any:
     """
     Executes an optimization study over Chong-Fly architectures and controllers.
@@ -68,15 +69,15 @@ def run_optuna_study(
     if not HAS_OPTUNA:
         raise ImportError("Optuna is not installed. Run: pip install optuna")
 
-    study = create_study(study_name=study_name, seed=seed)
+    study = create_study(study_name=study_name, storage=storage,seed=seed)
 
     def _trial_obj(trial: optuna.Trial) -> float:
         return objective(
             trial=trial,
             dataset_path=dataset_path,
             pretrain=pretrain,
-            eval_steps=eval_steps,
             seed=seed + trial.number,
+            device=device,
         )
 
     study.optimize(_trial_obj, n_trials=n_trials)
@@ -88,19 +89,24 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, default=10, help="Number of optimization trials")
     parser.add_argument("--dataset", type=str, default="data/reflex_dataset.pt", help="Reflex dataset path")
     parser.add_argument("--no-pretrain", action="store_true", help="Disable behavioral cloning pre-training")
-    parser.add_argument("--eval-steps", type=int, default=100, help="Simulation steps per trial")
     parser.add_argument("--seed", type=int, default=42, help="RNG seed")
+    parser.add_argument("--device", type=str, default="auto", help="Compute device (auto, cuda, cpu)")
+    parser.add_argument("--study-name", type=str, default="cfc_pareto_search", help="Ім'я експерименту")
+    parser.add_argument("--db", type=str, default="sqlite:///drone_optimization.db", help="Шлях до БД")
+
     args = parser.parse_args()
 
     data_file = os.path.join(_ROOT, args.dataset) if not os.path.isabs(args.dataset) else args.dataset
     print(f"Starting Optuna Study: {args.trials} trials, pretrain={not args.no_pretrain}, dataset={data_file}")
 
     study = run_optuna_study(
+        study_name=args.study_name,
         n_trials=args.trials,
+        storage=args.db,
         dataset_path=data_file,
         pretrain=not args.no_pretrain,
-        eval_steps=args.eval_steps,
         seed=args.seed,
+        device=args.device,
     )
 
     print("\n" + "=" * 60)
