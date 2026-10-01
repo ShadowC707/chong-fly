@@ -65,6 +65,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from configs.flight_config import DEFAULT_DT
+
 
 # ---------------------------------------------------------------------------
 # Utility: LeCun tanh  (Yann LeCun 1998 — better-conditioned than plain tanh)
@@ -105,7 +107,7 @@ class _SparseTopologyHook:
         self.mask = mask          # (k, k) bool tensor on same device as param
 
     def __call__(self, grad: torch.Tensor) -> torch.Tensor:
-        return grad * self.mask
+        return grad * self.mask.to(grad.device)
 
 
 # ---------------------------------------------------------------------------
@@ -149,7 +151,7 @@ class BiologicalCfCCell(nn.Module):
         backbone_act: str = "lecun_tanh",
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
-        dt: float = 0.004,
+        dt: float = DEFAULT_DT,
         solver_type: str = "CfC",
         sensor_indices: Optional[dict] = None,
         motor_indices: Optional[dict] = None,
@@ -162,7 +164,7 @@ class BiologicalCfCCell(nn.Module):
         self.input_size     = input_size
         self.mode           = mode
         self.solver_type    = solver_type
-        if (solver_type == "Euler_dt_0.02" or solver_type.lower() == "euler_dt_0.02") and dt == 0.004:
+        if (solver_type == "Euler_dt_0.02" or solver_type.lower() == "euler_dt_0.02") and dt == DEFAULT_DT:
             self.default_dt = 0.02
         else:
             self.default_dt = dt
@@ -534,7 +536,7 @@ def build_network_from_meta(
     backbone_act: str = "lecun_tanh",
     backbone_dropout: float = 0.0,
     tau_init: float = 0.1,
-    dt: float = 0.004,
+    dt: float = DEFAULT_DT,
     return_sequences: bool = False,
 ) -> BiologicalCfCNetwork:
     """

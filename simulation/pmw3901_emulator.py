@@ -20,6 +20,10 @@ import math
 from typing import Optional, Tuple
 import numpy as np
 
+from configs.flight_config import (
+    SENSORS,
+)
+
 
 class PMW3901FlowSensor:
     """
@@ -28,11 +32,11 @@ class PMW3901FlowSensor:
 
     def __init__(
         self,
-        min_altitude: float = 0.08,     # minimum sensing distance (meters)
-        max_altitude: float = 3.50,     # maximum tracking altitude (meters)
-        max_flow_rate: float = 4.0,     # maximum angular flow rate (rad/s) for +/- 1.0 normalization
-        derotate_with_gyro: bool = True,# subtract angular velocity (p, q)
-        noise_std: float = 0.01,        # Gaussian measurement noise std
+        min_altitude: float = SENSORS.flow_min_altitude_m,     # minimum sensing distance (meters)
+        max_altitude: float = SENSORS.flow_max_altitude_m,     # maximum tracking altitude (meters)
+        max_flow_rate: float = SENSORS.flow_max_rate_rads,     # maximum angular flow rate (rad/s) for +/- 1.0 normalization
+        derotate_with_gyro: bool = True,                       # subtract angular velocity (p, q)
+        noise_std: float = SENSORS.flow_noise_std,             # Gaussian measurement noise std
     ):
         self.min_altitude = min_altitude
         self.max_altitude = max_altitude

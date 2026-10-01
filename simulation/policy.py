@@ -75,27 +75,29 @@ except (ImportError, AttributeError):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Constants
+# Constants (imported from centralized config)
 # ─────────────────────────────────────────────────────────────────────────────
 
-SENSOR_DIM_BASE = 66        # 2 flow + 64 ToF
-MEMORY_DIM      = 8         # 8-sector egocentric ring buffer
-SENSOR_DIM      = 74        # 2 flow + 64 ToF + 8 memory (was 66)
-FLOW_DIM        = 2         # FlowX, FlowY
-TOF_DIM         = 64        # 8×8 ToF grid
-N_CONTROLS      = 4         # throttle, roll, pitch, yaw
+from configs.flight_config import (
+    SENSOR_DIM_BASE,
+    MEMORY_DIM,
+    SENSOR_DIM,
+    FLOW_DIM,
+    TOF_DIM,
+    N_CONTROLS,
+    PWM_MIN,
+    PWM_MID,
+    PWM_MAX,
+    PWM_HALF,
+    CH_THROTTLE,
+    CH_ROLL,
+    CH_PITCH,
+    CH_YAW,
+    CHANNEL_KEYS,
+    DEFAULT_DT,
+    MEMORY_DEFAULT_DISTANCE,
+)
 
-# RC PWM limits (µs)
-PWM_MIN       = 1000.0
-PWM_MID       = 1500.0
-PWM_MAX       = 2000.0
-PWM_HALF      = 500.0       # half-swing for attitude channels
-
-# Channel indices
-CH_THROTTLE   = 0
-CH_ROLL       = 1
-CH_PITCH      = 2
-CH_YAW        = 3
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -166,7 +168,7 @@ class SensorInputLayer(nn.Module):
             parts.append(np.asarray(memory_ring, dtype=np.float32).ravel()[:MEMORY_DIM])
 
         raw = np.concatenate(parts)
-        return torch.from_numpy(raw).unsqueeze(0)
+        return torch.from_numpy(raw).unsqueeze(0).to(self.gain.device)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -193,7 +195,7 @@ class DNProjectionHead(nn.Module):
     """
 
     # Canonical channel ordering
-    _CHANNEL_KEYS = ("throttle", "roll", "pitch", "yaw")
+    _CHANNEL_KEYS = CHANNEL_KEYS
 
     def __init__(
         self,
@@ -350,6 +352,7 @@ class ChongFlyMSPPolicy(nn.Module):
         self.cfc_network   = cfc_network
         self.dn_head       = DNProjectionHead(cell.hidden_size, cell.motor_indices)
         self.pwm_layer     = PWMOutputLayer()
+        self.default_dt    = getattr(cell, "default_dt", DEFAULT_DT)
 
         # Cache for stateful inference
         self._hx: Optional[torch.Tensor] = None
@@ -477,7 +480,7 @@ class ChongFlyMSPPolicy(nn.Module):
         backbone_act: str = "lecun_tanh",
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
-        dt: float = 0.004,
+        dt: float = DEFAULT_DT,
         solver_type: str = "CfC",
         pruning_sparsity: Optional[float] = None,
         ablate_cx: Optional[bool] = None,
@@ -521,6 +524,6 @@ class ChongFlyMSPPolicy(nn.Module):
 
     def extra_repr(self) -> str:
         k = self.cfc_network.cell.hidden_size
-        return (f"sensor_dim={SENSOR_DIM}, hidden={k}, "
-                f"output=4×PWM[1000–2000µs], "
+        return (f"sensor_dim={self.sensor_layer.sensor_dim}, hidden={k}, "
+                f"output={N_CONTROLS}×PWM[{int(PWM_MIN)}–{int(PWM_MAX)}µs], "
                 f"mode={self.cfc_network.cell.mode}")
