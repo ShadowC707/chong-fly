@@ -95,7 +95,7 @@ from configs.flight_config import (
     CH_YAW,
     CHANNEL_KEYS,
     DEFAULT_DT,
-    MEMORY_DEFAULT_DISTANCE,
+    MEMORY_DEFAULT_DISTANCE, PWM_HOVER,
 )
 
 
@@ -234,6 +234,15 @@ class DNProjectionHead(nn.Module):
 
         nn.init.xavier_uniform_(self.proj.weight)
         nn.init.zeros_(self.proj.bias)
+
+        # ---------------- ДОДАТИ ЦЕ ----------------
+        # Зміщуємо стартовий bias для Throttle, щоб Sigmoid одразу видавав PWM_HOVER
+        import math
+        target_th = (PWM_HOVER - PWM_MIN) / (PWM_MAX - PWM_MIN)
+        target_th = max(0.001, min(0.999, target_th))  # Safe clamp
+        init_bias = math.log(target_th / (1.0 - target_th))  # Inverse sigmoid
+        self.proj.bias.data[CH_THROTTLE] = init_bias
+        # -------------------------------------------
 
     def _resolve_key(self, key: str) -> list[int]:
         """

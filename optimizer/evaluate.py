@@ -91,7 +91,7 @@ from configs.flight_config import (
     MAX_SIM_TIME_S,
     CONTROL_DT,
     STAGNATION_TIME_LIMIT_S,
-    MIN_SPEED_HOVER_MPS,
+    MIN_SPEED_HOVER_MPS, TOF_RAYCASTER_MAX_RANGE_M,
 )
 
 
@@ -481,13 +481,7 @@ def simulate_policy_rollout(
         except TypeError:
             step_res = env.step(pwm)
 
-        # Безперервний респавн стіни під час rollout
-        if hasattr(env, "obstacle_dist"):
-            if env.obstacle_dist < OBSTACLE_DETECTION_THRESHOLD_M and abs(delta_yaw) > OBSTACLE_CLEARED_YAW_THRESHOLD_RAD:
-                walls_avoided += 1
-                env.obstacle_dist = float(np.random.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
-            elif env.obstacle_dist <= SENSORS.tof_min_clamp_dist:  # Якщо не встиг і майже врізався
-                pass  # Краш відпрацює нижче
+        # Краш відпрацює нижче якщо obstacle_dist <= OBSTACLE_CRASH_DIST_M
 
         next_obs, step_cost, done, info = step_res
         if isinstance(next_obs, tuple) and len(next_obs) == 2:
@@ -499,7 +493,9 @@ def simulate_policy_rollout(
             obs_tof = next_obs[FLOW_DIM:(FLOW_DIM + TOF_DIM)]
 
         # ── Неперервне середовище: ухилення від перешкод та їх респавн ──
-        dist = float(getattr(env, "obstacle_dist", 99.0))
+        dist = float(np.min(obs_tof)) * TOF_RAYCASTER_MAX_RANGE_M #??? look for a fix later???
+
+
         if dist < OBSTACLE_DETECTION_THRESHOLD_M and not in_evasion:
             in_evasion = True
             evasion_yaw_initial = current_yaw
@@ -579,19 +575,33 @@ def simulate_policy_rollout(
         #}
 
     # Multi-Objective Vector (Pareto Front)
-    # 1. Hardware Optimization (Minimize model size / non-zero weights)
+    # 1. Hardware Optimization: Рахуємо ТІЛЬКИ синапси нейроконтролера
     hardware_obj = 0.0
-    if hasattr(policy, "parameters"):
+    # Перевіряємо, чи є у політики виділене ядро (cfc_network), щоб ігнорувати сенсорний MLP
+    if hasattr(policy, "cfc_network"):
+        hardware_obj = float(sum((p != 0).sum().item() for p in policy.cfc_network.parameters()))
+    elif hasattr(policy, "parameters"):
         hardware_obj = float(sum((p != 0).sum().item() for p in policy.parameters()))
-        
-    # 2. Smoothness (Minimize Jitter on Pitch/Roll ONLY)
+
+    # 2 & 3. Базові метрики Jitter та Exploration
     jitter_obj = float(jitter_pr)
-    
-    # 3. Exploration / Survival (Maximize unique voxels visited)
-    if survival_time_s < 2.0: # HYPERPARAMETER??????
-        exploration_obj = 0.0
-    else:
-        exploration_obj = float(coverage_count)
+    exploration_obj = float(coverage_count)
+
+    # --- М'ЯКІ ШТРАФИ (Замість Kill-Switches) ---
+    if is_crash:
+        jitter_obj *= 5.0  # Якщо розбився - це НЕ плавний політ! Штрафуємо.
+    if is_saturated:
+        jitter_obj *= 2.0  # Мотори задихалися - збільшуємо штраф Jitter.
+    if is_crab:
+        exploration_obj *= 0.1  # Летів боком - його вокселі не рахуються як "усвідомлене дослідження".
+
+    # --- БОНУС ЗА РОЗУМ (Вирішує проблему "Крилатої ракети") ---
+    # За кожну уникнуту стіну даємо еквівалент 10-ти нових вокселів
+    exploration_obj += float(walls_avoided * 10.0)
+
+    # Захист від миттєвої смерті
+    warmup_penalty = min(1.0, survival_time_s / 2.0)
+    exploration_obj = exploration_obj * warmup_penalty
 
     pareto_vector = (hardware_obj, jitter_obj, exploration_obj)
 
@@ -612,6 +622,7 @@ def simulate_policy_rollout(
         "impact_energy_j": float(telemetry_summary["impact_energy_j"]),
         "forward_ratio_median": float(telemetry_summary["forward_ratio_median"]),
         "is_crab_flight": False,
+        "wall_avoidance_rate": float(walls_avoided / max(0.1, survival_time_s)),
         "memory_sectors": memory_8.copy(),
     }
 
@@ -801,19 +812,39 @@ def objective(
 
     total_eval_steps = int(MAX_SIM_TIME_S / CONTROL_DT)
 
-    pareto_vector, metrics = simulate_policy_rollout(
-        policy=policy,
-        eval_steps=total_eval_steps,
-        dt=CONTROL_DT,
-        seed=seed,
-    )
+    # --- МУЛЬТИ-СІД ОЦІНКА (Tier 1) ---
+    test_seeds = [seed, seed + 100, seed + 200]  # Три різні стартові умови (шуми)
+
+    total_hw, total_jitter, total_expl = 0.0, 0.0, 0.0
+    final_metrics = {}
+
+    for s in test_seeds:
+        pareto_s, metrics_s = simulate_policy_rollout(
+            policy=policy,
+            eval_steps=total_eval_steps,
+            dt=CONTROL_DT,
+            seed=s,
+        )
+        total_hw += pareto_s[0]
+        total_jitter += pareto_s[1]
+        total_expl += pareto_s[2]
+        final_metrics = metrics_s  # Зберігаємо метрики останнього польоту для логів
+
+    # Усереднюємо Парето-вектор
+    num_seeds = len(test_seeds)
+    pareto_vector = (total_hw / num_seeds, total_jitter / num_seeds, total_expl / num_seeds)
 
     if trial is not None and hasattr(trial, "set_user_attr"):
-        # Автоматично зберігаємо ВСІ метрики, які зібрав симулятор
-        for key, value in metrics.items():
-            # Optuna не вміє зберігати масиви в БД, тому переводимо пам'ять у рядок
+        # Автоматично зберігаємо ВСІ метрики останнього польоту
+        for key, value in final_metrics.items():
             if key == "memory_sectors":
                 value = str(value)
             trial.set_user_attr(key, value)
+
+    if final_metrics.get("survival_time_s", 0) >= (MAX_SIM_TIME_S - 0.1) and final_metrics.get("walls_avoided", 0) > 0:
+        os.makedirs("champions", exist_ok=True)
+        trial_num = trial.number if trial else "test"
+        save_path = f"champions/champion_trial_{trial_num}_w{final_metrics['walls_avoided']}.pt"
+        torch.save(policy.state_dict(), save_path)
 
     return pareto_vector
