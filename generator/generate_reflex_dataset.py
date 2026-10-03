@@ -28,7 +28,8 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from simulation.memory import EgocentricMemoryWrapper, SECTOR_FRONT
-from optimizer.evaluate import DroneSimulationEnv
+#from optimizer.evaluate import DroneSimulationEnv
+from simulation.drone_env import DroneSimulationEnv
 from configs.flight_config import (
     SENSOR_DIM,
     FLOW_DIM,
@@ -60,6 +61,8 @@ from configs.flight_config import (
     TURN_CLEARANCE_DIST_M,
     TURN_MAX_STEPS,
     OBSTACLE_CLEARANCE_MIN_M,
+    SENSORS,
+    TOF_MAX_RANGE_M,
 )
 
 
@@ -208,21 +211,36 @@ def generate_reflex_dataset(
 
     for ep in range(num_episodes):
         ep_seed = int(rng.integers(0, 1_000_000))
-        env = DroneSimulationEnv(dt=dt)
-        obs_flow, obs_tof = env.reset(seed=ep_seed)
-        env.obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
+        env = DroneSimulationEnv(dt=dt, engine="standalone", headless=True)
+
+        obs = env.reset(seed=ep_seed)
+        obs_flow = obs[:FLOW_DIM]
+        
+        obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
+        
+        def get_yaw() -> float:
+            q = env.physics.quat
+            return float(math.atan2(2.0 * (q[0] * q[3] + q[1] * q[2]), 1.0 - 2.0 * (q[2]**2 + q[3]**2)))
+            
+        def mock_tof(dist: float) -> np.ndarray:
+            grid = np.ones((TOF_ROWS, TOF_COLS), dtype=np.float32)
+            norm_dist = np.clip(dist / TOF_MAX_RANGE_M, 0.0, 1.0)
+            grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end] = norm_dist
+            return grid.ravel()
+
+        obs_tof = mock_tof(obstacle_dist)
 
         memory_wrapper = EgocentricMemoryWrapper(decay_rate=MEMORY_DECAY_RATE)
         expert.reset()
 
-        last_yaw = float(env.att[2])
+        last_yaw = get_yaw()
         turn_steps = 0
         ep_x: List[np.ndarray] = []
         ep_y: List[np.ndarray] = []
 
         for step in range(seq_len):
             # 1. Update Egocentric Ring Buffer
-            current_yaw = float(env.att[2])
+            current_yaw = get_yaw()
             delta_yaw = current_yaw - last_yaw
             delta_yaw = (delta_yaw + math.pi) % (2.0 * math.pi) - math.pi
             last_yaw = current_yaw
@@ -243,28 +261,36 @@ def generate_reflex_dataset(
             ep_y.append(pwm_expert)
 
             # 4. Advance physics simulation
-            (obs_flow, obs_tof), cost, done, info = env.step(pwm_expert, dt=dt)
+            obs_66, cost, done, info = env.step(pwm_expert)
+            
+            vel = env.physics.vel
+            v_forward = float(vel[0] * math.cos(current_yaw) + vel[1] * math.sin(current_yaw))
+            obstacle_dist = max(0.0, obstacle_dist - v_forward * dt)
+            
+            obs_flow = obs_66[:FLOW_DIM]
+            obs_tof = mock_tof(obstacle_dist)
 
             # Continuous reflex environment: complete turn maneuver and respawn next obstacle
             if expert.latched_turn is not None:
                 turn_steps += 1
-                if turn_steps >= TURN_MAX_STEPS or env.obstacle_dist <= TURN_CLEARANCE_DIST_M:
+                if turn_steps >= TURN_MAX_STEPS or obstacle_dist <= TURN_CLEARANCE_DIST_M:
                     expert.latched_turn = None
                     turn_steps = 0
-                    env.obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
-                    # Clear front ToF for new path ahead
+                    obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
                     obs_tof = np.ones(TOF_DIM, dtype=np.float32)
             else:
                 turn_steps = 0
-                if env.obstacle_dist <= OBSTACLE_CLEARANCE_MIN_M:
-                    env.obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
+                if obstacle_dist <= OBSTACLE_CLEARANCE_MIN_M:
+                    obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
                     obs_tof = np.ones(TOF_DIM, dtype=np.float32)
 
             if done:
                 # If crashed or tumbled, reset state to maintain full sequence length
-                obs_flow, obs_tof = env.reset(seed=ep_seed + step + 1)
-                env.obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
-                last_yaw = float(env.att[2])
+                obs = env.reset(seed=ep_seed + step + 1)
+                obs_flow = obs[:FLOW_DIM]
+                obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
+                obs_tof = mock_tof(obstacle_dist)
+                last_yaw = get_yaw()
                 expert.reset()
                 turn_steps = 0
 

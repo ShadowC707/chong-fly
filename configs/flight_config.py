@@ -61,7 +61,7 @@ class ActuatorConfig:
     pwm_max: float = 2000.0                 # Maximum RC PWM command (µs)
     pwm_half: float = 500.0                 # Half-swing deflection (µs) for attitude
 
-    pwm_hover: float = 1500.0               # Hover baseline PWM (µs)
+    pwm_hover: float = 1213.0               # Hover baseline PWM (µs)
     pwm_level_roll: float = 1500.0          # Neutral roll PWM (µs)
     pwm_neutral_yaw: float = 1500.0         # Neutral yaw PWM (µs)
     pwm_cruise_pitch: float = 1600.0        # Forward cruising pitch PWM (µs)
