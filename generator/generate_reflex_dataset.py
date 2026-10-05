@@ -1,340 +1,241 @@
-"""
-generator/generate_reflex_dataset.py
-====================================
-Offline Reflex Dataset Generator for Behavioral Cloning (Chong-Fly).
-
-Generates expert flight demonstrations teaching collision avoidance reflexes:
-- When front clearance < 0.8 m: brake (Pitch = 1300) and sharp turn (Yaw = 1900 or 1100).
-- When front clearance >= 0.8 m: advance (Pitch = 1600, Yaw = 1500).
-- State Latching (Hysteresis): prevents high-frequency chattering mid-turn.
-- Stochasticity: 50% left / 50% right turn probability, plus Gaussian actuator noise (+-20 PWM).
-- Sequential Format: outputs (X: [N, T, 74], Y: [N, T, 4]) sequences for recurrent CfC BPTT.
-"""
-
+"""Collect clean reflex targets in geometric scenes; never splice terminated episodes."""
 from __future__ import annotations
-
 import argparse
+import json
 import math
 import os
 import sys
-from typing import Any, Dict, List, Optional, Tuple
-
+from pathlib import Path
+from collections import Counter
+from copy import deepcopy
 import numpy as np
 import torch
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_ROOT = os.path.abspath(os.path.join(_HERE, ".."))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
-from simulation.memory import EgocentricMemoryWrapper, SECTOR_FRONT
-#from optimizer.evaluate import DroneSimulationEnv
-from simulation.drone_env import DroneSimulationEnv
 from configs.flight_config import (
-    SENSOR_DIM,
-    FLOW_DIM,
-    TOF_DIM,
-    TOF_ROWS,
-    TOF_COLS,
-    MEMORY_DIM,
-    N_CONTROLS,
-    PWM_MIN,
-    PWM_MAX,
-    PWM_HOVER,
-    PWM_LEVEL_ROLL,
-    PWM_CRUISE_PITCH,
-    PWM_NEUTRAL_YAW,
-    DEFAULT_DT,
-    APF_DISTANCE_THRESHOLD_M,
-    APF_MAX_SENSOR_RANGE_M,
-    APF_K_REPULSIVE,
-    APF_NOISE_STD_PWM,
-    APF_MAX_PITCH_BRAKE_PWM,
-    APF_REPULSION_SCALE,
-    APF_YAW_GAIN,
+    SENSOR_DIM, PWM_MIN, PWM_MAX, PWM_HOVER, PWM_MID, PWM_LEVEL_ROLL,
+    PWM_CRUISE_PITCH, PWM_NEUTRAL_YAW, DEFAULT_DT, CONTROL_DT, COORDINATE_VERSION,
+    TOF_RAYCASTER_MAX_RANGE_M, APF_DISTANCE_THRESHOLD_M, APF_NOISE_STD_PWM,
+    APF_K_REPULSIVE, APF_MAX_PITCH_BRAKE_PWM, APF_REPULSION_SCALE, APF_YAW_GAIN,
     APF_MIN_DIST_CLAMP,
-    MEMORY_DECAY_RATE,
-    OBSTACLE_INITIAL_DIST_MIN_M,
-    OBSTACLE_INITIAL_DIST_MAX_M,
-    OBSTACLE_RESPAWN_DIST_MIN_M,
-    OBSTACLE_RESPAWN_DIST_MAX_M,
-    TURN_CLEARANCE_DIST_M,
-    TURN_MAX_STEPS,
-    OBSTACLE_CLEARANCE_MIN_M,
-    SENSORS,
-    TOF_MAX_RANGE_M,
 )
+from generator.reflex_contract import (
+    DATASET_VERSION, TEACHER_VERSION, DEFAULT_DATASET_PATH, SCENARIOS, BEHAVIORS, REQUIRED_PATHS,
+)
+from simulation.drone_env import DroneSimulationEnv, RoomBoundaries, BoxObstacle
+from simulation.memory import EgocentricMemoryWrapper
+from simulation.altitude_control import AltitudeHold, sample_from_observation
+from simulation.control_contract import control_contract
 
 
 class ExpertReflexPolicy:
-    """
-    Artificial Potential Fields (APF) Expert flight controller.
-    Provides a continuous, differentiable target for Behavioral Cloning using Khatib's formula.
-    """
+    """Flow damping, smooth braking, deterministic latched escape.
 
-    def __init__(
-        self,
-        distance_threshold_m: float = APF_DISTANCE_THRESHOLD_M,
-        max_sensor_range_m: float = APF_MAX_SENSOR_RANGE_M,
-        noise_std_pwm: float = APF_NOISE_STD_PWM,
-        seed: Optional[int] = None,
-        k_repulsive: float = APF_K_REPULSIVE,
-        max_pitch_brake_pwm: float = APF_MAX_PITCH_BRAKE_PWM,
-        repulsion_scale: float = APF_REPULSION_SCALE,
-        yaw_gain: float = APF_YAW_GAIN,
-        min_dist_clamp: float = APF_MIN_DIST_CLAMP,
-        pwm_hover: float = PWM_HOVER,
-        pwm_level_roll: float = PWM_LEVEL_ROLL,
-        pwm_cruise_pitch: float = PWM_CRUISE_PITCH,
-        pwm_neutral_yaw: float = PWM_NEUTRAL_YAW,
-        pwm_min: float = PWM_MIN,
-        pwm_max: float = PWM_MAX,
-    ):
-        self.distance_threshold_m = float(distance_threshold_m)
-        self.max_sensor_range_m = float(max_sensor_range_m)
-        # Normalized distance threshold (d_0) in [0, 1]
-        self.d0 = self.distance_threshold_m / self.max_sensor_range_m
-        self.noise_std_pwm = float(noise_std_pwm)
+    RC yaw is right-positive; image columns run left to right. A symmetric
+    threat selects right, with no hidden random label. Sustained clearance
+    releases the turn. This heuristic is not a verified flight controller.
+    """
+    def __init__(self, distance_threshold_m=APF_DISTANCE_THRESHOLD_M,
+                 max_sensor_range_m=TOF_RAYCASTER_MAX_RANGE_M,
+                 noise_std_pwm=APF_NOISE_STD_PWM, seed=None,
+                 k_repulsive=APF_K_REPULSIVE, max_pitch_brake_pwm=APF_MAX_PITCH_BRAKE_PWM,
+                 repulsion_scale=APF_REPULSION_SCALE, yaw_gain=APF_YAW_GAIN,
+                 min_dist_clamp=APF_MIN_DIST_CLAMP, pwm_hover=PWM_HOVER,
+                 pwm_level_roll=PWM_LEVEL_ROLL, pwm_cruise_pitch=PWM_CRUISE_PITCH,
+                 pwm_neutral_yaw=PWM_NEUTRAL_YAW, pwm_min=PWM_MIN, pwm_max=PWM_MAX,
+                 flow_gain_pwm=400., release_margin_m=.15, clear_hold_s=.12):
+        settings = dict(distance_threshold_m=distance_threshold_m, max_sensor_range_m=max_sensor_range_m,
+            noise_std_pwm=noise_std_pwm, k_repulsive=k_repulsive, max_pitch_brake_pwm=max_pitch_brake_pwm,
+            repulsion_scale=repulsion_scale, yaw_gain=yaw_gain, min_dist_clamp=min_dist_clamp,
+            pwm_hover=pwm_hover, pwm_level_roll=pwm_level_roll, pwm_cruise_pitch=pwm_cruise_pitch,
+            pwm_neutral_yaw=pwm_neutral_yaw, pwm_min=pwm_min, pwm_max=pwm_max,
+            flow_gain_pwm=flow_gain_pwm, release_margin_m=release_margin_m, clear_hold_s=clear_hold_s)
+        for key, value in settings.items():
+            if not np.isfinite(value): raise ValueError(f'{key} must be finite')
+            setattr(self, key, float(value))
+        self.parameters = {key: float(value) for key, value in settings.items()}
+        if (not 0 < distance_threshold_m < max_sensor_range_m or min_dist_clamp <= 0
+                or repulsion_scale <= 0 or clear_hold_s <= 0 or release_margin_m < 0
+                or noise_std_pwm < 0 or flow_gain_pwm < 0 or pwm_min >= pwm_max
+                or k_repulsive < 0 or yaw_gain < 0 or max_pitch_brake_pwm < 0):
+            raise ValueError('Invalid teacher range, gain or timing')
+        self.d0 = distance_threshold_m / max_sensor_range_m
         self.rng = np.random.default_rng(seed)
-        self.k_repulsive = float(k_repulsive)
-        self.max_pitch_brake_pwm = float(max_pitch_brake_pwm)
-        self.repulsion_scale = float(repulsion_scale)
-        self.yaw_gain = float(yaw_gain)
-        self.min_dist_clamp = float(min_dist_clamp)
-        self.pwm_hover = float(pwm_hover)
-        self.pwm_level_roll = float(pwm_level_roll)
-        self.pwm_cruise_pitch = float(pwm_cruise_pitch)
-        self.pwm_neutral_yaw = float(pwm_neutral_yaw)
-        self.pwm_min = float(pwm_min)
-        self.pwm_max = float(pwm_max)
+        self.nx = np.tile(np.linspace(-1., 1., 8), (8, 1)).ravel()
+        self.reset()
 
-        self.latched_turn = None  # Retained for compatibility with generator loop
-
-        # Precompute normals for the 8x8 ToF grid
-        # Columns 0..7 map to horizontal normal nx from -1.0 (left) to 1.0 (right)
-        cols = np.linspace(-1.0, 1.0, TOF_COLS)
-        self.nx = np.tile(cols, (TOF_ROWS, 1)).flatten()  # 64-D array of x-normals
-
-    def reset(self) -> None:
+    def reset(self):
         self.latched_turn = None
+        self._clear_elapsed = 0.
 
-    def step(self, obs_74: np.ndarray) -> np.ndarray:
-        """
-        Produces expert 4-D PWM command [throttle, roll, pitch, yaw] based on APF.
-        """
-        obs = np.asarray(obs_74, dtype=np.float32).ravel()
-
-        throttle = self.pwm_hover
-        roll = self.pwm_level_roll
-        pitch_base = self.pwm_cruise_pitch
-        yaw_base = self.pwm_neutral_yaw
-
-        # ToF Grid (first 64 elements of the depth part)
-        tof = obs[FLOW_DIM:(FLOW_DIM + TOF_DIM)] if obs.size >= (FLOW_DIM + TOF_DIM) else np.ones(TOF_DIM, dtype=np.float32)
-
-        # Protection against division by zero
+    def step(self, obs_74, dt=CONTROL_DT):
+        obs = np.asarray(obs_74, dtype=np.float32)
+        if (obs.shape != (SENSOR_DIM,) or not np.isfinite(obs).all()
+                or np.any(abs(obs[:2]) > 1) or np.any(obs[2:] < 0) or np.any(obs[2:] > 1)):
+            raise ValueError('Expected finite normalized observation [flow(2), ToF(64), memory(8)]')
+        if not np.isfinite(dt) or dt <= 0: raise ValueError('dt must be positive and finite')
+        tof = obs[2:66]
         d = np.maximum(tof, self.min_dist_clamp)
-
-        active_mask = d < self.d0
-
-        if np.any(active_mask):
-            d_active = d[active_mask]
-            
-            # Khatib's Formula: F_i = k * (1/d_i - 1/d0) / (d_i^2)
-            force_magnitudes = self.k_repulsive * (1.0 / d_active - 1.0 / self.d0) * (1.0 / (d_active ** 2))
-            
-            # Use mean instead of sum to prevent 64x blowup
-            mean_repulsion = float(np.mean(force_magnitudes))
-            
-            # Directional force for Yaw.
-            # If obstacle is at nx (e.g., -1 left), it pushes us right (positive force).
-            force_x = float(np.mean(force_magnitudes * (-self.nx[active_mask])))
-            
-            # Continuous smooth braking using rational saturation to prevent violent jumps near d -> 0
-            braking = self.max_pitch_brake_pwm * (mean_repulsion / (self.repulsion_scale + mean_repulsion))
-            pitch = pitch_base - braking
-            
-            # Yaw turn
-            yaw = yaw_base + force_x * self.yaw_gain
-        else:
-            pitch = pitch_base
-            yaw = yaw_base
-
-        pwm = np.array([throttle, roll, pitch, yaw], dtype=np.float32)
-
-        if self.noise_std_pwm > 0.0:
-            noise = self.rng.normal(0.0, self.noise_std_pwm, size=N_CONTROLS).astype(np.float32)
-            pwm += noise
-
+        active = d < self.d0
+        force = np.zeros(64)
+        force[active] = self.k_repulsive * (1/d[active] - 1/self.d0) / d[active]**2
+        mean_repulsion = float(force[active].mean()) if active.any() else 0.
+        force_x = float((force * -self.nx)[active].mean()) if active.any() else 0.
+        braking = self.max_pitch_brake_pwm * mean_repulsion / (self.repulsion_scale + mean_repulsion)
+        if self.latched_turn is None and active.any():
+            self.latched_turn = 1 if force_x >= -1e-6 else -1
+        clear = float(tof.min()) * self.max_sensor_range_m >= self.distance_threshold_m + self.release_margin_m
+        self._clear_elapsed = self._clear_elapsed + dt if clear else 0.
+        if self._clear_elapsed + 1e-9 >= self.clear_hold_s:
+            self.latched_turn = None
+        yaw = self.pwm_neutral_yaw
+        if self.latched_turn is not None:
+            yaw += self.latched_turn * np.clip(abs(force_x) * self.yaw_gain, 120., 350.)
+        pwm = np.array([self.pwm_hover,
+                        self.pwm_level_roll + self.flow_gain_pwm * obs[1],
+                        self.pwm_cruise_pitch - braking - self.flow_gain_pwm * obs[0], yaw], dtype=np.float32)
+        if self.noise_std_pwm:
+            pwm += self.rng.normal(0, self.noise_std_pwm, 4).astype(np.float32)
         return np.clip(pwm, self.pwm_min, self.pwm_max)
 
 
-def generate_reflex_dataset(
-    num_episodes: int = 50,
-    seq_len: int = 200,
-    dt: float = DEFAULT_DT,
-    distance_threshold_m: float = APF_DISTANCE_THRESHOLD_M,
-    noise_std_pwm: float = APF_NOISE_STD_PWM,
-    seed: int = 42,
-    output_path: Optional[str] = None,
-    pwm_hover: float = PWM_HOVER,
-    pwm_level_roll: float = PWM_LEVEL_ROLL,
-    pwm_cruise_pitch: float = PWM_CRUISE_PITCH,
-    pwm_neutral_yaw: float = PWM_NEUTRAL_YAW,
-    pwm_min: float = PWM_MIN,
-    pwm_max: float = PWM_MAX,
-) -> Dict[str, Any]:
-    """
-    Generates demonstration sequences of (X: 74-D, Y: 4-D PWM) using ExpertReflexPolicy.
-
-    Returns:
-        dict with keys:
-          'X': torch.Tensor of shape (num_episodes, seq_len, 74)
-          'Y': torch.Tensor of shape (num_episodes, seq_len, 4)
-          'metadata': dict of training parameters
-    """
+def _make_scenario(name, seed):
+    """The same real boxes participate in raycasting and collision detection."""
     rng = np.random.default_rng(seed)
-    expert = ExpertReflexPolicy(
-        distance_threshold_m=distance_threshold_m,
-        noise_std_pwm=noise_std_pwm,
-        seed=seed,
-        pwm_hover=pwm_hover,
-        pwm_level_roll=pwm_level_roll,
-        pwm_cruise_pitch=pwm_cruise_pitch,
-        pwm_neutral_yaw=pwm_neutral_yaw,
-        pwm_min=pwm_min,
-        pwm_max=pwm_max,
-    )
+    env = DroneSimulationEnv(dt=DEFAULT_DT, engine='standalone', headless=True,
+                             room=RoomBoundaries(-8, 8, -8, 8, 0, 4))
+    env.boxes, env.cylinders = [], []
+    if name.startswith('obstacle_'):
+        distance = float(rng.uniform(.45, .70))
+        y_min, y_max = {'obstacle_left': (.02, .5), 'obstacle_right': (-.5, -.02),
+                        'obstacle_center': (-.35, .35)}[name]
+        env.boxes = [BoxObstacle(distance, distance + .15, y_min, y_max, .2, 2.)]
+    env.reset(initial_pos=np.array([0., 0., 1.]), seed=seed)
+    env.physics.quat[:] = [1., 0., 0., 0.]
+    env.physics.vel[:] = [rng.uniform(.15, .35), 0, 0]
+    if name in {'drift_left', 'drift_right'}:
+        env.physics.vel[1] = rng.uniform(.35, .65) * (1 if name == 'drift_left' else -1)
+    if name in {'drift_forward', 'drift_backward'}:
+        env.physics.vel[0] = rng.uniform(1.4, 1.8) * (1 if name == 'drift_forward' else -1)
+    obs = env._sample_observation(elapsed_dt=0.)
+    return env, obs
 
-    all_x: List[np.ndarray] = []
-    all_y: List[np.ndarray] = []
 
+def _behavior(obs, action):
+    if action[3] > PWM_MID + 50: return 1
+    if action[3] < PWM_MID - 50: return 2
+    if obs[1] > .03: return 3
+    if obs[1] < -.03: return 4
+    if action[2] < PWM_MID: return 5
+    return 0
+
+
+def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
+                            distance_threshold_m=APF_DISTANCE_THRESHOLD_M,
+                            noise_std_pwm=APF_NOISE_STD_PWM, seed=42, output_path=None,
+                            pwm_hover=PWM_HOVER, pwm_level_roll=PWM_LEVEL_ROLL,
+                            pwm_cruise_pitch=PWM_CRUISE_PITCH, pwm_neutral_yaw=PWM_NEUTRAL_YAW,
+                            pwm_min=PWM_MIN, pwm_max=PWM_MAX):
+    """One continuous trajectory per row, explicit valid-prefix padding on termination.
+
+    dt is the policy period, a multiple of the 4 ms physics tick. Optional
+    Navigation noise perturbs execution only; Y stores clean expert labels.
+    Y[..., 0] is an unused interface placeholder, never a learning target.
+    Applied throttle comes exclusively from the range/attitude controller.
+    A telemetry fault aborts collection and does not publish a partial dataset.
+    Equal scenario allocation is supplemented with per-frame behavior counts.
+    """
+    if any(isinstance(n, bool) or not isinstance(n, int) or n <= 0 for n in (num_episodes, seq_len)):
+        raise ValueError('num_episodes and seq_len must be positive integers')
+    if not np.isfinite(dt) or dt <= 0: raise ValueError('dt must be positive and finite')
+    ratio = dt/DEFAULT_DT
+    if ratio < 1 or not math.isclose(ratio, round(ratio), abs_tol=1e-8, rel_tol=0):
+        raise ValueError('Control dt must be an integer multiple of physics dt')
+    if not np.isfinite(noise_std_pwm) or noise_std_pwm < 0:
+        raise ValueError('Execution noise must be finite and nonnegative')
+    rng = np.random.default_rng(seed)
+    X = np.zeros((num_episodes, seq_len, SENSOR_DIM), dtype=np.float32)
+    Y = np.full((num_episodes, seq_len, 4), PWM_MID, dtype=np.float32)
+    applied_actions = np.full_like(Y, PWM_MID)
+    valid = np.zeros((num_episodes, seq_len), dtype=bool)
+    behavior = np.full((num_episodes, seq_len), -1, dtype=np.int64)
+    scenarios, records = [], []
     for ep in range(num_episodes):
-        ep_seed = int(rng.integers(0, 1_000_000))
-        env = DroneSimulationEnv(dt=dt, engine="standalone", headless=True)
-
-        obs = env.reset(seed=ep_seed)
-        obs_flow = obs[:FLOW_DIM]
-        
-        obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
-        
-        def get_yaw() -> float:
-            q = env.physics.quat
-            return float(math.atan2(2.0 * (q[0] * q[3] + q[1] * q[2]), 1.0 - 2.0 * (q[2]**2 + q[3]**2)))
-            
-        def mock_tof(dist: float) -> np.ndarray:
-            grid = np.ones((TOF_ROWS, TOF_COLS), dtype=np.float32)
-            norm_dist = np.clip(dist / TOF_MAX_RANGE_M, 0.0, 1.0)
-            grid[SENSORS.tof_center_row_start:SENSORS.tof_center_row_end, SENSORS.tof_center_col_start:SENSORS.tof_center_col_end] = norm_dist
-            return grid.ravel()
-
-        obs_tof = mock_tof(obstacle_dist)
-
-        memory_wrapper = EgocentricMemoryWrapper(decay_rate=MEMORY_DECAY_RATE)
-        expert.reset()
-
-        last_yaw = get_yaw()
-        turn_steps = 0
-        ep_x: List[np.ndarray] = []
-        ep_y: List[np.ndarray] = []
-
-        for step in range(seq_len):
-            # 1. Update Egocentric Ring Buffer
-            current_yaw = get_yaw()
-            delta_yaw = current_yaw - last_yaw
-            delta_yaw = (delta_yaw + math.pi) % (2.0 * math.pi) - math.pi
-            last_yaw = current_yaw
-
-            memory_8 = memory_wrapper.update(obs_tof, delta_yaw_rad=delta_yaw)
-
-            # 2. Build 74-D observation vector
-            obs_74 = np.concatenate([
-                np.asarray(obs_flow, dtype=np.float32).ravel()[:FLOW_DIM],
-                np.asarray(obs_tof, dtype=np.float32).ravel()[:TOF_DIM],
-                np.asarray(memory_8, dtype=np.float32).ravel()[:MEMORY_DIM],
-            ])
-
-            # 3. Query expert action
-            pwm_expert = expert.step(obs_74)
-
-            ep_x.append(obs_74)
-            ep_y.append(pwm_expert)
-
-            # 4. Advance physics simulation
-            obs_66, cost, done, info = env.step(pwm_expert)
-            
-            vel = env.physics.vel
-            v_forward = float(vel[0] * math.cos(current_yaw) + vel[1] * math.sin(current_yaw))
-            obstacle_dist = max(0.0, obstacle_dist - v_forward * dt)
-            
-            obs_flow = obs_66[:FLOW_DIM]
-            obs_tof = mock_tof(obstacle_dist)
-
-            # Continuous reflex environment: complete turn maneuver and respawn next obstacle
-            if expert.latched_turn is not None:
-                turn_steps += 1
-                if turn_steps >= TURN_MAX_STEPS or obstacle_dist <= TURN_CLEARANCE_DIST_M:
-                    expert.latched_turn = None
-                    turn_steps = 0
-                    obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
-                    obs_tof = np.ones(TOF_DIM, dtype=np.float32)
-            else:
-                turn_steps = 0
-                if obstacle_dist <= OBSTACLE_CLEARANCE_MIN_M:
-                    obstacle_dist = float(rng.uniform(OBSTACLE_RESPAWN_DIST_MIN_M, OBSTACLE_RESPAWN_DIST_MAX_M))
-                    obs_tof = np.ones(TOF_DIM, dtype=np.float32)
-
-            if done:
-                # If crashed or tumbled, reset state to maintain full sequence length
-                obs = env.reset(seed=ep_seed + step + 1)
-                obs_flow = obs[:FLOW_DIM]
-                obstacle_dist = float(rng.uniform(OBSTACLE_INITIAL_DIST_MIN_M, OBSTACLE_INITIAL_DIST_MAX_M))
-                obs_tof = mock_tof(obstacle_dist)
-                last_yaw = get_yaw()
-                expert.reset()
-                turn_steps = 0
-
-        all_x.append(np.array(ep_x, dtype=np.float32))
-        all_y.append(np.array(ep_y, dtype=np.float32))
-
-    X_tensor = torch.from_numpy(np.array(all_x, dtype=np.float32))  # [N, T, 74]
-    Y_tensor = torch.from_numpy(np.array(all_y, dtype=np.float32))  # [N, T, 4]
-
-    dataset = {
-        "X": X_tensor,
-        "Y": Y_tensor,
-        "metadata": {
-            "num_episodes": num_episodes,
-            "seq_len": seq_len,
-            "dt": dt,
-            "sensor_dim": SENSOR_DIM,
-            "action_dim": N_CONTROLS,
-            "distance_threshold_m": distance_threshold_m,
-            "seed": seed,
-        },
-    }
-
+        name = SCENARIOS[ep % len(SCENARIOS)]
+        scenarios.append(name)
+        ep_seed = int(rng.integers(0, 2**31 - 1))
+        env, obs = _make_scenario(name, ep_seed)
+        expert = ExpertReflexPolicy(distance_threshold_m=distance_threshold_m,
+            max_sensor_range_m=env.tof.max_range, noise_std_pwm=0, seed=ep_seed,
+            pwm_hover=pwm_hover, pwm_level_roll=pwm_level_roll, pwm_cruise_pitch=pwm_cruise_pitch,
+            pwm_neutral_yaw=pwm_neutral_yaw, pwm_min=pwm_min, pwm_max=pwm_max)
+        memory = EgocentricMemoryWrapper()
+        altitude = AltitudeHold()
+        ticks, done, info = 0, False, {}
+        try:
+            for t in range(seq_len):
+                yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
+                ring = memory.update(obs[2:66], current_yaw_rad=-yaw)
+                x = np.concatenate([obs, ring]).astype(np.float32)
+                label = expert.step(x, dt=dt)
+                action = label.copy()
+                action[1:] = np.clip(action[1:] + rng.normal(0, noise_std_pwm, 3), pwm_min, pwm_max)
+                sample = sample_from_observation(env.get_isaac_obs())
+                action = altitude.apply(action, sample, now_s=ticks*DEFAULT_DT)
+                X[ep, t], Y[ep, t], valid[ep, t] = x, label, True
+                applied_actions[ep, t] = action
+                behavior[ep, t] = _behavior(x, label)
+                for _ in range(round(ratio)):
+                    obs, _, done, info = env.step(action, action_type='pwm')
+                    ticks += 1
+                    if done: break
+                if done: break
+            records.append({'seed': ep_seed, 'scenario': name, 'valid_steps': int(valid[ep].sum()),
+                            'physics_ticks': ticks, 'duration_s': ticks*DEFAULT_DT,
+                            'terminated': bool(done), 'crashed': bool(info.get('crashed', False)),
+                            'collision_kind': info.get('collision_kind')})
+        finally:
+            env.close()
+    counts = Counter(BEHAVIORS[int(b)] for b in behavior[valid])
+    dataset = {'X': torch.from_numpy(X), 'Y': torch.from_numpy(Y),
+               'applied_actions': torch.from_numpy(applied_actions),
+               'valid': torch.from_numpy(valid), 'behavior': torch.from_numpy(behavior),
+               'metadata': {'dataset_version': DATASET_VERSION, 'teacher_version': TEACHER_VERSION,
+                   'coordinate_version': COORDINATE_VERSION, 'observation_source': 'geometric_raycast',
+                   'dt': dt, 'physics_dt': DEFAULT_DT, 'tof_max_range_m': TOF_RAYCASTER_MAX_RANGE_M,
+                   'sensor_dim': SENSOR_DIM, 'action_dim': 4, 'seed': seed,
+                   'control_contract': control_contract(),
+                   'num_episodes': num_episodes, 'seq_len': seq_len,
+                   'distance_threshold_m': distance_threshold_m, 'execution_noise_std_pwm': noise_std_pwm,
+                   'teacher_parameters': expert.parameters,
+                   'label_noise_std_pwm': 0., 'episode_scenarios': scenarios,
+                   'scenario_counts': dict(Counter(scenarios)), 'behavior_names': list(BEHAVIORS),
+                   'behavior_counts': dict(counts), 'episodes': records,
+                   'required_sensor_motor_paths': deepcopy(REQUIRED_PATHS)}}
     if output_path is not None:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         torch.save(dataset, output_path)
-
+        report = {'metadata': dataset['metadata'], 'valid_frames': int(valid.sum()),
+                  'crashed_episodes': sum(row['crashed'] for row in records),
+                  'action_min': Y[valid].min(axis=0).tolist(), 'action_max': Y[valid].max(axis=0).tolist()}
+        report['applied_action_min'] = applied_actions[valid].min(axis=0).tolist()
+        report['applied_action_max'] = applied_actions[valid].max(axis=0).tolist()
+        path = Path(output_path)
+        path.with_name(path.stem + '_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     return dataset
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Generate Reflex Dataset for Chong-Fly")
-    parser.add_argument("--episodes", type=int, default=60, help="Number of flight episodes")
-    parser.add_argument("--seq_len", type=int, default=250, help="Steps per episode")
-    parser.add_argument("--output", type=str, default="data/reflex_dataset.pt", help="Output path")
-    parser.add_argument("--seed", type=int, default=42, help="RNG seed")
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--episodes', type=int, default=60)
+    parser.add_argument('--seq_len', type=int, default=100)
+    parser.add_argument('--output', default=DEFAULT_DATASET_PATH)
+    parser.add_argument('--seed', type=int, default=42)
     args = parser.parse_args()
-
-    out_file = os.path.join(_ROOT, args.output) if not os.path.isabs(args.output) else args.output
-    print(f"Generating reflex dataset: {args.episodes} episodes x {args.seq_len} steps -> {out_file}")
-    data = generate_reflex_dataset(
-        num_episodes=args.episodes,
-        seq_len=args.seq_len,
-        seed=args.seed,
-        output_path=out_file,
-    )
-    print(f"Saved dataset: X shape = {data['X'].shape}, Y shape = {data['Y'].shape}")
+    path = os.path.join(_ROOT, args.output)
+    data = generate_reflex_dataset(args.episodes, args.seq_len, seed=args.seed, output_path=path)
+    print(f'Saved {path}: {tuple(data["X"].shape)}, valid frames={int(data["valid"].sum())}')
+    print(f'Behavior counts: {data["metadata"]["behavior_counts"]}')
