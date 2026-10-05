@@ -176,118 +176,39 @@ class SensorInputLayer(nn.Module):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class DNProjectionHead(nn.Module):
+    """Weighted readout from explicitly mapped DN clusters, without implicit fallbacks.
+
+    pitch_roll is a supported legacy alias for both channels. Shared clusters
+    remain shared; masking cannot restore motor degrees of freedom lost in reduction.
     """
-    Sparse read-out from DN motor cluster indices → 4 raw motor logits.
-
-    For each motor channel (throttle, roll, pitch, yaw), the corresponding
-    DN cluster activations are averaged and mapped through a small linear
-    projection.  This mirrors the biological premotor→motor pathway:
-    descending neurons (DNs) → thoracic motor circuits.
-
-    If motor_index_map is not provided (or empty), falls back to a full
-    linear projection from hidden_size → N_CONTROLS.
-
-    Parameters
-    ----------
-    hidden_size      : k  (CfC hidden dimension)
-    motor_index_map  : {"throttle": [i, j, ...], "roll": [...], ...}
-                       Cluster indices from ReducedModel.motor_index_map.
-    """
-
-    # Canonical channel ordering
-    _CHANNEL_KEYS = CHANNEL_KEYS
-
-    def __init__(
-        self,
-        hidden_size: int,
-        motor_index_map: Optional[dict[str, list[int]]] = None,
-    ):
+    def __init__(self, hidden_size, motor_index_map=None, *, allow_dense_fallback=False):
         super().__init__()
-        self.hidden_size     = hidden_size
+        import warnings
+        from core.routing import RoutedLinear, motor_mask, structural_rank
+        self.hidden_size = hidden_size
         self.motor_index_map = motor_index_map or {}
-
-        # Build per-channel index buffers
-        self._ch_indices: list[Optional[torch.Tensor]] = []
-        for key in self._CHANNEL_KEYS:
-            # Try direct key, then fall back to partial match
-            idx = self._resolve_key(key)
-            if idx:
-                buf = torch.tensor(idx, dtype=torch.long)
-                self.register_buffer(f"_idx_{key}", buf)
-                self._ch_indices.append(buf)
-            else:
-                self.register_buffer(f"_idx_{key}", None)
-                self._ch_indices.append(None)
-
-        # Per-channel linear projector: mean-pool → scalar
-        # Input dim = hidden_size (fallback) or 1 (mean of DN activations)
-        self.use_sparse = any(i is not None for i in self._ch_indices)
-
-        if self.use_sparse:
-            # 1-D per-channel: mean(DN activations) → 1 scalar per channel
-            self.proj = nn.Linear(hidden_size, N_CONTROLS, bias=True)
-            # Mask: only the DN indices for each channel are active
-            self._build_sparse_proj_mask()
-        else:
-            # Full projection (no structural prior)
-            self.proj = nn.Linear(hidden_size, N_CONTROLS, bias=True)
-
+        self.proj = RoutedLinear(motor_mask(hidden_size, self.motor_index_map, allow_dense_fallback))
+        self.use_sparse = True
         nn.init.xavier_uniform_(self.proj.weight)
         nn.init.zeros_(self.proj.bias)
-
-        # ---------------- ДОДАТИ ЦЕ ----------------
-        # Зміщуємо стартовий bias для Throttle, щоб Sigmoid одразу видавав PWM_HOVER
         import math
-        target_th = (PWM_HOVER - PWM_MIN) / (PWM_MAX - PWM_MIN)
-        target_th = max(0.001, min(0.999, target_th))  # Safe clamp
-        init_bias = math.log(target_th / (1.0 - target_th))  # Inverse sigmoid
-        self.proj.bias.data[CH_THROTTLE] = init_bias
-        # -------------------------------------------
+        target_th = max(.001, min(.999, (PWM_HOVER-PWM_MIN)/(PWM_MAX-PWM_MIN)))
+        with torch.no_grad():
+            self.proj.bias[CH_THROTTLE] = math.log(target_th/(1-target_th))
+        self.proj.apply_mask()
+        self.structural_rank = structural_rank(self._proj_mask)
+        if self.structural_rank < N_CONTROLS:
+            warnings.warn(f"Motor mapping supports at most {self.structural_rank}/4 independent "
+                          "readout directions; reduction has merged motor roles",
+                          UserWarning, stacklevel=2)
 
-    def _resolve_key(self, key: str) -> list[int]:
-        """
-        Match motor_index_map key to channel name.
-        Supports exact match and substring match (e.g. "pitch_roll" → pitch & roll).
-        """
-        if key in self.motor_index_map:
-            return self.motor_index_map[key]
-        # substring search
-        for mkey, indices in self.motor_index_map.items():
-            if key in mkey or mkey in key:
-                return indices
-        return []
+    @property
+    def _proj_mask(self):
+        return self.proj.route_mask
 
-    def _build_sparse_proj_mask(self):
-        """
-        Create a (N_CONTROLS, hidden_size) boolean mask where row i is True
-        only for the DN cluster indices of channel i.
-        """
-        mask = torch.zeros(N_CONTROLS, self.hidden_size, dtype=torch.bool)
-        for ch_idx, key in enumerate(self._CHANNEL_KEYS):
-            idx_buf = getattr(self, f"_idx_{key}", None)
-            if idx_buf is not None and len(idx_buf) > 0:
-                valid = idx_buf[idx_buf < self.hidden_size]
-                mask[ch_idx, valid] = True
-        # If a channel has no mapped indices, activate all (fallback)
-        empty_rows = ~mask.any(dim=1)
-        mask[empty_rows, :] = True
-        self.register_buffer("_proj_mask", mask)
-
-    def forward(self, h: torch.Tensor) -> torch.Tensor:
-        """
-        h : (batch, hidden_size)
-        Returns raw motor logits : (batch, N_CONTROLS)
-        """
-        if self.use_sparse:
-            # Apply sparse mask to projection weights in forward
-            W_masked = self.proj.weight * self._proj_mask.float()
-            return F.linear(h, W_masked, self.proj.bias)
+    def forward(self, h):
         return self.proj(h)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PWMOutputLayer
-# ─────────────────────────────────────────────────────────────────────────────
 
 class PWMOutputLayer(nn.Module):
     """
@@ -353,13 +274,30 @@ class ChongFlyMSPPolicy(nn.Module):
         cfc_network: BiologicalCfCNetwork,
         sensor_dim: int = SENSOR_DIM,
         learnable_scale: bool = True,
+        allow_dense_motor_fallback: bool = False,
     ):
         super().__init__()
         cell = cfc_network.cell
 
         self.sensor_layer  = SensorInputLayer(sensor_dim, learnable_scale)
         self.cfc_network   = cfc_network
-        self.dn_head       = DNProjectionHead(cell.hidden_size, cell.motor_indices)
+        if allow_dense_motor_fallback and cell.connectivity != "unconstrained":
+            raise ValueError("Dense motor fallback requires an explicit unconstrained baseline")
+        self.dn_head = DNProjectionHead(cell.hidden_size, cell.motor_indices,
+                                        allow_dense_fallback=allow_dense_motor_fallback)
+        self.cfc_network.motor_head = None  # the policy owns the single active DN readout
+        self.sensor_dim = sensor_dim
+        if sensor_dim != cell.input_size:
+            raise ValueError("Policy sensor_dim must match the cell input_size")
+        self.routing_diagnostics = {"connectivity": cell.connectivity,
+                                    "motor_structural_rank": self.dn_head.structural_rank}
+        if cell.connectivity == "structured":
+            from core.routing import sensor_motor_paths
+            self.routing_diagnostics["unmapped_input_channels"] = (~cell.W_in.route_mask.any(dim=0)).nonzero().flatten().tolist()
+            overlap = cell.W_in.route_mask.any(dim=1) & self.dn_head._proj_mask.any(dim=0)
+            self.routing_diagnostics["input_motor_overlap_clusters"] = overlap.nonzero().flatten().tolist()
+            self.routing_diagnostics["sensor_motor_paths"] = sensor_motor_paths(
+                cell._effective_W().detach() != 0, cell.sensor_indices, self.dn_head._proj_mask)
         self.pwm_layer     = PWMOutputLayer()
         self.default_dt    = getattr(cell, "default_dt", DEFAULT_DT)
 
@@ -400,8 +338,7 @@ class ChongFlyMSPPolicy(nn.Module):
 
         # ── CfC recurrent forward — raw hidden states ─────────────────────
         # Run the CfC cell directly to obtain (batch, T, k) hidden states.
-        # We bypass BiologicalCfCNetwork.motor_head (used in training/env)
-        # and feed h_seq straight into our DNProjectionHead.
+        # This policy owns one DN readout; the unused generic motor head is removed.
         cell = self.cfc_network.cell
         B = obs_norm.shape[0]
         if hx is None:
@@ -474,6 +411,7 @@ class ChongFlyMSPPolicy(nn.Module):
     def post_step(self):
         """Call after optimizer.step() to enforce W_macro sparsity."""
         self.cfc_network.post_step()
+        self.dn_head.proj.apply_mask()
 
     # ─────────────────────────────────── factory
 
@@ -490,10 +428,13 @@ class ChongFlyMSPPolicy(nn.Module):
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
         dt: float = DEFAULT_DT,
-        solver_type: str = "CfC",
+        solver_type: str = "exponential_euler",
         pruning_sparsity: Optional[float] = None,
         ablate_cx: Optional[bool] = None,
         learnable_scale: bool = True,
+        connectivity: str = "structured",
+        input_routes: Optional[dict] = None,
+        allow_dense_motor_fallback: bool = False,
     ) -> "ChongFlyMSPPolicy":
         """
         Build ChongFlyMSPPolicy directly from a ReducedModel meta file.
@@ -504,7 +445,7 @@ class ChongFlyMSPPolicy(nn.Module):
         mode            : "fixed" | "masked" | "free"
         prune_meta_path : optional magnitude-pruner meta for synapse mask
         sensor_dim      : sensory input size (default 66 = 2 flow + 64 ToF)
-        solver_type     : 'CfC' | 'Euler_dt_0.02'
+        solver_type     : 'exponential_euler' | 'euler'; old spellings remain aliases
         pruning_sparsity: optional float in [0.0, 1.0)
         ablate_cx       : whether Central Complex is ablated (loads _nocx meta if available)
         """
@@ -526,8 +467,12 @@ class ChongFlyMSPPolicy(nn.Module):
             tau_init=tau_init,
             dt=dt,
             return_sequences=True,
+            connectivity=connectivity,
+            input_routes=input_routes,
+            include_motor_head=False,
         )
-        return cls(net, sensor_dim=sensor_dim, learnable_scale=learnable_scale)
+        return cls(net, sensor_dim=sensor_dim, learnable_scale=learnable_scale,
+                   allow_dense_motor_fallback=allow_dense_motor_fallback)
 
     # ─────────────────────────────────── repr
 

@@ -160,7 +160,7 @@ for ch, key in enumerate(("throttle", "roll", "pitch", "yaw")):
     check(f"  {key} mask non-zero", active > 0, f"{int(active)} active cols")
 
 # Without motor map (full fallback)
-dn_full = DNProjectionHead(K, motor_index_map={})
+dn_full = DNProjectionHead(K, motor_index_map={}, allow_dense_fallback=True)
 logits_f = dn_full(h)
 check("fallback output shape", logits_f.shape == (BATCH, N_CONTROLS))
 
@@ -280,7 +280,9 @@ section("9. Gradient flow through all policy parameters")
 
 if HAS_META and policy is not None:
     policy.zero_grad()
-    obs  = torch.randn(BATCH, SENSOR_DIM)
+    # Routed inputs can reach DN outputs only after graph hops. A one-step loss
+    # intentionally has zero gradient for populations without a direct readout.
+    obs  = torch.randn(BATCH, 8, SENSOR_DIM)
     hx_0 = torch.randn(BATCH, policy.cfc_network.cell.hidden_size)
     pwm_out, _ = policy(obs, hx=hx_0)
     loss = pwm_out.sum()
@@ -310,5 +312,9 @@ print(f"  Results: {passed}/{total} passed"
       + (f"  — {failed} FAILED" if failed else "  — all OK ✓"))
 print(f"{'='*62}\n")
 
-if failed:
+def test_policy_smoke_checks():
+    assert all(_results), "See the policy checks above for failed expectations"
+
+
+if __name__ == "__main__" and failed:
     sys.exit(1)

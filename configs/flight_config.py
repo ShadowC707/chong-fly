@@ -29,7 +29,7 @@ class SensorsConfig:
     sensor_dim: int = 74                    # Current 74-D (2 flow + 64 ToF + 8 memory)
     n_controls: int = 4                     # 4 channels: Throttle, Roll, Pitch, Yaw
 
-    tof_max_range_m: float = 3.0            # Max measurement range for ToF
+    tof_max_range_m: float = 3.5            # Same normalized distance contract as raycaster
     tof_raycaster_max_range_m: float = 3.5  # Max measurement range for Isaac ToF raycaster
     tof_fov_h_deg: float = 45.0             # Horizontal FOV (degrees)
     tof_fov_v_deg: float = 45.0             # Vertical FOV (degrees)
@@ -151,9 +151,9 @@ class ArenaConfig:
 @dataclass(frozen=True)
 class APFConfig:
     distance_threshold_m: float = 0.8       # Clearance threshold to trigger avoidance (m)
-    max_sensor_range_m: float = 3.0         # Sensor normalization range (m)
+    max_sensor_range_m: float = 3.5         # Same normalized distance contract as raycaster
     k_repulsive: float = 20.0               # Repulsive potential field gain
-    noise_std_pwm: float = 15.0             # Gaussian actuator perturbation std (µs)
+    noise_std_pwm: float = 0.0              # Clean labels by default; generator may perturb execution
     
     # Smooth braking & turning gains
     max_pitch_brake_pwm: float = 280.0      # Maximum braking deflection from cruising pitch (µs)
@@ -327,4 +327,5 @@ HOVER_THROTTLE_NORMALIZED = METRICS.hover_throttle_normalized
 
 MAX_SIM_TIME_S = PHYSICS.max_sim_time_s
 CONTROL_DT = PHYSICS.control_dt
+COORDINATE_VERSION = "flu-rc-right-v1"
 STAGNATION_TIME_LIMIT_S = METRICS.stagnation_time_limit_s

@@ -1,56 +1,18 @@
-"""
-bio_pipeline/models.py
-======================
-Biological Closed-form Continuous-time (CfC) neural core for Chong-Fly.
+"""Directed rate-network core with a versioned continuous-time contract.
 
-Architecture
-------------
-BiologicalCfCCell implements the closed-form solution of the Liquid Time-constant
-(LTC) ODE derived in Hasani et al. 2022 (Nature Machine Intelligence):
+For row-batched states and W[source, target]:
+    drive(h,u) = h @ W + routed_input(u) + b
+    target(h,u) = A * tanh(drive(h,u))
+    dh/dt = (target(h,u) - h) / tau, tau > 0 (seconds)
 
-    dx/dt = -[ 1/τ + f(x,u;θ) ] · x  +  f(x,u;θ) · A
+Exponential Euler freezes target during each step. It is exact for constant
+forcing and first-order for a general recurrent system. The class name and
+solver alias CfC are retained for API compatibility; this implementation does
+not claim equivalence to published CfC/LTC equations.
 
-Closed-form solution (no Runge-Kutta needed):
-
-    x(t+Δt) = σ(-f·Δt) · x(t)  +  (1 - σ(-f·Δt)) · A·f/(1/τ + f)
-             ≈ σ_gate · x(t)    +  (1 - σ_gate) · h_ff
-
-where  σ_gate = sigmoid(-(f + 1/τ)·Δt)  is the time-aware decay gate,
-       h_ff   = tanh(W_macro·x + W_in·u + b)  is the feed-forward backbone,
-       A      = learned asymptotic state amplitude.
-
-W_macro topology
-----------------
-The recurrent weight matrix is initialised from one of the pre-computed
-reduced models (spectral / centrality) and can be:
-  • Fixed    – frozen as a buffer; gradients are blocked entirely.
-  • Masked   – trainable but constrained to the sparsity pattern of a
-               magnitude-pruned CSR matrix; entries outside the mask are
-               zeroed after every gradient step via a registered backward hook.
-
-Usage
------
-    from bio_pipeline.models import BiologicalCfCCell, BiologicalCfCNetwork
-    from bio_pipeline.graph_reducer import ReducedModel
-
-    model_meta = ReducedModel.load("data/reduced_models/meta_spectral_k64.json")
-
-    cell = BiologicalCfCCell.from_reduced_model(
-        model_meta,
-        input_size=2,           # FlowX + FlowY
-        mode="masked",          # "fixed" | "masked" | "free"
-        backbone_units=64,
-        backbone_layers=2,
-        dt=0.004,               # 250 Hz control loop
-    )
-
-    # Single time-step
-    x = torch.zeros(batch, cell.hidden_size)
-    u = torch.randn(batch, 2)
-    x_next = cell(u, x, dt=0.004)
-
-    # Full sequence via BiologicalCfCNetwork
-    net = BiologicalCfCNetwork(cell, output_dim=4)   # 4 motor channels
+Structured mode has no dense recurrent backbone; inputs and motor readouts
+follow declared routes. An explicitly unconstrained baseline retains the MLP.
+These are engineering routes over the supplied graph, not proof of its biology.
 """
 
 from __future__ import annotations
@@ -65,7 +27,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from configs.flight_config import DEFAULT_DT
+from configs.flight_config import DEFAULT_DT, COORDINATE_VERSION
+from core.contracts import DYNAMICS_VERSION, MATRIX_ORIENTATION, TAU_FLOOR_S, canonical_solver
+from core.routing import ROUTING_VERSION, RoutedLinear, sensor_mask, motor_mask
 
 
 # ---------------------------------------------------------------------------
@@ -94,29 +58,12 @@ def _make_activation(name: str) -> nn.Module:
 
 
 # ---------------------------------------------------------------------------
-# SparseTopologyMask – registers a pruning mask as a non-parameter buffer
-# and applies it to W_macro after every backward pass.
-# ---------------------------------------------------------------------------
-
-class _SparseTopologyHook:
-    """
-    Backward hook that zeroes gradient entries outside the binary mask,
-    effectively blocking updates to pruned synapses.
-    """
-    def __init__(self, mask: torch.Tensor):
-        self.mask = mask          # (k, k) bool tensor on same device as param
-
-    def __call__(self, grad: torch.Tensor) -> torch.Tensor:
-        return grad * self.mask.to(grad.device)
-
-
-# ---------------------------------------------------------------------------
-# BiologicalCfCCell
+# BiologicalCfCCell – rate dynamics with a masked directed recurrent operator.
 # ---------------------------------------------------------------------------
 
 class BiologicalCfCCell(nn.Module):
     """
-    Single-step Closed-form Continuous-time RNN cell with biological W_macro.
+    Directed leaky rate cell; historical CfC class name retained for compatibility.
 
     Parameters
     ----------
@@ -135,8 +82,7 @@ class BiologicalCfCCell(nn.Module):
     dt              : float – default integration timestep Δt (seconds).
                               Can be overridden per forward() call.
     sensor_indices  : dict  – {"lptc_flow": [...], "lc_looming": [...]}
-                              cluster indices that receive sensory input;
-                              used for structured input projection.
+                              input populations enforced by the structured adapter.
     motor_indices   : dict  – {"throttle": [...], "yaw": [...], ...}
                               cluster indices read out as motor commands.
     """
@@ -152,45 +98,59 @@ class BiologicalCfCCell(nn.Module):
         backbone_dropout: float = 0.0,
         tau_init: float = 0.1,
         dt: float = DEFAULT_DT,
-        solver_type: str = "CfC",
+        solver_type: str = "exponential_euler",
         sensor_indices: Optional[dict] = None,
         motor_indices: Optional[dict] = None,
+        connectivity: str = "structured",
+        input_routes: Optional[dict] = None,
     ):
         super().__init__()
-        assert mode in ("fixed", "masked", "free"), \
-            f"mode must be 'fixed', 'masked' or 'free', got '{mode}'"
+        if mode not in ("fixed", "masked", "free"):
+            raise ValueError(f"Unknown mode {mode!r}")
+        if not math.isfinite(dt) or dt <= 0:
+            raise ValueError("Default dt must be positive and finite")
+        if not math.isfinite(tau_init) or tau_init <= TAU_FLOOR_S:
+            raise ValueError(f"tau_init must be finite and greater than {TAU_FLOOR_S} seconds")
 
         self.hidden_size    = hidden_size
         self.input_size     = input_size
         self.mode           = mode
-        self.solver_type    = solver_type
-        if (solver_type == "Euler_dt_0.02" or solver_type.lower() == "euler_dt_0.02") and dt == DEFAULT_DT:
-            self.default_dt = 0.02
-        else:
-            self.default_dt = dt
+        self.solver_type    = canonical_solver(solver_type)
+        if connectivity not in {"structured", "unconstrained"}:
+            raise ValueError("connectivity must be structured or unconstrained")
+        if connectivity == "structured" and mode == "free":
+            raise ValueError("mode='free' requires explicit connectivity='unconstrained'")
+        self.connectivity = connectivity
+        self.default_dt = float(dt)
+        self._architecture_contract = {
+            "hidden_size": hidden_size, "input_size": input_size,
+            "backbone_units": backbone_units, "backbone_layers": backbone_layers,
+            "backbone_act": backbone_act, "backbone_dropout": backbone_dropout,
+            "connectivity": connectivity,
+        }
         self.sensor_indices = sensor_indices or {}
         self.motor_indices  = motor_indices or {}
 
         # ── Membrane time constants  τ  (one per neuron, always trainable) ──
-        # Initialised with small spread around tau_init; kept positive via softplus.
-        tau_raw = math.log(math.expm1(tau_init)) * torch.ones(hidden_size)
+        # Initialise at tau_init; stable inverse softplus includes the positive floor.
+        tau_value = tau_init - TAU_FLOOR_S
+        tau_raw = (tau_value + math.log(-math.expm1(-tau_value))) * torch.ones(hidden_size)
         self.tau_raw = nn.Parameter(tau_raw)          # softplus(tau_raw) = τ > 0
 
         # ── Asymptotic amplitude  A  (one per neuron, always trainable) ──────
         self.A = nn.Parameter(torch.ones(hidden_size))
 
         # ── Backbone MLP  f(x, u; θ)  ────────────────────────────────────────
-        layers: list[nn.Module] = [
-            nn.Linear(hidden_size + input_size, backbone_units),
-            _make_activation(backbone_act),
-        ]
-        for _ in range(backbone_layers - 1):
-            layers.append(nn.Linear(backbone_units, backbone_units))
-            layers.append(_make_activation(backbone_act))
-            if backbone_dropout > 0.0:
-                layers.append(nn.Dropout(backbone_dropout))
-        layers.append(nn.Linear(backbone_units, hidden_size))
-        self.backbone = nn.Sequential(*layers)
+        self.backbone = nn.Identity()  # no trainable bypass in structured mode
+        if connectivity == "unconstrained":
+            layers: list[nn.Module] = [nn.Linear(hidden_size + input_size, backbone_units),
+                                      _make_activation(backbone_act)]
+            for _ in range(backbone_layers - 1):
+                layers.extend([nn.Linear(backbone_units, backbone_units), _make_activation(backbone_act)])
+                if backbone_dropout > 0.0:
+                    layers.append(nn.Dropout(backbone_dropout))
+            layers.append(nn.Linear(backbone_units, hidden_size))
+            self.backbone = nn.Sequential(*layers)
 
         # ── W_macro  (recurrent biological weight matrix) ───────────────────
         # Placeholder – populated via from_reduced_model() or set_w_macro()
@@ -203,14 +163,22 @@ class BiologicalCfCCell(nn.Module):
             self._w_macro_param = nn.Parameter(W_zeros)
             self.register_buffer("W_macro", None)   # will use param in forward
 
-        # Mask buffer (registered separately; None until set_w_macro is called)
-        self.register_buffer("_synapse_mask", None)
+        # An uninitialized masked graph has no edges. Keep shape stable for checkpoint loading.
+        self.register_buffer("_synapse_mask", torch.zeros(k, k, dtype=torch.bool))
         self._hook_handle = None                     # backward hook handle
+        if mode == "masked":
+            self._hook_handle = self._w_macro_param.register_hook(self._mask_gradient)
 
         # ── Input projection  W_in  (learnable) ─────────────────────────────
-        self.W_in = nn.Linear(input_size, hidden_size, bias=True)
+        if connectivity == "structured":
+            self.W_in = RoutedLinear(sensor_mask(hidden_size, input_size, self.sensor_indices, input_routes))
+            self._architecture_contract["input_routing"] = self.W_in.get_extra_state()
+        else:
+            self.W_in = nn.Linear(input_size, hidden_size, bias=True)
         nn.init.xavier_uniform_(self.W_in.weight)
         nn.init.zeros_(self.W_in.bias)
+        if isinstance(self.W_in, RoutedLinear):
+            self.W_in.apply_mask()
 
         # Bias for backbone output
         self.b = nn.Parameter(torch.zeros(hidden_size))
@@ -219,7 +187,30 @@ class BiologicalCfCCell(nn.Module):
     @property
     def tau(self) -> torch.Tensor:
         """Positive membrane time constants via softplus."""
-        return F.softplus(self.tau_raw) + 1e-3    # always > 0
+        return F.softplus(self.tau_raw) + TAU_FLOOR_S
+
+    def _mask_gradient(self, grad):
+        return grad * self._synapse_mask.to(grad.device)
+
+    def get_extra_state(self):
+        """Guard against interpreting old trained weights under new dynamics."""
+        return {"dynamics_version": DYNAMICS_VERSION, "matrix_orientation": MATRIX_ORIENTATION,
+                "coordinate_version": COORDINATE_VERSION,
+                "routing_version": ROUTING_VERSION,
+                "solver": self.solver_type, "default_dt": self.default_dt, "mode": self.mode,
+                "architecture": dict(self._architecture_contract)}
+
+    def set_extra_state(self, state):
+        if state != self.get_extra_state():
+            raise RuntimeError("Incompatible neural contract in checkpoint; rebuild/retrain the policy")
+
+    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict,
+                              missing_keys, unexpected_keys, error_msgs):
+        if state_dict.get(prefix + "_extra_state") != self.get_extra_state():
+            error_msgs.append(prefix + "incompatible or missing neural contract (legacy checkpoint); retrain required")
+            return
+        super()._load_from_state_dict(state_dict, prefix, local_metadata, strict,
+                                      missing_keys, unexpected_keys, error_msgs)
 
     # ------------------------------------------------------------------ W_macro accessors
 
@@ -241,111 +232,54 @@ class BiologicalCfCCell(nn.Module):
 
         Parameters
         ----------
-        W    : weight matrix (k × k)
+        W    : source_target weight matrix (k × k); W[source, target]
         mask : binary sparsity mask (k × k).  If None and mode == "masked",
                the mask is inferred from the non-zero entries of W.
         """
-        # Convert W to float32 tensor
-        if sp.issparse(W):
-            W_dense = torch.from_numpy(W.toarray()).float()
-        elif isinstance(W, np.ndarray):
-            W_dense = torch.from_numpy(W).float()
-        else:
-            W_dense = W.float()
-
-        assert W_dense.shape == (self.hidden_size, self.hidden_size), \
-            f"W shape {W_dense.shape} ≠ ({self.hidden_size}, {self.hidden_size})"
-
-        # Build / validate mask
+        parameter = self._effective_W()
+        W_dense = torch.as_tensor(W.toarray() if sp.issparse(W) else W,
+                                  dtype=parameter.dtype, device=parameter.device)
+        shape = (self.hidden_size, self.hidden_size)
+        if W_dense.shape != shape or not torch.isfinite(W_dense).all():
+            raise ValueError(f"W must be a finite {shape} source_target matrix")
         if mask is None:
-            mask_tensor = (W_dense.abs() > 1e-7).float()
-        elif sp.issparse(mask):
-            mask_tensor = torch.from_numpy(
-                (mask.toarray() != 0).astype(np.float32))
-        elif isinstance(mask, np.ndarray):
-            mask_tensor = torch.from_numpy(mask.astype(np.float32))
+            mask_tensor = W_dense != 0
         else:
-            mask_tensor = mask.float()
-
-        # Store
-        if self.mode == "fixed":
-            self.W_macro.copy_(W_dense)
-        else:
-            with torch.no_grad():
-                self._w_macro_param.copy_(W_dense)
-
-        # Register / update mask buffer
-        self._synapse_mask = mask_tensor.bool()
-
-        # Register backward hook for "masked" mode
-        if self.mode == "masked":
-            if self._hook_handle is not None:
-                self._hook_handle.remove()
-            hook = _SparseTopologyHook(self._synapse_mask.float())
-            self._hook_handle = self._w_macro_param.register_hook(hook)
+            raw_mask = torch.as_tensor(mask.toarray() if sp.issparse(mask) else mask,
+                                       device=parameter.device)
+            if raw_mask.shape != shape or not torch.isfinite(raw_mask).all():
+                raise ValueError(f"mask must be finite with shape {shape}")
+            mask_tensor = (raw_mask != 0) & (W_dense != 0)
+        with torch.no_grad():
+            parameter.copy_(W_dense if self.mode == "free" else W_dense * mask_tensor)
+            self._synapse_mask.copy_(mask_tensor)
 
     # ------------------------------------------------------------------ forward
 
-    def forward(
-        self,
-        input: torch.Tensor,           # (batch, input_size)
-        hx: torch.Tensor,              # (batch, hidden_size)
-        dt: Optional[float] = None,    # integration timestep override
-    ) -> torch.Tensor:
+    def forward(self, input: torch.Tensor, hx: torch.Tensor,
+                dt: Optional[float] = None) -> torch.Tensor:
+        """Integrate dh/dt = (A*tanh(drive(h,u))-h)/tau.
+
+        Both solvers evaluate drive at the old state. Exponential Euler freezes
+        that target for this step; it is not an exact nonlinear ODE solution.
         """
-        One CfC integration step.
-
-        Closed-form update (no ODE solver):
-            f    = backbone(cat(hx, input)) + W_macro @ hx + W_in(input) + b
-            gate = sigmoid( -(f + 1/τ) · Δt )
-            h'   = gate · hx  +  (1 - gate) · A · tanh(f)
-
-        Returns
-        -------
-        h_new : (batch, hidden_size)
-        """
-        if dt is None:
-            dt = self.default_dt
-
-        W = self._effective_W()                     # (k, k)
-
-        # ── Backbone: non-linear modulation of recurrent + input signal ──────
-        cat_in = torch.cat([hx, input], dim=-1)     # (batch, k + input_size)
-        f_bb   = self.backbone(cat_in)               # (batch, k)
-
-        # ── Recurrent contribution (W_macro, possibly sparse-masked) ─────────
-        # Apply mask in forward pass too (zero-out pruned weights)
-        if self.mode == "masked" and self._synapse_mask is not None:
-            W = W * self._synapse_mask.to(W.device).float()
-
-        f_rec  = hx @ W.T                           # (batch, k)
-
-        # ── Sensory input projection ──────────────────────────────────────────
-        f_in   = self.W_in(input)                   # (batch, k)
-
-        # ── Combined pre-activation ───────────────────────────────────────────
-        f      = f_bb + f_rec + f_in + self.b       # (batch, k)
-
-        # ── Time-aware decay gate  σ(-(f + 1/τ)·Δt) ─────────────────────────
-        tau    = self.tau.to(input.device)           # (k,)
-        gate   = torch.sigmoid(-(f + 1.0 / tau) * dt)  # (batch, k)
-
-        # ── Asymptotic attractor ──────────────────────────────────────────────
-        A      = self.A.to(input.device)             # (k,)
-        h_inf  = A * torch.tanh(f)                   # (batch, k)
-
-        # ── State update: Euler explicit step vs CfC closed-form ──────────────
-        if self.solver_type == "Euler_dt_0.02" or self.solver_type.lower().startswith("euler"):
-            # Explicit Euler discretization of the continuous-time LTC ODE:
-            # dh/dt = -(f + 1/tau) * hx + h_inf
-            dh_dt = -(f + 1.0 / tau) * hx + h_inf
-            h_new = hx + dt * dh_dt
-        else:
-            # Time-aware decay gate σ(-(f + 1/τ)·Δt) and closed-form LTC update
-            gate  = torch.sigmoid(-(f + 1.0 / tau) * dt)  # (batch, k)
-            h_new = gate * hx + (1.0 - gate) * h_inf      # (batch, k)
-
-        return h_new
+        dt = self.default_dt if dt is None else dt
+        if not math.isfinite(dt) or dt < 0:
+            raise ValueError("dt must be finite and nonnegative")
+        if dt == 0:
+            return hx
+        W = self._effective_W()
+        if self.mode == "masked":
+            W = W * self._synapse_mask
+        f = hx @ W + self.W_in(input) + self.b
+        if self.connectivity == "unconstrained":
+            f = f + self.backbone(torch.cat([hx, input], dim=-1))
+        target = self.A * torch.tanh(f)
+        if self.solver_type == "euler":
+            return hx + (dt / self.tau) * (target - hx)
+        # expm1 avoids cancellation when dt is very small.
+        fraction = -torch.expm1(-dt / self.tau)
+        return hx + fraction * (target - hx)
 
     # ------------------------------------------------------------------ constructor helpers
 
@@ -357,7 +291,7 @@ class BiologicalCfCCell(nn.Module):
         mode: str = "masked",
         prune_mask_model=None,         # optional separate MagnitudePruner model for mask
         pruning_sparsity: Optional[float] = None,
-        solver_type: str = "CfC",
+        solver_type: str = "exponential_euler",
         **kwargs,
     ) -> "BiologicalCfCCell":
         """
@@ -371,7 +305,7 @@ class BiologicalCfCCell(nn.Module):
         prune_mask_model: optional ReducedModel from MagnitudePruner — its
                           sparsity pattern is used as the synapse mask.
         pruning_sparsity: optional float in [0.0, 1.0) for magnitude pruning.
-        solver_type     : 'CfC' | 'Euler_dt_0.02'
+        solver_type     : 'exponential_euler' | 'euler'; old spellings are aliases
         **kwargs        : forwarded to BiologicalCfCCell.__init__
         """
         k = model.k
@@ -388,13 +322,17 @@ class BiologicalCfCCell(nn.Module):
         W = model.W
         # Choose mask / pruning source
         if pruning_sparsity is not None:
+            if not math.isfinite(pruning_sparsity) or not 0 <= pruning_sparsity < 1:
+                raise ValueError("pruning_sparsity must be in [0, 1)")
             W_dense = W.toarray() if sp.issparse(W) else np.array(W, copy=True)
             k_pct = float(pruning_sparsity) * 100.0
             threshold = float(np.percentile(np.abs(W_dense), k_pct))
-            mask = (np.abs(W_dense) >= threshold).astype(np.float32)
+            mask = ((np.abs(W_dense) >= threshold) & (W_dense != 0)).astype(np.float32)
             W_pruned = W_dense * mask
             cell.set_w_macro(W_pruned, mask=mask)
         elif prune_mask_model is not None:
+            if prune_mask_model.k != model.k or not np.array_equal(prune_mask_model.cluster_map, model.cluster_map):
+                raise ValueError("Pruning mask must use the same cluster mapping as the model")
             mask = prune_mask_model.W   # CSR matrix → boolean mask
             cell.set_w_macro(W, mask=mask)
         else:
@@ -414,6 +352,8 @@ class BiologicalCfCCell(nn.Module):
         if self.mode == "masked" and self._synapse_mask is not None:
             mask = self._synapse_mask.to(self._w_macro_param.device).float()
             self._w_macro_param.mul_(mask)
+        if isinstance(self.W_in, RoutedLinear):
+            self.W_in.apply_mask()
 
     # ------------------------------------------------------------------ repr
 
@@ -431,19 +371,9 @@ class BiologicalCfCNetwork(nn.Module):
     """
     Full recurrent network: BiologicalCfCCell + linear motor output head.
 
-    Sensor routing
-    --------------
-    If the cell's sensor_indices are set, a structured input projection is
-    applied: each sensor group's signal is injected specifically into the
-    cluster indices that correspond to that biological population.
-    Otherwise a standard linear projection W_in is used.
-
-    Motor output
-    ------------
-    The motor_indices from the cell's index map are used to read out the
-    hidden state into separate motor channels (throttle / yaw / pitch-roll).
-    A final linear layer maps each group's cluster activities to scalar
-    actuator commands.
+    In structured mode, both the cell input and this motor head use declared
+    routes. ChongFlyMSPPolicy replaces the generic head with its single DN head.
+    Dense input/backbone/readout is available only in the unconstrained baseline.
 
     Parameters
     ----------
@@ -458,16 +388,26 @@ class BiologicalCfCNetwork(nn.Module):
         cell: BiologicalCfCCell,
         output_dim: int = 4,
         return_sequences: bool = False,
+        include_motor_head: bool = True,
     ):
         super().__init__()
         self.cell             = cell
         self.output_dim       = output_dim
         self.return_sequences = return_sequences
 
-        # Motor output head: reads full hidden state → motor commands
-        self.motor_head = nn.Linear(cell.hidden_size, output_dim, bias=True)
-        nn.init.xavier_uniform_(self.motor_head.weight)
-        nn.init.zeros_(self.motor_head.bias)
+        # The optional generic head follows the same channel mapping as the policy.
+        self.motor_head = None
+        if include_motor_head:
+            if cell.connectivity == "structured":
+                if output_dim != 4:
+                    raise ValueError("Structured motor mapping requires four output channels")
+                self.motor_head = RoutedLinear(motor_mask(cell.hidden_size, cell.motor_indices))
+            else:
+                self.motor_head = nn.Linear(cell.hidden_size, output_dim, bias=True)
+            nn.init.xavier_uniform_(self.motor_head.weight)
+            nn.init.zeros_(self.motor_head.bias)
+            if isinstance(self.motor_head, RoutedLinear):
+                self.motor_head.apply_mask()
 
     def forward(
         self,
@@ -488,6 +428,8 @@ class BiologicalCfCNetwork(nn.Module):
                   (batch, output_dim)     if not return_sequences
         h_last  : (batch, hidden_size)    final hidden state
         """
+        if self.motor_head is None:
+            raise RuntimeError("This network is a policy encoder; use ChongFlyMSPPolicy for motor outputs")
         B, T, _ = inputs.shape
         if hx is None:
             hx = torch.zeros(B, self.cell.hidden_size,
@@ -516,6 +458,8 @@ class BiologicalCfCNetwork(nn.Module):
         Call after optimizer.step() to enforce sparsity mask on W_macro.
         """
         self.cell.apply_topology_mask()
+        if isinstance(self.motor_head, RoutedLinear):
+            self.motor_head.apply_mask()
 
 
 # ---------------------------------------------------------------------------
@@ -529,7 +473,7 @@ def build_network_from_meta(
     mode: str = "masked",
     prune_meta_path: Optional[str] = None,
     pruning_sparsity: Optional[float] = None,
-    solver_type: str = "CfC",
+    solver_type: str = "exponential_euler",
     ablate_cx: Optional[bool] = None,
     backbone_units: int = 64,
     backbone_layers: int = 2,
@@ -538,6 +482,9 @@ def build_network_from_meta(
     tau_init: float = 0.1,
     dt: float = DEFAULT_DT,
     return_sequences: bool = False,
+    connectivity: str = "structured",
+    input_routes: Optional[dict] = None,
+    include_motor_head: bool = True,
 ) -> BiologicalCfCNetwork:
     """
     One-call factory: load a ReducedModel from disk and build the full network.
@@ -551,7 +498,7 @@ def build_network_from_meta(
     prune_meta_path : optional meta_magnitude_p90_k12942.json — its sparsity
                       pattern is used as synapse mask (overrides W zeros)
     pruning_sparsity: optional float in [0.0, 1.0) for magnitude pruning
-    solver_type     : 'CfC' | 'Euler_dt_0.02'
+    solver_type     : 'exponential_euler' | 'euler'; old spellings are aliases
     ablate_cx       : if True, load _nocx version of model if available
     **kwargs        : forwarded to BiologicalCfCCell
 
@@ -590,7 +537,9 @@ def build_network_from_meta(
         backbone_dropout=backbone_dropout,
         tau_init=tau_init,
         dt=dt,
+        connectivity=connectivity,
+        input_routes=input_routes,
     )
 
     return BiologicalCfCNetwork(cell, output_dim=output_dim,
-                                return_sequences=return_sequences)
+        return_sequences=return_sequences, include_motor_head=include_motor_head)

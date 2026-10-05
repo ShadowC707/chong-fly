@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import dataclasses
+import warnings
 from typing import Any
 
 import numpy as np
@@ -32,6 +33,7 @@ from scipy.sparse import csr_matrix
 from sklearn.utils.extmath import randomized_svd
 from sklearn.cluster import MiniBatchKMeans
 from numba import njit, prange
+from core.contracts import MATRIX_ORIENTATION, REDUCTION_NORMALIZATION, REDUCED_FORMAT_VERSION
 
 # ---------------------------------------------------------------------------
 # Polarity map (excitatory +1 / inhibitory -1)
@@ -80,6 +82,19 @@ class ReducedModel:
     # Benchmark (filled lazily)
     metrics: dict[str, Any] = dataclasses.field(default_factory=dict)
     platform_hint: str = ""
+    provenance: dict[str, Any] = dataclasses.field(default_factory=dict)
+
+    def __post_init__(self):
+        """All in-memory models use source_target weights and target-mean reduction."""
+        if not isinstance(self.k, (int, np.integer)) or self.k <= 0 or self.W.shape != (self.k, self.k):
+            raise ValueError("Reduced matrix shape must match positive k")
+        values = self.W.data if sp.issparse(self.W) else self.W
+        if not np.isfinite(values).all():
+            raise ValueError("Reduced matrix contains non-finite weights")
+        cmap = np.asarray(self.cluster_map)
+        if (cmap.ndim != 1 or not cmap.size or not np.issubdtype(cmap.dtype, np.integer)
+                or np.any(cmap < 0) or np.any(cmap >= self.k)):
+            raise ValueError("Invalid cluster_map for reduced matrix")
 
     # ------------------------------------------------------------------ I/O
     def save(self, out_dir: str) -> dict[str, str]:
@@ -104,6 +119,10 @@ class ReducedModel:
         np.save(cmap_path, self.cluster_map)
 
         meta = {
+            "format_version": REDUCED_FORMAT_VERSION,
+            "matrix_orientation": MATRIX_ORIENTATION,
+            "reduction_normalization": REDUCTION_NORMALIZATION,
+            "provenance": self.provenance,
             "reducer":  self.reducer_name,
             "k":        self.k,
             "sparse":   sp.issparse(self.W),
@@ -120,11 +139,27 @@ class ReducedModel:
         return {"w": w_path, "meta": meta_path, "cmap": cmap_path}
 
     @staticmethod
-    def load(meta_path: str) -> "ReducedModel":
-        """Reconstruct a ReducedModel from its meta JSON side-car."""
+    def load(meta_path: str, *, allow_legacy: bool = True) -> "ReducedModel":
+        """Load canonical weights; warn and convert known repository legacy graphs.
+
+        Legacy spectral/centrality files used W[source,target]/source_size.
+        Conversion multiplies by source_size/target_size, preserving edge direction.
+        No files are rewritten. Set allow_legacy=False to require explicit v2 metadata.
+        This concerns graph initialization, never trained neural checkpoints.
+        """
         meta_dir = os.path.dirname(meta_path)
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
+
+        legacy = "format_version" not in meta
+        if legacy:
+            known = meta.get("reducer") in {"spectral", "centrality"} or str(meta.get("reducer", "")).startswith("magnitude_p")
+            if not allow_legacy or not known or any(key in meta for key in ("matrix_orientation", "reduction_normalization")):
+                raise ValueError("Unknown/legacy graph contract; explicit migration is required")
+        elif (meta["format_version"] != REDUCED_FORMAT_VERSION
+              or meta.get("matrix_orientation") != MATRIX_ORIENTATION
+              or meta.get("reduction_normalization") != REDUCTION_NORMALIZATION):
+            raise ValueError("Unsupported graph contract: format, orientation or normalization")
 
         w_path = os.path.join(meta_dir, meta["w_file"])
         if meta["sparse"]:
@@ -134,7 +169,7 @@ class ReducedModel:
 
         cmap = np.load(os.path.join(meta_dir, meta["cmap_file"]))
 
-        return ReducedModel(
+        model = ReducedModel(
             W=W,
             k=meta["k"],
             reducer_name=meta["reducer"],
@@ -143,7 +178,26 @@ class ReducedModel:
             motor_index_map=meta["motor_index_map"],
             metrics=meta.get("metrics", {}),
             platform_hint=meta.get("platform_hint", ""),
+            provenance=meta.get("provenance", {}),
         )
+        if legacy:
+            sizes = np.bincount(cmap, minlength=model.k).astype(np.float64)
+            sizes = np.maximum(sizes, 1.)  # unused clusters have no incoming/outgoing edges
+            if str(meta["reducer"]).startswith("magnitude_p"):
+                if not np.array_equal(cmap, np.arange(model.k)):
+                    raise ValueError("Legacy magnitude model requires an identity cluster_map")
+            if sp.issparse(W):
+                model.W = (sp.diags(sizes) @ W @ sp.diags(1./sizes)).astype(np.float32).tocsr()
+            else:
+                model.W = (W * sizes[:, None] / sizes[None, :]).astype(np.float32)
+            model.metrics = {}
+            model.provenance = {**model.provenance, "legacy_conversion": {
+                "from": "unversioned-source-mean", "to": REDUCTION_NORMALIZATION,
+                "source_metadata": os.path.basename(meta_path),
+            }}
+            warnings.warn(f"Legacy graph {meta_path}: converted source-mean to target-mean in memory; "
+                          "old trained checkpoints require retraining", UserWarning, stacklevel=2)
+        return model
 
 
 # ---------------------------------------------------------------------------
@@ -231,7 +285,11 @@ def _normalize_rows_jit(matrix: np.ndarray) -> np.ndarray:
 def _condense_synapses_jit(pre_idx: np.ndarray, post_idx: np.ndarray,
                             weights: np.ndarray,
                             clusters: np.ndarray, k: int) -> np.ndarray:
-    """Accumulate signed synaptic weights into macro-cluster matrix."""
+    """W[source,target] = sum(edges)/target_population_size.
+
+    If h is mean activity per cluster, h @ W equals lifting h to neurons,
+    propagating through the full graph, then averaging each target cluster.
+    """
     W = np.zeros((k, k), dtype=np.float32)
     sz = np.zeros(k, dtype=np.float32)
 
@@ -246,8 +304,8 @@ def _condense_synapses_jit(pre_idx: np.ndarray, post_idx: np.ndarray,
         W[cp, cq] += weights[e]
 
     for p in range(k):
-        d = sz[p] if sz[p] >= 1.0 else 1.0
         for q in range(k):
+            d = sz[q] if sz[q] >= 1.0 else 1.0
             W[p, q] /= d
 
     return W
@@ -631,7 +689,7 @@ def _project_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 
-def load_graph(data_dir: str) -> tuple[pd.DataFrame, pd.DataFrame,
+def load_graph(data_dir: str, *, allow_legacy: bool = False, polarity_map=None) -> tuple[pd.DataFrame, pd.DataFrame,
                                         np.ndarray, np.ndarray, np.ndarray]:
     """
     Load nodes + edges, assign integer indices, compute signed weights.
@@ -644,14 +702,8 @@ def load_graph(data_dir: str) -> tuple[pd.DataFrame, pd.DataFrame,
     post_idx        : int32 ndarray
     signed_weights  : float32 ndarray
     """
-    nodes_file = os.path.join(data_dir, "raw_nodes.csv")
-    edges_file = os.path.join(data_dir, "raw_edges.parquet")
-    if not os.path.exists(nodes_file) or not os.path.exists(edges_file):
-        print(f"[ERROR] Missing data files in {data_dir}. Run circuit_extractor.py first.")
-        sys.exit(1)
-
-    nodes_df = pd.read_csv(nodes_file)
-    edges_df = pd.read_parquet(edges_file)
+    from generator.source_contract import read_bundle
+    nodes_df, edges_df, _ = read_bundle(data_dir, allow_legacy=allow_legacy)
 
     unique_ids   = nodes_df["root_id"].unique()
     node_to_idx  = {nid: i for i, nid in enumerate(unique_ids)}
@@ -661,16 +713,30 @@ def load_graph(data_dir: str) -> tuple[pd.DataFrame, pd.DataFrame,
     edges_df = edges_df.copy()
     edges_df["pre_idx"]  = edges_df["pre_id"].map(node_to_idx)
     edges_df["post_idx"] = edges_df["post_id"].map(node_to_idx)
-    edges_df = (edges_df
-                .dropna(subset=["pre_idx", "post_idx"])
-                .astype({"pre_idx": np.int32, "post_idx": np.int32}))
+    # read_bundle rejects unknown endpoints rather than silently dropping edges.
+    edges_df = edges_df.astype({"pre_idx": np.int32, "post_idx": np.int32})
 
     pre_idx  = edges_df["pre_idx"].values
     post_idx = edges_df["post_idx"].values
     raw_w    = edges_df["weight"].values.astype(np.float32)
 
-    # Signed weights: excitatory + / inhibitory –
-    polarities     = nodes_df["cell_type"].map(POLARITY_MAP).fillna(1.0).values.astype(np.float32)
+    # This is an explicit engineering hypothesis, not measured transmitter data.
+    # Never silently assign +1 to a previously unseen intermediate type.
+    mapping = POLARITY_MAP if polarity_map is None else polarity_map
+    if (not isinstance(mapping, dict) or any(isinstance(value, (bool, np.bool_))
+            or not isinstance(value, (int, float, np.integer, np.floating))
+            or value not in (-1, 1) for value in mapping.values())):
+        raise ValueError('polarity map values must be -1 or +1')
+    unknown = sorted(set(nodes_df.cell_type) - set(mapping))
+    if unknown:
+        raise ValueError(f'Missing polarity for cell types: {unknown}; supply an explicit polarity map')
+    applied_mapping = {name: int(mapping[name]) for name in sorted(set(nodes_df.cell_type))}
+    nodes_df.attrs['polarity_contract'] = {
+        'method': 'local_cell_type_heuristic' if polarity_map is None else 'explicit_cell_type_map',
+        'mapping': applied_mapping,
+        'biologically_verified': False,
+    }
+    polarities = nodes_df["cell_type"].map(mapping).values.astype(np.float32)
     signed_weights = raw_w * polarities[pre_idx]
 
     return nodes_df, edges_df, pre_idx, post_idx, signed_weights

@@ -375,7 +375,7 @@ class ConnectomeModelAdapter(BaseIsaacModel):
     def from_meta(
         cls,
         meta_path: str,
-        solver_type: str = "CfC",
+        solver_type: str = "exponential_euler",
         pruning_sparsity: Optional[float] = None,
         ablate_cx: Optional[bool] = None,
     ) -> ConnectomeModelAdapter:
@@ -448,7 +448,8 @@ class AutonomousLaserNavigatorModel(BaseIsaacModel):
         target_roll = (left_threat - right_threat) * self.avoidance_gain
         target_pitch = -center_threat * self.avoidance_gain
 
-        target_roll -= obs.optical_flow[1] * self.flow_damping_gain
+        # +FlowY is leftward velocity; +roll accelerates right in FLU.
+        target_roll += obs.optical_flow[1] * self.flow_damping_gain
         target_pitch -= obs.optical_flow[0] * self.flow_damping_gain
 
         max_angle = MAX_TILT_ANGLE_RAD

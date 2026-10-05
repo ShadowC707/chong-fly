@@ -17,6 +17,9 @@ env/
 # ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
 # Ignore all dense .npy matrices and cluster maps in reduced_models/
 data/reduced_models/*.npy
+# Small reproducible role-preserving candidates need their node→cluster maps.
+!data/reduced_models/cmap_role_degree_k128.npy
+!data/reduced_models/cmap_role_degree_k256.npy
 
 # Keep small sparse CSR matrices (.npz) — they are kilobytes and tracked
 # data/reduced_models/w_magnitude_*.npz   ← tracked
@@ -24,6 +27,10 @@ data/reduced_models/*.npy
 # ── Raw connectome bulk data ───────────────────────────────────────────────────
 data/raw_connectome/*.parquet
 data/raw_connectome/*.csv
+data/raw_connectome_*/*.parquet
+data/raw_connectome_*/*.csv
+data/annotations_*/*.tsv
+data/research_sources/*.pdf
 
 # ── Explicitly keep lightweight JSON artefacts ────────────────────────────────
 !data/reduced_models/models_grid_manifest.json

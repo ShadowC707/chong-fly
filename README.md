@@ -1,5 +1,39 @@
 # Chong Fly: Biologically Grounded Drone Autopilot (Drosophila Connectome & CfC)
 
+Flight evaluation now uses `flight-benchmark-v7`, with navigation-only learning,
+a shared altitude supervisor, corrected coordinates,
+versioned geometric reflex demonstrations and role-preserving k128/k256
+candidates, explicit input/output routes and no dense recurrent bypass in structured mode.
+Read the [current navigation training contract](NAVIGATION_TRAINING_UK.md),
+[CAVE acquisition and source integrity contract](CONNECTOME_SOURCE_UK.md),
+[coordinate and pretraining history](COORDINATES_AND_PRETRAIN_UK.md),
+[reduction contract](REDUCTION_CONTRACT_UK.md),
+[routing contract](ROUTING_CONTRACT_UK.md), [neural contract](NEURAL_CONTRACT_UK.md), and the
+[simulation benchmark contract](BENCHMARK_V2_UK.md) before continuing Optuna.
+Earlier scores and trained checkpoints are incompatible with the new dynamics.
+The bundled role-degree candidates come from the local **synthetic** graph, not
+authenticated FlyWire data. Historical architecture claims and benchmark tables
+below are not validation of these new candidates or of flight readiness.
+The current structured candidates fail the teacher-route check (ToF→yaw is
+absent in the source graph as well as k128/k256). The [route audit](data/sensor_route_audit_v1.json)
+distinguishes source/mapping gaps from routes lost or introduced by reduction.
+The [range altitude controller](ALTITUDE_CONTROL_UK.md) is now included in
+demonstration collection and the standard objective. Historical raw v6 and
+assisted v6 results are excluded from v7 studies. Resolve the source/mapping
+gap before a large Optuna search; no biological edges have been invented.
+
+The [flight candidate registry and directed audit](FLIGHT_CANDIDATES_UK.md)
+now verify a separate real FlyWire 783 LPLC2→DNp06 projection: 1,442 synapses
+across 201 directed neuron pairs. This is anatomical evidence for a candidate
+pathway; its ToF encoding and RC decoder remain unvalidated. It does not replace
+the synthetic model artifacts or certify their routes.
+
+The [saccade circuit audit](SACCADE_CIRCUIT_UK.md) resolves DNae014/DNb01
+from author root IDs and identifies substantial same-root counts in raw CAVE
+data. A verified synapse quality policy is required before training on these
+real graphs. The [GL5528 sensor plan](LIGHT_SENSORS_UK.md) records the proposed
+light channels; they are not yet part of the policy observation contract.
+
 Autonomous drone flight control architecture based on the biological connectome of the *Drosophila melanogaster* fruit fly.
 The project translates whole-brain connectomic pathways into high-frequency closed-loop flight reflex controllers deployable across edge devices, microcontrollers, and neural accelerators.
 
@@ -120,15 +154,30 @@ pip install numpy pandas scipy scikit-learn torch numba pyarrow
 ```
 
 ### 2. Extract Connectome Topology
+Acquisition now requires an explicit source and writes a new directory. For
+measured CAVE data, use a pinned version and verified table names as described
+in [the source contract](CONNECTOME_SOURCE_UK.md). For a synthetic pipeline check:
 ```bash
-python generator/circuit_extractor.py
+python -m generator.circuit_extractor --source synthetic --seed 42
 ```
 
-### 3. Generate Multi-Scale Model Grid & Benchmark
-Runs parallel spectral embedding and synaptic condensation with high-performance linear throughput profiling:
+### 3. Generate the Current Candidate Grid
+Preserves individual sensor/motor neurons and separates other cells by type,
+side, layer and outgoing sign profile. For the current synthetic source:
 ```bash
-python generator/graph_reducer.py
+python -m generator.role_reducer --data-dir data/raw_connectome_synthetic_seed42 --out-dir data/reduced_models/synthetic_source_v1 --k 128 256
 ```
+Acquisition provenance is inherited from the source manifest. Historical raw
+files require explicit `--allow-legacy-source`; a source flag cannot promote
+them to CAVE data. Existing default candidates are kept for historical comparison.
+
+### 4. Collect and Check Reflex Demonstrations
+```bash
+python -m generator.generate_reflex_dataset --episodes 64 --seq_len 100 --seed 42
+python -m pytest tests -q -p no:cacheprovider
+```
+This creates `data/reflex_dataset_v3.pt` plus a JSON collection report. Old
+unversioned demonstrations and trained checkpoints require regeneration/retraining.
 
 ---
 
