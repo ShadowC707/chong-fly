@@ -11,7 +11,6 @@ Connects:
 
 from __future__ import annotations
 
-import argparse
 import math
 import os
 import sys
@@ -29,7 +28,6 @@ except ImportError:
     optuna = None
     HAS_OPTUNA = False
 
-from optimizer.evaluate import objective
 from optimizer.rollout import BENCHMARK_VERSION
 from generator.reflex_contract import DEFAULT_DATASET_PATH
 from simulation.control_contract import control_contract
@@ -57,8 +55,10 @@ def feasible_pareto_trials(study):
     Filtering an unconstrained frontier afterwards is insufficient: an unsafe
     trial could have dominated and hidden every safe candidate.
     """
+    fingerprint = study.user_attrs.get('experiment_fingerprint')
     candidates = [t for t in study.get_trials(deepcopy=False)
                   if t.state == optuna.trial.TrialState.COMPLETE
+                  and (fingerprint is None or t.user_attrs.get('experiment_fingerprint') == fingerprint)
                   and all(c <= 0 for c in safety_constraints(t))
                   and t.values is not None and all(math.isfinite(v) for v in t.values)]
     def losses(trial):
@@ -72,9 +72,10 @@ def feasible_pareto_trials(study):
 
 
 def create_study(
-    study_name: str = "flight_benchmark_v7",
-    storage: Optional[str] = "sqlite:///flight_benchmark_v7.db",
+    study_name: str = "flight_benchmark_v8",
+    storage: Optional[str] = "sqlite:///flight_benchmark_v8.db",
     seed: int = 42,
+    experiment_contract=None,
 ) -> Any:
     """
     Create a constrained three-objective study; reject incompatible history.
@@ -110,6 +111,14 @@ def create_study(
     if any(t.state == optuna.trial.TrialState.COMPLETE
            and t.user_attrs.get('control_contract') != control_contract() for t in study.trials):
         raise ValueError('Study contains trials with a different control contract')
+    from optimizer.candidate_selection import contract_sha256
+    fingerprint = contract_sha256(experiment_contract) if experiment_contract is not None else None
+    existing = study.user_attrs.get('experiment_fingerprint')
+    if existing != fingerprint and (existing is not None or study.trials):
+        raise ValueError('Incompatible experiment fingerprint; use a new study')
+    if experiment_contract is not None:
+        study.set_user_attr('experiment_contract', experiment_contract)
+        study.set_user_attr('experiment_fingerprint', fingerprint)
     study.set_user_attr("benchmark_version", BENCHMARK_VERSION)
     study.set_user_attr('control_contract', control_contract())
     study.set_user_attr("comparison_seed", seed)
@@ -117,71 +126,28 @@ def create_study(
 
 
 def run_optuna_study(
-    n_trials: int = 15,
+    *,
+    source,
+    candidates,
+    output,
+    n_trials: int = 2,
     dataset_path: str = DEFAULT_DATASET_PATH,
-    pretrain: bool = True,
     seed: int = 42,
-    study_name: str = "flight_benchmark_v7",
-    storage: Optional[str] = "sqlite:///flight_benchmark_v7.db",
-    device: str = "auto",
+    study_name: str = "registry_navigation_v8",
+    storage: Optional[str] = None,
+    device: str = "cpu",
+    config=None,
+    research_only: bool = False,
+    preflight_only: bool = False,
 ) -> Any:
-    """
-    Executes an optimization study over Chong-Fly architectures and controllers.
-    """
-    if not HAS_OPTUNA:
-        raise ImportError("Optuna is not installed. Run: pip install optuna")
-
-    study = create_study(study_name=study_name, storage=storage,seed=seed)
-
-    def _trial_obj(trial: optuna.Trial):
-        return objective(
-            trial=trial,
-            dataset_path=dataset_path,
-            pretrain=pretrain,
-            seed=seed,
-            device=device,
-        )
-
-    study.optimize(_trial_obj, n_trials=n_trials)
-    return study
+    """Public API for the registry pipeline; the implicit historical grid is retired."""
+    from optimizer.search_pipeline import run_search
+    resolved = {'seed':seed, 'device':device, **(config or {})}
+    return run_search(source, candidates, dataset_path, output, config=resolved,
+        research_only=research_only, trials=n_trials, storage=storage,
+        study_name=study_name, preflight_only=preflight_only)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Chong-Fly Optuna Tuner with Behavioral Cloning")
-    parser.add_argument("--trials", type=int, default=10, help="Number of optimization trials")
-    parser.add_argument("--dataset", type=str, default=DEFAULT_DATASET_PATH, help="Reflex dataset path")
-    parser.add_argument("--no-pretrain", action="store_true", help="Disable behavioral cloning pre-training")
-    parser.add_argument("--seed", type=int, default=42, help="RNG seed")
-    parser.add_argument("--device", type=str, default="auto", help="Compute device (auto, cuda, cpu)")
-    parser.add_argument("--study-name", type=str, default="flight_benchmark_v7", help="Ім'я експерименту")
-    parser.add_argument("--db", type=str, default="sqlite:///flight_benchmark_v7.db", help="Шлях до БД")
-
-    args = parser.parse_args()
-
-    data_file = os.path.join(_ROOT, args.dataset) if not os.path.isabs(args.dataset) else args.dataset
-    print(f"Starting Optuna Study: {args.trials} trials, pretrain={not args.no_pretrain}, dataset={data_file}")
-
-    study = run_optuna_study(
-        study_name=args.study_name,
-        n_trials=args.trials,
-        storage=args.db,
-        dataset_path=data_file,
-        pretrain=not args.no_pretrain,
-        seed=args.seed,
-        device=args.device,
-    )
-
-    print("\n" + "=" * 60)
-    print("Optimization Completed!")
-    if len(study.directions) > 1:
-        frontier = feasible_pareto_trials(study)
-        print(f"Number of feasible Pareto-optimal trials: {len(frontier)}")
-        for t in frontier:
-            print(f"  Trial #{t.number}: values={t.values}, params={t.params}")
-    else:
-        print(f"Best Trial #{study.best_trial.number}")
-        print(f"Best Composite Cost: {study.best_value:.4f}")
-        print("Best Hyperparameters:")
-        for k, v in study.best_params.items():
-            print(f"  * {k}: {v}")
-    print("=" * 60)
+    from optimizer.search_pipeline import main
+    main()

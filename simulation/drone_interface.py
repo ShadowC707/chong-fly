@@ -126,12 +126,23 @@ class DownwardLaserSensor:
                 if t_enter <= t_exit and t_enter > 0.0 and t_enter < min_t:
                     min_t = t_enter
                     hit_surf = "box"
-                    hit_norm = np.array([0.0, 0.0, 1.0], dtype=np.float32)
+                    # Normal belongs to the entry face, including vertical walls.
+                    axis = int(np.argmax([t_near_x, t_near_y, t_near_z]))
+                    hit_norm = np.zeros(3, dtype=np.float32)
+                    hit_norm[axis] = -1. if direction[axis] > 0 else 1.
 
         # 3. Cylindrical obstacle intersection
         if cylinders:
             for cyl in cylinders:
                 cx, cy, r = cyl.center_x, cyl.center_y, cyl.radius
+                # The top disk is part of the finite solid, even for a vertical
+                # ray whose side-wall quadratic has zero horizontal direction.
+                if dz < -eps:
+                    t_top = (cyl.height-pz)/dz
+                    top_x, top_y = px+t_top*dx-cx, py+t_top*dy-cy
+                    if 0. < t_top < min_t and top_x*top_x+top_y*top_y <= r*r:
+                        min_t, hit_surf = t_top, "cylinder"
+                        hit_norm = np.array([0.,0.,1.], dtype=np.float32)
                 ox = px - cx
                 oy = py - cy
                 A = dx * dx + dy * dy

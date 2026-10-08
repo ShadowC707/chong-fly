@@ -9,7 +9,9 @@ import os
 import sys
 import math
 import unittest
+import tempfile
 import numpy as np
+import torch
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.abspath(os.path.join(_HERE, ".."))
@@ -29,6 +31,7 @@ from simulation.drone_env import (
     BoxObstacle,
 )
 from simulation.policy import ChongFlyMSPPolicy
+from tests.synthetic_graphs import write_tiny_model
 
 
 class TestBetaflightPID(unittest.TestCase):
@@ -248,11 +251,11 @@ class TestDroneSimulationEnv(unittest.TestCase):
 
     def test_closed_loop_policy_integration(self):
         """Test closed-loop flight with ChongFlyMSPPolicy."""
-        policy = ChongFlyMSPPolicy.from_meta(
-            "data/reduced_models/meta_spectral_k32.json",
-            mode="fixed",
-            dt=0.004,
-        )
+        with tempfile.TemporaryDirectory() as directory, torch.random.fork_rng(devices=[]):
+            torch.manual_seed(42)
+            policy = ChongFlyMSPPolicy.from_meta(
+                str(write_tiny_model(directory)), mode="fixed", dt=0.004,
+            )
         policy.reset_state()
         self.env.reset(seed=42)
 

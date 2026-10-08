@@ -64,13 +64,13 @@ def audit_routes(source, models):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--data-dir', type=Path, default=root/'data/raw_connectome')
+    parser.add_argument('--data-dir', type=Path, required=True)
     parser.add_argument('--config', type=Path, default=root/'configs/cell_mapping.json')
     parser.add_argument('--polarity-map', type=Path, help='The same explicit polarity map used for reduction')
     parser.add_argument('--allow-legacy-source', action='store_true', help='Explicitly audit unverified historical raw data')
-    parser.add_argument('--models', type=Path, nargs='+', default=[
-        root/f'data/reduced_models/meta_role_degree_k{k}.json' for k in (128, 256)])
-    parser.add_argument('--output', type=Path, default=root/'data/sensor_route_audit_v1.json')
+    parser.add_argument('--models', type=Path, nargs='+', default=[],
+                        help='Explicit candidates; omit to audit only the source.')
+    parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args(argv)
     polarity = json.loads(args.polarity_map.read_text(encoding='utf-8')) if args.polarity_map else None
     nodes, edges, pre, post, weights = load_graph(str(args.data_dir), allow_legacy=args.allow_legacy_source,

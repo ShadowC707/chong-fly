@@ -175,7 +175,8 @@ def resolve_source_kind(provenance, requested):
 def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--data-dir', type=Path, default=root / 'data/raw_connectome')
+    parser.add_argument('--data-dir', type=Path, required=True,
+                        help='Explicit source bundle; historical synthetic data is archived.')
     parser.add_argument('--config', type=Path, default=root / 'configs/cell_mapping.json')
     parser.add_argument('--polarity-map', type=Path, help='Explicit JSON map of every selected cell type to -1/+1')
     parser.add_argument('--out-dir', type=Path, default=root / 'data/reduced_models')

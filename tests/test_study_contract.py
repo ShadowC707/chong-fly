@@ -36,15 +36,36 @@ def test_legacy_study_is_rejected_without_relabelling(tmp_path):
     assert len(old.trials) == 1
 
 
-def test_trials_share_training_and_scenario_seed(monkeypatch):
-    seeds = []
-    def objective(**kwargs):
-        seeds.append(kwargs["seed"])
-        kwargs["trial"].set_user_attr("constraints", [0.])
-        return 1., 0., 2.
-    monkeypatch.setattr(tuner, "objective", objective)
-    tuner.run_optuna_study(n_trials=2, storage=None, pretrain=False, seed=17)
-    assert seeds == [17, 17]
+def test_public_tuner_delegates_to_verified_registry_pipeline(monkeypatch):
+    from optimizer import search_pipeline
+    calls = []
+    monkeypatch.setattr(search_pipeline, 'run_search', lambda *a, **kw: calls.append((a, kw)))
+    tuner.run_optuna_study(source='source', candidates='registry', output='output',
+                          dataset_path='dataset', n_trials=2, seed=17, research_only=True)
+    args, kwargs = calls[0]
+    assert args == ('source', 'registry', 'dataset', 'output')
+    assert kwargs['config']['seed'] == 17
+    assert kwargs['trials'] == 2 and kwargs['research_only'] is True
+
+
+def test_registry_frontier_rejects_missing_or_different_experiment_evidence():
+    study = tuner.create_study(storage=None, experiment_contract={'dataset':'current'})
+    for fingerprint in (None, 'different', study.user_attrs['experiment_fingerprint']):
+        attrs = {'benchmark_version':BENCHMARK_VERSION, 'control_contract':control_contract(),
+                 'feasible':True, 'constraints':[0.]}
+        if fingerprint is not None:
+            attrs['experiment_fingerprint'] = fingerprint
+        study.add_trial(optuna.trial.create_trial(values=[1., 0., 100.], user_attrs=attrs))
+    assert [t.number for t in tuner.feasible_pareto_trials(study)] == [2]
+
+
+def test_explicit_cuda_request_cannot_silently_train_on_cpu(monkeypatch):
+    import torch
+    from optimizer import evaluate
+    monkeypatch.setattr(torch.cuda, 'is_available', lambda:False)
+    monkeypatch.setattr(evaluate, 'create_model', lambda *a, **kw:torch.nn.Linear(1, 1))
+    with pytest.raises(RuntimeError, match='CUDA'):
+        evaluate.objective(pretrain=False, eval_steps=1, device='cuda')
 
 
 def test_objective_publishes_constraints_to_optuna(monkeypatch):

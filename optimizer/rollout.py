@@ -13,10 +13,11 @@ from simulation.memory import EgocentricMemoryWrapper
 from simulation.control_contract import control_contract
 from simulation.metrics import (
     VoxelTracker, PhysicsTelemetryTracker, calculate_jitter_pr, calculate_saccades_yaw,
+    measure_yaw_bursts,
 )
 
-BENCHMARK_VERSION = "flight-benchmark-v7"
-RAW_BENCHMARK_VERSION = "flight-benchmark-v6"
+BENCHMARK_VERSION = "flight-benchmark-v8"
+RAW_BENCHMARK_VERSION = "flight-benchmark-v8-raw"
 
 
 def _observation(result):
@@ -110,6 +111,7 @@ def simulate_policy_rollout(policy, env=None, eval_steps=100, dt=None, seed=42, 
         voxels, telemetry = VoxelTracker(), PhysicsTelemetryTracker()
         memory = EgocentricMemoryWrapper()
         pwms, speeds, clearances = [], [], []
+        yaw_rates = []
         altitude_errors = []
         ticks = saturation_count = 0
         total_energy = 0.0
@@ -145,6 +147,8 @@ def simulate_policy_rollout(policy, env=None, eval_steps=100, dt=None, seed=42, 
                     fatal, failure_reason = True, f'Altitude control: {exc}'
                     break
             pwms.append(pwm.copy())
+            omega = getattr(getattr(env, 'physics', env), 'omega', None)
+            yaw_rates.append(float(omega[2]) if omega is not None else float('nan'))
             saturation_count += int(np.any(pwm < PWM_SATURATION_LOW) or np.any(pwm > PWM_SATURATION_HIGH))
             for _ in range(substeps):
                 next_obs, _, done, info = env.step(pwm)
@@ -185,6 +189,9 @@ def simulate_policy_rollout(policy, env=None, eval_steps=100, dt=None, seed=42, 
         summary = telemetry.compute_summary()
         jitter = float(calculate_jitter_pr(pwms))
         saccades = calculate_saccades_yaw(pwms)
+        yaw_bursts = (measure_yaw_bursts(yaw_rates, dt=control_dt)
+                      if yaw_rates and np.isfinite(yaw_rates).all() else
+                      {'version':'physical-yaw-bursts-v1', 'count':None, 'events':[], 'available':False})
         feasible = bool(complete and not terminated and not crashed and not fatal and not info.get("user_closed", False))
         metrics = {
             "benchmark_version": (RAW_BENCHMARK_VERSION if altitude_hold is None else
@@ -200,7 +207,8 @@ def simulate_policy_rollout(policy, env=None, eval_steps=100, dt=None, seed=42, 
             "total_energy_j": total_energy, "mean_power_w": total_energy/elapsed if elapsed else 0.0,
             "mean_fwd_speed": float(np.mean(speeds)) if speeds else 0.0,
             "saturation_ratio": saturation_count/max(1, len(pwms)),
-            "jitter_pr_l2": jitter, "saccades_yaw_count": saccades,
+            "jitter_pr_l2": jitter, "saccades_yaw_count": yaw_bursts['count'],
+            "yaw_bursts":yaw_bursts, "legacy_yaw_jump_count":saccades,
             "roughness_score": float(jitter + saccades),
             "coverage_count": voxels.get_coverage_count(), "coverage_volume": voxels.get_coverage_volume(),
             "mean_clearance": summary["mean_clearance"],
