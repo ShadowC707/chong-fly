@@ -87,22 +87,26 @@ def create_model(
     sensor_dim: int = SENSOR_DIM,
     base_dir: str = "data/reduced_models",
     allow_fallback: bool = False,
+    candidate_pool=None,
+    policy_options=None,
 ) -> Any:
     """
     Constructs a flight policy from an Optuna Trial or dictionary parameters.
     Attempts ChongFlyMSPPolicy.from_meta if metadata and weight matrices are available.
     If allow_fallback is False, raises FileNotFoundError if metadata or weights are missing.
     """
+    if candidate_pool is not None:
+        if hasattr(trial_or_params, 'suggest_categorical'):
+            name = trial_or_params.suggest_categorical('candidate', candidate_pool.names)
+        elif isinstance(trial_or_params, dict):
+            name = trial_or_params.get('candidate')
+        else:
+            raise ValueError('Registry selection requires an explicit candidate')
+        return candidate_pool.create_policy(name, policy_options or {})
     params: Dict[str, Any] = {}
     if trial_or_params is not None:
         if hasattr(trial_or_params, "suggest_categorical"):
-            params["reducer"] = trial_or_params.suggest_categorical("reducer", ["role_degree"])
-            params["k_clusters"] = trial_or_params.suggest_categorical("k_clusters", [128, 256])
-            # All-entry percentiles below the existing zero fraction remove no
-            # edges. Keep pruning off until path-preserving pruning is evaluated.
-            params["pruning_sparsity"] = trial_or_params.suggest_categorical("pruning_sparsity", [0.0])
-            params["solver_type"] = trial_or_params.suggest_categorical("solver_type", ["exponential_euler"])
-            params["ablate_cx"] = trial_or_params.suggest_categorical("ablate_cx", [False])
+            raise ValueError('Optuna requires a verified candidate registry; the old k128/k256 grid is retired')
         elif isinstance(trial_or_params, dict):
             params = dict(trial_or_params)
 
@@ -122,7 +126,9 @@ def create_model(
 
     if not os.path.exists(meta_path):
         if not allow_fallback:
-            hint = " Generate it with: python -m generator.role_reducer --k 128 256" if reducer == "role_degree" else ""
+            hint = (" Legacy artifacts are archived. Generate a candidate from a verified source with:"
+                    " python -m generator.role_reducer --data-dir <verified-source>"
+                    " --out-dir data/reduced_models --k <valid-k>") if reducer == "role_degree" else ""
             raise FileNotFoundError(f"Connectome metadata file '{meta_path}' not found for k={k}, ablate_cx={ablate_cx}.{hint}")
         return DefaultFlightPolicy(sensor_dim=sensor_dim)
 
@@ -130,6 +136,8 @@ def create_model(
     import json
     with open(meta_path, "r", encoding="utf-8") as f:
         meta_dict = json.load(f)
+    if meta_dict.get('provenance', {}).get('training_ready') is False:
+        raise ValueError('Artifact training_ready=false: use the explicit research diagnostic, not an Optuna trial')
     if meta_dict.get("k") != k or meta_dict.get("reducer") != reducer:
         raise ValueError("Metadata does not match the requested reducer and k")
     if reducer == "role_degree":
@@ -190,7 +198,7 @@ def objective(
     policy = create_model(trial, sensor_dim=SENSOR_DIM, allow_fallback=False)
     target_device = torch.device("cuda" if torch.cuda.is_available() else "cpu") if device == "auto" else torch.device(device)
     if target_device.type == "cuda" and not torch.cuda.is_available():
-        target_device = torch.device("cpu")
+        raise RuntimeError('CUDA requested but unavailable; no silent CPU fallback')
     policy = policy.to(target_device)
     if pretrain:
         policy = pretrain_policy(

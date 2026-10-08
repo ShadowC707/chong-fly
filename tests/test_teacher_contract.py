@@ -104,3 +104,9 @@ def test_execution_noise_does_not_contaminate_teacher_labels():
     noisy = generate_reflex_dataset(num_episodes=6, seq_len=1, seed=3, noise_std_pwm=20)
     torch.testing.assert_close(clean['X'], noisy['X'], rtol=0, atol=0)
     torch.testing.assert_close(clean['Y'], noisy['Y'], rtol=0, atol=0)
+
+
+def test_episode_scene_seeds_are_independent_of_execution_horizon():
+    short = generate_reflex_dataset(num_episodes=8, seq_len=1, seed=39)
+    longer = generate_reflex_dataset(num_episodes=8, seq_len=8, seed=39)
+    assert [r['seed'] for r in short['metadata']['episodes']] == [r['seed'] for r in longer['metadata']['episodes']]

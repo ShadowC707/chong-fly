@@ -18,6 +18,7 @@ These are engineering routes over the supplied graph, not proof of its biology.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 from typing import Optional
 
@@ -103,6 +104,7 @@ class BiologicalCfCCell(nn.Module):
         motor_indices: Optional[dict] = None,
         connectivity: str = "structured",
         input_routes: Optional[dict] = None,
+        preserve_signs: bool = False,
     ):
         super().__init__()
         if mode not in ("fixed", "masked", "free"):
@@ -115,6 +117,9 @@ class BiologicalCfCCell(nn.Module):
         self.hidden_size    = hidden_size
         self.input_size     = input_size
         self.mode           = mode
+        if type(preserve_signs) is not bool or (preserve_signs and mode == 'free'):
+            raise ValueError('Sign preservation requires fixed or masked connectivity')
+        self.preserve_signs = preserve_signs
         self.solver_type    = canonical_solver(solver_type)
         if connectivity not in {"structured", "unconstrained"}:
             raise ValueError("connectivity must be structured or unconstrained")
@@ -128,6 +133,8 @@ class BiologicalCfCCell(nn.Module):
             "backbone_act": backbone_act, "backbone_dropout": backbone_dropout,
             "connectivity": connectivity,
         }
+        if preserve_signs:
+            self._architecture_contract['synapse_sign_policy'] = 'initial-sign-projection-v1'
         self.sensor_indices = sensor_indices or {}
         self.motor_indices  = motor_indices or {}
 
@@ -165,6 +172,9 @@ class BiologicalCfCCell(nn.Module):
 
         # An uninitialized masked graph has no edges. Keep shape stable for checkpoint loading.
         self.register_buffer("_synapse_mask", torch.zeros(k, k, dtype=torch.bool))
+        # Derived from the declared graph, like input/output routing masks;
+        # a checkpoint cannot replace the graph's sign reference.
+        self.register_buffer('_synapse_sign', torch.zeros(k, k) if preserve_signs else None, persistent=False)
         self._hook_handle = None                     # backward hook handle
         if mode == "masked":
             self._hook_handle = self._w_macro_param.register_hook(self._mask_gradient)
@@ -194,11 +204,15 @@ class BiologicalCfCCell(nn.Module):
 
     def get_extra_state(self):
         """Guard against interpreting old trained weights under new dynamics."""
-        return {"dynamics_version": DYNAMICS_VERSION, "matrix_orientation": MATRIX_ORIENTATION,
+        state = {"dynamics_version": DYNAMICS_VERSION, "matrix_orientation": MATRIX_ORIENTATION,
                 "coordinate_version": COORDINATE_VERSION,
                 "routing_version": ROUTING_VERSION,
                 "solver": self.solver_type, "default_dt": self.default_dt, "mode": self.mode,
                 "architecture": dict(self._architecture_contract)}
+        if self.preserve_signs:
+            reference = self._synapse_sign.detach().to(torch.int8).cpu().numpy().tobytes()
+            state['initial_sign_sha256'] = hashlib.sha256(reference).hexdigest()
+        return state
 
     def set_extra_state(self, state):
         if state != self.get_extra_state():
@@ -218,6 +232,8 @@ class BiologicalCfCCell(nn.Module):
         """Return the W_macro tensor used in forward (buffer or param)."""
         if self.mode == "fixed":
             return self.W_macro                    # frozen buffer
+        if self.preserve_signs:
+            return self._synapse_sign * torch.clamp(self._synapse_sign * self._w_macro_param, min=0.)
         return self._w_macro_param                 # masked / free param
 
     # ------------------------------------------------------------------ topology loading
@@ -236,7 +252,7 @@ class BiologicalCfCCell(nn.Module):
         mask : binary sparsity mask (k × k).  If None and mode == "masked",
                the mask is inferred from the non-zero entries of W.
         """
-        parameter = self._effective_W()
+        parameter = self.W_macro if self.mode == 'fixed' else self._w_macro_param
         W_dense = torch.as_tensor(W.toarray() if sp.issparse(W) else W,
                                   dtype=parameter.dtype, device=parameter.device)
         shape = (self.hidden_size, self.hidden_size)
@@ -253,6 +269,8 @@ class BiologicalCfCCell(nn.Module):
         with torch.no_grad():
             parameter.copy_(W_dense if self.mode == "free" else W_dense * mask_tensor)
             self._synapse_mask.copy_(mask_tensor)
+            if self.preserve_signs:
+                self._synapse_sign.copy_(torch.sign(W_dense) * mask_tensor)
 
     # ------------------------------------------------------------------ forward
 
@@ -352,6 +370,8 @@ class BiologicalCfCCell(nn.Module):
         if self.mode == "masked" and self._synapse_mask is not None:
             mask = self._synapse_mask.to(self._w_macro_param.device).float()
             self._w_macro_param.mul_(mask)
+            if self.preserve_signs:
+                self._w_macro_param.copy_(self._effective_W())
         if isinstance(self.W_in, RoutedLinear):
             self.W_in.apply_mask()
 
@@ -485,6 +505,7 @@ def build_network_from_meta(
     connectivity: str = "structured",
     input_routes: Optional[dict] = None,
     include_motor_head: bool = True,
+    preserve_signs: bool = False,
 ) -> BiologicalCfCNetwork:
     """
     One-call factory: load a ReducedModel from disk and build the full network.
@@ -539,7 +560,10 @@ def build_network_from_meta(
         dt=dt,
         connectivity=connectivity,
         input_routes=input_routes,
+        preserve_signs=preserve_signs,
     )
 
-    return BiologicalCfCNetwork(cell, output_dim=output_dim,
+    network = BiologicalCfCNetwork(cell, output_dim=output_dim,
         return_sequences=return_sequences, include_motor_head=include_motor_head)
+    network.graph_provenance = dict(model.provenance)
+    return network

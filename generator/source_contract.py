@@ -100,6 +100,24 @@ def validate_source(source):
             raise ValueError('CAVE source requires count-checked query completeness')
 
 
+def publish_directory(stage, output):
+    """Atomically rename a prepared directory, retrying only transient Windows locks.
+
+    Callers own staging cleanup. Existing destinations are never replaced.
+    """
+    stage, output = Path(stage), Path(output)
+    for attempt in range(4):
+        if output.exists():
+            raise FileExistsError(f'Output appeared during preparation: {output}')
+        try:
+            os.rename(stage, output)
+            return
+        except OSError as exc:
+            if getattr(exc, 'winerror', None) not in (5, 32, 33) or attempt == 3:
+                raise
+            time.sleep(.05 * 2**attempt)
+
+
 def write_bundle(nodes, edges, output, source, summary):
     """Publish a complete new directory only after both tables serialize successfully."""
     validate_source(source)
@@ -125,19 +143,7 @@ def write_bundle(nodes, edges, output, source, summary):
                   'source_manifest_sha256': manifest_sha256(manifest)}
         (stage/'source_manifest.json').write_text(json.dumps(manifest, indent=2, allow_nan=False), encoding='utf-8')
         (stage/'circuit_summary.json').write_text(json.dumps(report, indent=2, allow_nan=False), encoding='utf-8')
-        # rename, never replace: the existing input dataset is not an update target.
-        for attempt in range(4):
-            if output.exists():
-                raise FileExistsError(f'Output appeared during extraction: {output}')
-            try:
-                os.rename(stage, output)
-                break
-            except OSError as exc:
-                # Antivirus/indexer handles can briefly deny a Windows rename.
-                # Keep publication atomic; permanent failures still propagate.
-                if getattr(exc, 'winerror', None) not in (5, 32, 33) or attempt == 3:
-                    raise
-                time.sleep(.05 * 2**attempt)
+        publish_directory(stage, output)
     return manifest
 
 

@@ -1,9 +1,44 @@
-# Chong Fly: Biologically Grounded Drone Autopilot (Drosophila Connectome & CfC)
+# Chong Fly: Drosophila Connectome Navigation Research
 
-Flight evaluation now uses `flight-benchmark-v7`, with navigation-only learning,
+The [brake-first and sensor geometry report](TEACHER_GEOMETRY_UK.md) covers
+teacher v4, correct downward cylinder-cap hits and box-face normals, stable
+scene seeds, and a shared comparison runner. Across 128 ten-second scenes,
+v4 had no collisions and three telemetry stops, including one new regression.
+Close-clearance cases and range surface transitions still prevent admission.
+
+The [teacher braking report](TEACHER_BRAKING_UK.md) describes the latest
+versioned teacher fix and matched 96-scene comparison: collisions fell from
+8 to 1, with two telemetry faults still unresolved. Historical v2 demonstrations
+remain available for exact replay but are incompatible with current pretraining.
+No replacement training dataset or newly admitted model was produced.
+
+The [spatial calibration and teacher replay report](SPATIAL_CALIBRATION_UK.md)
+documents the latest twelve-case admission gate, measured width dependence,
+an experimental divisive encoding and exact reproduction of ten terminated
+teacher episodes. Simple input normalization did not resolve the longer-run
+amplitude failures; the default encoding remains unchanged.
+
+The [current registry selection guide](REGISTRY_SELECTION_UK.md) provides the
+executable research pipeline, configuration, reproducibility checks and measured
+results for k301/k306. It exports each trial's exact weights and graph, and
+excludes candidates that fail functional admission. The first comparison
+completed all seven short physical scenes for both graphs, but neither passed
+the distance/amplitude gate. No candidate has scientific or flight admission.
+
+The [navigation learning report](NAVIGATION_LEARNING_UK.md) documents explicit
+threat encoding, a neutral-origin option, channel-specific yaw balancing,
+temporal response checks, two trained seeds and named physical challenge scenes.
+Its runs provide the historical comparison for the current guide above.
+
+The [k306 learning diagnostic](CANDIDATE_DIAGNOSTICS_UK.md) now includes
+held-out metrics, explicit research-only pretraining, optional preservation of
+initial synaptic signs, and a verified checkpoint. Candidates remain unapproved
+for a large search; short-run improvement is not flight validation.
+
+Flight evaluation now uses `flight-benchmark-v8`, with physical yaw-burst metrics, navigation-only learning,
 a shared altitude supervisor, corrected coordinates,
-versioned geometric reflex demonstrations and role-preserving k128/k256
-candidates, explicit input/output routes and no dense recurrent bypass in structured mode.
+versioned geometric reflex demonstrations, explicit input/output routes
+and no dense recurrent bypass in structured mode.
 Read the [current navigation training contract](NAVIGATION_TRAINING_UK.md),
 [CAVE acquisition and source integrity contract](CONNECTOME_SOURCE_UK.md),
 [coordinate and pretraining history](COORDINATES_AND_PRETRAIN_UK.md),
@@ -11,10 +46,21 @@ Read the [current navigation training contract](NAVIGATION_TRAINING_UK.md),
 [routing contract](ROUTING_CONTRACT_UK.md), [neural contract](NEURAL_CONTRACT_UK.md), and the
 [simulation benchmark contract](BENCHMARK_V2_UK.md) before continuing Optuna.
 Earlier scores and trained checkpoints are incompatible with the new dynamics.
-The bundled role-degree candidates come from the local **synthetic** graph, not
-authenticated FlyWire data. Historical architecture claims and benchmark tables
-below are not validation of these new candidates or of flight readiness.
-The current structured candidates fail the teacher-route check (ToF→yaw is
+The historical synthetic graph, reduced candidates, v1/v2 demonstrations and
+Optuna database have been moved to a reversible local archive. New measured
+candidates are isolated under `data/reduced_models/flywire783_filtered_v2/`. See the
+[artifact cleanup record](ARTIFACT_CLEANUP_UK.md) for the inventory and recovery details.
+Tests now generate tiny explicitly synthetic graphs in temporary directories;
+they do not load active flight candidates. Real FlyWire sources and v3
+geometric demonstrations remain available. Historical architecture claims and
+benchmark tables below are not validation of flight readiness.
+The [filtered FlyWire 783 preparation report](FILTERED_CANDIDATES_783_UK.md)
+documents official filtered acquisition, four versioned candidates and offline
+verification. The k301/k306 graphs pass required directed-route checks; k242 is
+rejected for missing ToF→yaw. All remain `training_ready=false`, with explicit
+source-quality and engineering-mapping questions. Use the commands in that
+report for this measured candidate set; older grids below are historical.
+The archived structured candidates failed the teacher-route check (ToF→yaw is
 absent in the source graph as well as k128/k256). The [route audit](data/sensor_route_audit_v1.json)
 distinguishes source/mapping gaps from routes lost or introduced by reduction.
 The [range altitude controller](ALTITUDE_CONTROL_UK.md) is now included in
@@ -26,7 +72,7 @@ The [flight candidate registry and directed audit](FLIGHT_CANDIDATES_UK.md)
 now verify a separate real FlyWire 783 LPLC2→DNp06 projection: 1,442 synapses
 across 201 directed neuron pairs. This is anatomical evidence for a candidate
 pathway; its ToF encoding and RC decoder remain unvalidated. It does not replace
-the synthetic model artifacts or certify their routes.
+the archived synthetic model artifacts or certify their routes.
 
 The [saccade circuit audit](SACCADE_CIRCUIT_UK.md) resolves DNae014/DNb01
 from author root IDs and identifies substantial same-root counts in raw CAVE
@@ -39,7 +85,12 @@ The project translates whole-brain connectomic pathways into high-frequency clos
 
 ---
 
-## 🌟 Architecture Overview
+## Historical Architecture Proposal
+
+The architecture claims, grid sizes, benchmark numbers and roadmap below are
+historical material. The active controller is a graph-constrained leaky-rate
+model; the current measured candidates and launch commands are documented in
+[the registry selection guide](REGISTRY_SELECTION_UK.md).
 
 The neural architecture integrates two functional subsystems extracted directly from the FlyWire whole-brain connectome dataset:
 

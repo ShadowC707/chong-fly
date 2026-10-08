@@ -110,7 +110,7 @@ def select_annotations(path, *, version, target_classes, excluded_classes=(), ex
         records.append({'root_id':row['root_id'], 'cell_type':next(iter(matches)),
                         'side':row['side'], 'super_class':row['super_class'],
                         'source_cell_type':row['cell_type'], 'source_hemibrain_type':row['hemibrain_type'],
-                        **{key:row[key] for key in ('top_nt','top_nt_conf','known_nt') if key in row}})
+                        **{key:row[key] for key in ('top_nt','top_nt_conf','known_nt','known_nt_source') if key in row}})
     if not records:
         raise ValueError('No published neurons match requested exact labels')
     nodes = pd.DataFrame(records).sort_values('root_id').reset_index(drop=True)

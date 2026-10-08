@@ -36,12 +36,15 @@ def test_audit_refuses_to_compare_artifacts_from_a_different_source():
         audit_routes(source, [model])
 
 
-@pytest.mark.parametrize('k', [128, 256])
-def test_current_structured_yaw_is_invariant_to_tof_with_identical_flow_history(k):
+@pytest.mark.parametrize('sparse', [False, True])
+def test_missing_route_yaw_is_invariant_to_tof_with_identical_flow_history(tmp_path, sparse):
     import torch
-    from optimizer.evaluate import create_model
-    torch.manual_seed(42)
-    model = create_model({'k_clusters': k})
+    from simulation.policy import ChongFlyMSPPolicy
+    from tests.synthetic_graphs import write_tiny_model
+    meta = write_tiny_model(tmp_path, looming_to_yaw=False, sparse=sparse)
+    with torch.random.fork_rng(devices=[]):
+        torch.manual_seed(42)
+        model = ChongFlyMSPPolicy.from_meta(str(meta))
     x = torch.ones(2, 12, 74)
     x[..., :2] = 0
     x[1, :, 2:66] = .1

@@ -130,10 +130,9 @@ def test_default_optuna_candidates_do_not_return_to_collapsed_spectral_models(tm
         def suggest_float(self, *args):
             raise AssertionError('Do not tune ineffective all-entry sparsity on these sparse graphs')
     trial = Trial()
-    with pytest.raises(FileNotFoundError, match='meta_role_degree_k128'):
+    with pytest.raises(ValueError, match='registry'):
         create_model(trial, base_dir=str(tmp_path))
-    assert trial.choices['k_clusters'] == [128, 256]
-    assert trial.choices['reducer'] == ['role_degree']
+    assert trial.choices == {}
 
 
 def test_default_missing_artifacts_explain_regeneration(tmp_path):

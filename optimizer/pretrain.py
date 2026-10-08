@@ -39,6 +39,9 @@ def pretrain_policy(
     seed: Optional[int] = None,
     device: Optional[Union[str, torch.device]] = None,
     validation_fraction: float = 0.2,
+    research_only: bool = False,
+    loss_mode: str = 'behavior-v1',
+    yaw_balance: float = .5,
 ) -> Any:
     """
     Rapidly pre-trains a policy using Behavioral Cloning on reflex demonstration sequences.
@@ -54,6 +57,9 @@ def pretrain_policy(
     seed : optional RNG seed for reproducible splitting/subsampling.
     validation_fraction : held-out fraction within each scenario (default: 0.2).
     device : torch device (default: cpu or policy device).
+    research_only : explicit opt-in for structurally valid but unapproved artifacts.
+    loss_mode : behavior-v1, channel-v2 (yaw direction), or channel-v3 (yaw amplitude bins).
+    yaw_balance : mix of empirical yaw frequencies and equal group mass.
 
     Returns
     -------
@@ -62,6 +68,15 @@ def pretrain_policy(
     if policy is None or not isinstance(policy, torch.nn.Module):
         # Non-PyTorch dummy policy pass-through
         return policy
+
+    if type(research_only) is not bool:
+        raise ValueError('research_only must be an explicit boolean')
+    if getattr(policy, 'training_admission', None) is False and not research_only:
+        raise ValueError('Artifact lacks training admission; use research_only=True for a bounded diagnostic')
+    if loss_mode not in {'behavior-v1', 'channel-v2', 'channel-v3'}:
+        raise ValueError('Unknown loss_mode')
+    if not np.isfinite(yaw_balance) or not 0 <= yaw_balance <= 1:
+        raise ValueError('yaw_balance must be in [0, 1]')
 
     # A requested dataset is part of the experiment, never an optional hint.
     if isinstance(dataset_path, dict):
@@ -178,6 +193,16 @@ def pretrain_policy(
     present = counts > 0
     class_weights[present] = counts.sum() / (present.sum()*counts[present])
     frame_weights = class_weights[labels_sub.clamp_min(0)] * valid_sub
+    channel_weights = None
+    if loss_mode in {'channel-v2', 'channel-v3'}:
+        from optimizer.navigation_loss import navigation_weights, navigation_loss
+        channel_weights = navigation_weights(Y_sub, valid_sub, labels_sub, len(names),
+                                             yaw_balance=yaw_balance, amplitude_bins=loss_mode == 'channel-v3')
+    yaw_delta = Y_sub[..., 3]-PWM_MID
+    yaw_counts = {'neutral':int(((yaw_delta.abs() <= 1) & valid_sub).sum()),
+                  'right':int(((yaw_delta > 1) & valid_sub).sum()),
+                  'left':int(((yaw_delta < -1) & valid_sub).sum())}
+    expected_valid_per_episode = float(valid_sub.sum())/num_subset
 
     # Resolve target device
     if device is None:
@@ -189,6 +214,8 @@ def pretrain_policy(
     X_sub = X_sub.to(device)
     Y_sub = Y_sub.to(device)
     frame_weights = frame_weights.to(device)
+    if channel_weights is not None:
+        channel_weights = channel_weights.to(device)
 
     # 3. Setup optimizer and training mode
     policy.train()
@@ -226,7 +253,17 @@ def pretrain_policy(
 
             weights = frame_weights[batch_indices]
             errors = (pred_norm - target_norm).square().mean(dim=-1)
-            loss = (errors * weights).sum() / weights.sum()
+            if channel_weights is None:
+                loss = (errors * weights).sum() / weights.sum()
+                numerator = (errors.detach()*weights).sum()
+                denominator = float(weights.sum())
+            else:
+                # Fixed expected batch mass: a rare-only batch cannot silently
+                # amplify itself by dividing by its own observed weight sum.
+                denominator = expected_valid_per_episode*len(batch_indices)*len(NAVIGATION_INDICES)
+                loss = navigation_loss(pwm_pred, Y_batch, channel_weights[batch_indices],
+                                       normalizer=denominator)
+                numerator = loss.detach()*denominator
 
             if loss.requires_grad:
                 loss.backward()
@@ -239,8 +276,8 @@ def pretrain_policy(
                     policy.post_step()
 
 
-            loss_numerator += float((errors.detach()*weights).sum())
-            loss_denominator += float(weights.sum())
+            loss_numerator += float(numerator)
+            loss_denominator += denominator
 
         loss_history.append(loss_numerator / loss_denominator)
         if validation_indices:
@@ -282,12 +319,21 @@ def pretrain_policy(
         "_pretrain_info",
         {
             "dt": dataset_dt,
+            "research_only": research_only,
+            "artifact_training_admission": getattr(policy, 'training_admission', None),
             "epochs": epochs,
             "subset_size": num_subset,
             "subset_indices": indices.tolist(),
             "validation_indices": validation_indices,
             "subset_scenario_counts": dict(Counter(scenarios[i] for i in indices)),
             "training_behavior_counts": {name: int(counts[i]) for i, name in enumerate(names)},
+            "training_yaw_counts": yaw_counts,
+            "loss_contract": {"version":loss_mode,
+                              "yaw_balance":yaw_balance if loss_mode != 'behavior-v1' else None,
+                              "yaw_group_threshold_pwm":1. if loss_mode != 'behavior-v1' else None,
+                              "yaw_amplitude_threshold_pwm":200. if loss_mode == 'channel-v3' else None,
+                              "normalizer":'expected-training-batch-mass' if loss_mode != 'behavior-v1'
+                                           else 'observed-batch-behavior-mass'},
             "validation_loss_history": validation_history,
             "validation_channel_mae_pwm": validation_mae,
             "validation_behavior_mae_pwm": validation_behavior_mae,

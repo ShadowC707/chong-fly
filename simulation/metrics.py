@@ -47,6 +47,40 @@ def calculate_saccades_yaw(pwm_history: np.ndarray, threshold: float = SACCADE_Y
     return saccade_count
 
 
+def measure_yaw_bursts(yaw_rates, *, dt):
+    """Short physical turns under a versioned engineering definition.
+
+    Rates are measured body-Z rad/s, not PWM jumps. Hysteresis starts at
+    0.4 rad/s and ends below 0.2; an event requires a 0.75 peak, >=0.1 rad
+    angle and 0.06..1.0 s duration. An unfinished/sustained turn is excluded.
+    This is an MVP maneuver metric, not biological proof of a fly saccade.
+    """
+    if not math.isfinite(dt) or dt <= 0:
+        raise ValueError('dt must be positive and finite')
+    rates = np.asarray(yaw_rates, dtype=float)
+    if rates.ndim != 1 or not np.isfinite(rates).all():
+        raise ValueError('Yaw rates must be a finite one-dimensional series')
+    events, start, sign = [], None, 0
+    def finish(end):
+        sample = rates[start:end]
+        duration = len(sample)*dt
+        angle = float(sample.sum()*dt)
+        peak = float(np.abs(sample).max())
+        if .06-1e-9 <= duration <= 1.+1e-9 and abs(angle) >= .1 and peak >= .75:
+            events.append({'start_s':start*dt, 'duration_s':duration,
+                           'angle_rad':angle, 'peak_rate_rad_s':peak})
+    for i, rate in enumerate(rates):
+        if start is not None and (abs(rate) < .2 or rate*sign < 0):
+            finish(i)
+            start = None
+        if start is None and abs(rate) >= .4:
+            start, sign = i, np.sign(rate)
+    return {'version':'physical-yaw-bursts-v1', 'dt':dt, 'count':len(events), 'events':events,
+            'definition':{'start_rate_rad_s':.4, 'end_rate_rad_s':.2,
+                          'peak_min_rad_s':.75, 'angle_min_rad':.1,
+                          'duration_min_s':.06, 'duration_max_s':1.}}
+
+
 # ... (Клас VoxelTracker залишаєш як був, він згодиться пізніше) ...
 
 class VoxelTracker:

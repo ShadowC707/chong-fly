@@ -97,6 +97,7 @@ def test_expert_policy_apf_directional_repulsion():
 
     # 1. Перешкода зліва (ToF сітка 8x8, ліва половина: стовпці 0..3)
     obs_left = np.ones(74, dtype=np.float32)
+    obs_left[:2] = 0.0  # isolate directional response at rest
     tof_left = np.ones((8, 8))
     tof_left[:, 0:4] = 0.2  # Близько
     obs_left[2:66] = tof_left.flatten()
@@ -106,6 +107,7 @@ def test_expert_policy_apf_directional_repulsion():
 
     # 2. Перешкода справа (стовпці 4..7)
     obs_right = np.ones(74, dtype=np.float32)
+    obs_right[:2] = 0.0
     tof_right = np.ones((8, 8))
     tof_right[:, 4:8] = 0.2
     obs_right[2:66] = tof_right.flatten()
@@ -125,6 +127,7 @@ def test_expert_policy_apf_symmetric_braking():
     expert = ExpertReflexPolicy(distance_threshold_m=0.8, noise_std_pwm=0.0)
     
     obs_wall = np.ones(74, dtype=np.float32)
+    obs_wall[:2] = 0.0
     obs_wall[2:66] = 0.15  # Плоска стіна
     
     pwm = expert.step(obs_wall)
@@ -242,7 +245,7 @@ def test_pretrain_policy_bagging_subsets():
     assert info1["subset_indices"] != info2["subset_indices"]
 
 
-def test_optuna_objective_end_to_end(monkeypatch):
+def test_optuna_objective_end_to_end(monkeypatch, tiny_model_meta):
     """
     End-to-End інтеграційний тест:
     Optuna trial запускає objective() з швидким навчанням (1 епоха)
@@ -253,10 +256,10 @@ def test_optuna_objective_end_to_end(monkeypatch):
     import optuna
     from optimizer.evaluate import objective
     from optimizer import evaluate
-    original_factory = evaluate.create_model
-    # Explicit dense baseline: the current structured graph cannot learn ToF→yaw.
+    from simulation.policy import ChongFlyMSPPolicy
+    # Test structured learning with all required directed routes.
     monkeypatch.setattr(evaluate, 'create_model', lambda *a, **kw:
-                        original_factory({'connectivity': 'unconstrained', 'k_clusters': 128}))
+                        ChongFlyMSPPolicy.from_meta(str(tiny_model_meta)))
 
     # Компактний датасет для швидкого тесту
     dataset = generate_reflex_dataset(num_episodes=4, seq_len=15, seed=123)

@@ -59,6 +59,12 @@ wandb/
 htmlcov/
 *.log
 scratch/
+.test-tmp*/
+# Immutable measured bulk responses are local; inventories and small candidates are tracked.
+data/flywire783_filtered_source_*/*.parquet
+data/flywire783_filtered_source_*/raw/*.parquet
+# Reversible local archives contain historical bulk data, not active candidates.
+archive/
 *.swp
 *.swo
 *~
