@@ -1,0 +1,192 @@
+{
+  "date": "2026-10-23",
+  "recovery_commit": "83bed72",
+  "checkout": "Materialized from Git index using checkout-index with core.autocrlf=true; no copied local datasets/traces.",
+  "environment": "Existing Windows Python 3.12 venv; not a fresh dependency installation or Linux/Pi run.",
+  "pytest": {
+    "passed": 800,
+    "seconds": 70.34,
+    "removed_obsolete_test": "scratch_apply_gpu import inertness"
+  },
+  "artifacts": {
+    "packages_verified": [
+      "k306_tau025_bridge_v1",
+      "k306_tau025_hold_v1",
+      "k306_tau025_integrated_v1",
+      "k306_tau025_numpy_behaviors_v2",
+      "k306_tau025_numpy_v1",
+      "k306_tau025_system_v1"
+    ],
+    "assembly_passed": true,
+    "checkpoint_loaded": true,
+    "candidate": "bridge_role_k306",
+    "release": {
+      "passed": true,
+      "mode": "offline_synthetic_telemetry_no_physics",
+      "accepted_commands": 40,
+      "accepted_sessions": [
+        "self-check-0",
+        "self-check-1"
+      ],
+      "watchdog_tripped": true,
+      "old_session_rejected": true,
+      "forbidden_modules_loaded": [],
+      "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+      "release_sha256": "726248862613d3be2716239037aed1698b8fa629b558c0b238b31aa6a54c937c",
+      "numpy_version": "2.5.2",
+      "bundle_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+      "limitation": "Synthetic clear telemetry; no hardware I/O, real-time scheduler or physical fallback validation."
+    },
+    "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1"
+  },
+  "release_rebuilt": true,
+  "physical_cases": [
+    {
+      "case": "normal",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "bounded_jitter",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "response_loss",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "response_expiry",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "sensor_loss",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "manual_reentry",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "watchdog_reentry",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "old_session_reentry",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_sync",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_multi",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_latency",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_held",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_loss",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    },
+    {
+      "case": "maneuver_manual_reentry",
+      "passed": true,
+      "exact_equal": {
+        "physics": true,
+        "traces": true,
+        "receiver_events": true,
+        "link_events": true
+      }
+    }
+  ],
+  "comparison_exclusion": "Only manifest_sha256 in command traces, which includes executing file paths.",
+  "control_source_bytes_unchanged": true,
+  "limits": [
+    "First cleanup only: older tracked experiment results are retained.",
+    "Local backup is on the same disk.",
+    "No remote fetch/push, main merge or hardware validation."
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "base_commit": "cc6797135067ade7e1ad38c328029b411003be9e",
+  "reviewed_source_commit": "3917686450dcf6659a916fe930de4759e7209f05",
+  "stages": [
+    {
+      "stage": 1,
+      "commit": "76466af622923c0dcacb3eb05e09f70d973a0189",
+      "title": "refactor: extract artifact IO and retire obsolete entrypoints",
+      "pytest": "472 passed in 35.69s"
+    },
+    {
+      "stage": 2,
+      "commit": "867bafada833122e87bf337003d8ea0d5c1ba0d7",
+      "title": "data: record measured FlyWire candidates and retire synthetic inputs",
+      "pytest": "472 passed in 27.87s"
+    },
+    {
+      "stage": 3,
+      "commit": "d57d59b1a14cc7a2ad19f7581a765690b297d730",
+      "title": "fix: align ToF geometry and teacher training contracts",
+      "pytest": "577 passed in 32.28s"
+    },
+    {
+      "stage": 4,
+      "commit": "0a1539a3f0c29dbf8af8810254c622ea86128305",
+      "title": "feat: add recurrent diagnostics and frozen-core model selection",
+      "pytest": "638 passed in 37.30s"
+    },
+    {
+      "stage": 5,
+      "commit": "364972e8935f448b78c75b2efcb759321d652875",
+      "title": "feat: add XY coordination and exact-checkpoint trajectory evaluation",
+      "pytest": "692 passed in 40.25s"
+    },
+    {
+      "stage": 6,
+      "commit": "ead51360879aa163a968b544b0c0e166b5a682e8",
+      "title": "feat: assemble NumPy runtime with sensor and authority contracts",
+      "pytest": "771 passed in 56.37s"
+    },
+    {
+      "stage": 7,
+      "commit": "8c112f301b0602e34181452bc8fd201c327d7ad3",
+      "title": "feat: connect session receiver transport and offline release",
+      "pytest": "800 passed in 61.49s (0:01:01)"
+    },
+    {
+      "stage": 8,
+      "commit": "ce9b845394341aa96173065b301904b4ddb8c099",
+      "title": "data: preserve the exact MVP checkpoint and integration evidence",
+      "pytest": "800 passed in 69.25s (0:01:09)"
+    }
+  ],
+  "integration": {
+    "artifacts_verified": true,
+    "checkpoint": "bridge_role_k306",
+    "release": {
+      "passed": true,
+      "mode": "offline_synthetic_telemetry_no_physics",
+      "accepted_commands": 40,
+      "accepted_sessions": [
+        "self-check-0",
+        "self-check-1"
+      ],
+      "watchdog_tripped": true,
+      "old_session_rejected": true,
+      "forbidden_modules_loaded": [],
+      "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+      "release_sha256": "726248862613d3be2716239037aed1698b8fa629b558c0b238b31aa6a54c937c",
+      "numpy_version": "2.5.2",
+      "bundle_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+      "limitation": "Synthetic clear telemetry; no hardware I/O, real-time scheduler or physical fallback validation."
+    },
+    "physical_cases": [
+      {
+        "case": "normal",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "bounded_jitter",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "response_loss",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "response_expiry",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "sensor_loss",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "manual_reentry",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "watchdog_reentry",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "old_session_reentry",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_sync",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_multi",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_latency",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_held",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_loss",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      },
+      {
+        "case": "maneuver_manual_reentry",
+        "exact_equal": {
+          "physics": true,
+          "traces": true,
+          "receiver_events": true,
+          "link_events": true
+        }
+      }
+    ],
+    "physical_passed": true,
+    "limitation": "Same Windows environment; comparison excludes only path-dependent trace manifest SHA. No hardware execution."
+  },
+  "historical_files_omitted": 231,
+  "historical_git_blob_bytes_omitted": 93133824,
+  "source_equivalence": "All executable code and retained artifacts copied from reviewed source without edits; documentation-only adaptations follow.",
+  "limitations": [
+    "Existing Windows Python environment, no new dependency installation.",
+    "Final documentation commit is validated separately; its hash cannot be embedded in itself.",
+    "Main is not merged by this operation."
+  ]
+}
