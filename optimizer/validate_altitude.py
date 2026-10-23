@@ -10,7 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from configs.flight_config import CONTROL_DT
-from generator.generate_reflex_dataset import ExpertReflexPolicy
+from generator.generate_reflex_dataset import make_teacher
 from generator.reflex_contract import TEACHER_VERSION
 from optimizer.rollout import simulate_policy_rollout
 from simulation.altitude_control import AltitudeHold
@@ -19,7 +19,7 @@ from simulation.altitude_control import AltitudeHold
 class TeacherPolicy:
     """Adapt the same observation-only teacher to the common rollout interface."""
     def __init__(self):
-        self.teacher = ExpertReflexPolicy()
+        self.teacher = make_teacher(TEACHER_VERSION)
 
     def reset_state(self):
         self.teacher.reset()

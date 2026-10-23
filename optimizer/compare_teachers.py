@@ -8,14 +8,15 @@ import torch
 
 from configs.flight_config import CONTROL_DT, DEFAULT_DT, PWM_MID
 from generator import generate_reflex_dataset as generator
-from generator.prepare_flywire_candidates import publication, write_json
-from generator.reflex_contract import TEACHER_VERSION, LEGACY_TEACHER_VERSION, BRAKING_TEACHER_VERSION
+from artifacts.io import publication, write_json
+from generator.reflex_contract import TEACHER_VERSION, LEGACY_TEACHER_VERSION, BRAKING_TEACHER_VERSION, BRAKE_FIRST_TEACHER_VERSION
 from generator.source_contract import file_sha256
 from optimizer.search_pipeline import validate_demonstration_context
 from simulation.altitude_control import AltitudeHold, AltitudeTelemetryError, sample_from_observation
 from simulation.memory import EgocentricMemoryWrapper
 
-VERSIONS = {'legacy':LEGACY_TEACHER_VERSION, 'previous':BRAKING_TEACHER_VERSION, 'braking':TEACHER_VERSION}
+VERSIONS = {'legacy':LEGACY_TEACHER_VERSION, 'previous':BRAKING_TEACHER_VERSION,
+            'braking':BRAKE_FIRST_TEACHER_VERSION, 'corrected':TEACHER_VERSION}
 
 
 def _rollout(record, profile, version, parameters, steps):

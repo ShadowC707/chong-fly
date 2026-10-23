@@ -3,10 +3,11 @@ import numpy as np
 import torch
 
 from configs.flight_config import CONTROL_DT
+from generator.reflex_contract import TEACHER_VERSION
 
 
 @torch.no_grad()
-def temporal_response_probe(policy, *, tolerance_pwm=20., coverage_columns=(4,)):
+def temporal_response_probe(policy, *, tolerance_pwm=20., coverage_columns=(4,), teacher_version=TEACHER_VERSION):
     """Clear -> left/right threat -> clear, without resetting recurrent state.
 
     By default four cases combine mirrored threats at 0.35/0.70 m. Optional
@@ -15,7 +16,7 @@ def temporal_response_probe(policy, *, tolerance_pwm=20., coverage_columns=(4,))
     remaining inside the tolerance for the rest of the two-second recovery.
     These controlled sensor stimuli are diagnostics, not physical trajectories.
     """
-    from generator.generate_reflex_dataset import ExpertReflexPolicy
+    from generator.generate_reflex_dataset import make_teacher
     if (not isinstance(coverage_columns, (tuple, list)) or not coverage_columns or
         any(type(c) is not int or not 1 <= c <= 4 for c in coverage_columns) or
         len(set(coverage_columns)) != len(coverage_columns)):
@@ -37,7 +38,7 @@ def temporal_response_probe(policy, *, tolerance_pwm=20., coverage_columns=(4,))
         raise ValueError('Nonfinite temporal response')
     rows = []
     for i, (side, distance, width) in enumerate(cases):
-        expert = ExpertReflexPolicy(noise_std_pwm=0)
+        expert = make_teacher(teacher_version, noise_std_pwm=0)
         targets = torch.from_numpy(np.stack([expert.step(x, dt=CONTROL_DT)
                                              for x in obs[i].cpu().numpy()]))
         yaw = pwm[i, :, 3].cpu()
@@ -59,7 +60,7 @@ def temporal_response_probe(policy, *, tolerance_pwm=20., coverage_columns=(4,))
             'onset_s':float(onset[0]*CONTROL_DT) if len(onset) else None,
             'recovery_settle_s':settle*CONTROL_DT if settle < recovery else None,
             'recovery_final_abs_yaw_pwm':float(tail[-1].abs())})
-    return {'dt':CONTROL_DT, 'dtype':str(parameter.dtype), 'tolerance_pwm':tolerance_pwm,
+    return {'dt':CONTROL_DT, 'teacher_version':teacher_version, 'dtype':str(parameter.dtype), 'tolerance_pwm':tolerance_pwm,
             'warmup_s':warmup*CONTROL_DT, 'threat_s':threat*CONTROL_DT,
             'recovery_s':recovery*CONTROL_DT, 'cases':rows}
 

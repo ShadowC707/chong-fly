@@ -639,6 +639,8 @@ class ToFRaycaster:
     room boundaries and obstacles.
     """
 
+    geometry_version = 'point-rays-solid-v2'
+
     def __init__(
         self,
         rows: int = TOF_ROWS,
@@ -753,6 +755,13 @@ class ToFRaycaster:
         if cylinders:
             for cyl in cylinders:
                 cx, cy, r = cyl.center_x, cyl.center_y, cyl.radius
+                # A finite cylinder includes its top disk, not only its side.
+                # Safe denominator also handles exactly horizontal rays.
+                cap_direction = np.abs(dz) > eps
+                t_cap = (cyl.height - pz) / np.where(cap_direction, dz, 1.)
+                cap_x, cap_y = px + t_cap*dx - cx, py + t_cap*dy - cy
+                cap_hit = cap_direction & (t_cap > 0) & (cap_x*cap_x + cap_y*cap_y <= r*r)
+                distances = np.where(cap_hit, np.minimum(distances, t_cap), distances)
                 ox = px - cx
                 oy = py - cy
 
@@ -781,27 +790,19 @@ class ToFRaycaster:
         # ── 3. Intersect with Box Obstacles (Slab Method) ────────────────────
         if boxes:
             for box in boxes:
-                # Slab intersection for all 64 rays
-                inv_d = 1.0 / np.where(np.abs(world_dirs) > eps, world_dirs, np.sign(world_dirs) * eps)
-                t_b1 = (box.x_min - px) * inv_d[:, 0]
-                t_b2 = (box.x_max - px) * inv_d[:, 0]
-                t_near_x = np.minimum(t_b1, t_b2)
-                t_far_x = np.maximum(t_b1, t_b2)
-
-                t_b3 = (box.y_min - py) * inv_d[:, 1]
-                t_b4 = (box.y_max - py) * inv_d[:, 1]
-                t_near_y = np.minimum(t_b3, t_b4)
-                t_far_y = np.maximum(t_b3, t_b4)
-
-                t_b5 = (box.z_min - pz) * inv_d[:, 2]
-                t_b6 = (box.z_max - pz) * inv_d[:, 2]
-                t_near_z = np.minimum(t_b5, t_b6)
-                t_far_z = np.maximum(t_b5, t_b6)
-
-                t_enter = np.maximum(np.maximum(t_near_x, t_near_y), t_near_z)
-                t_exit = np.minimum(np.minimum(t_far_x, t_far_y), t_far_z)
-
-                box_hit = (t_enter <= t_exit) & (t_exit > 0) & (t_enter > 0)
+                # A parallel ray inside a slab imposes no t restriction;
+                # outside it cannot hit. Never calculate 1/0 or 0*infinity.
+                lower = np.array([box.x_min, box.y_min, box.z_min])
+                upper = np.array([box.x_max, box.y_max, box.z_max])
+                origin = np.array([px, py, pz])
+                parallel = np.abs(world_dirs) <= eps
+                inv_d = 1. / np.where(parallel, 1., world_dirs)
+                t_lo, t_hi = (lower-origin)*inv_d, (upper-origin)*inv_d
+                near = np.where(parallel, -np.inf, np.minimum(t_lo, t_hi))
+                far = np.where(parallel, np.inf, np.maximum(t_lo, t_hi))
+                outside = (parallel & ((origin < lower) | (origin > upper))).any(axis=1)
+                t_enter, t_exit = near.max(axis=1), far.min(axis=1)
+                box_hit = ~outside & (t_enter <= t_exit) & (t_exit > 0) & (t_enter > 0)
                 distances = np.where(box_hit, np.minimum(distances, t_enter), distances)
 
         # Clamp and normalize to [0.0, 1.0]
@@ -2067,46 +2068,81 @@ if __name__ == "__main__":
 
 class OpticalFlowOUWrapper:
     """
-    Observation Wrapper that injects Ornstein-Uhlenbeck (OU) noise into 
-    the Optical Flow observations (FlowX, FlowY) when the drone is far 
-    from obstacles. This induces a smooth, deterministic Levy-like 
-    exploration flight pattern without breaking ONNX determinism.
+    Seeded synthetic flow perturbation for exploration experiments, not a
+    learned exploration policy or a Levy-flight model. Distances are in metres;
+    observations still carry normalized ToF. Only the added noise is filtered.
     """
     def __init__(
-        self, 
+        self,
         env: Any,
+        *,
         theta: float = 0.15,
         mu: float = 0.0,
-        sigma: float = 0.3,
+        sigma: float = 0.06,
         dt: float = DEFAULT_DT,
-        clearance_threshold: float = 1.0,
-        seed: int = 42
+        clearance_start_m: float = 0.85,
+        clearance_full_m: float = 1.25,
+        gate_tau_s: float = 0.12,
+        state_decay_tau_s: float = 0.10,
+        seed: int = 42,
     ):
         self.env = env
+        self.tof_range_m = float(env.tof.max_range)
+        values = (theta, mu, sigma, dt, clearance_start_m, clearance_full_m,
+                  gate_tau_s, state_decay_tau_s, self.tof_range_m)
+        if (not all(np.isfinite(v) for v in values) or theta < 0 or sigma < 0
+                or dt <= 0 or gate_tau_s <= 0 or state_decay_tau_s <= 0
+                or not 0 <= clearance_start_m < clearance_full_m <= self.tof_range_m):
+            raise ValueError('Invalid OU parameters or metre-based clearance window')
+        if not math.isclose(dt, env.dt, rel_tol=0, abs_tol=1e-9):
+            raise ValueError('OU dt must equal the wrapped environment physics timestep')
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
         self.dt = dt
-        self.clearance_threshold = clearance_threshold
+        self.clearance_start_m = clearance_start_m
+        self.clearance_full_m = clearance_full_m
+        self.gate_tau_s = gate_tau_s
+        self.state_decay_tau_s = state_decay_tau_s
+        self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.state = np.zeros(2, dtype=np.float32)
-        
-    def _ou_step(self) -> np.ndarray:
-        # OU process: dx = theta * (mu - x) * dt + sigma * sqrt(dt) * noise
+        self.gain = 0.
+
+    def configuration(self) -> Dict[str, Any]:
+        return dict(kind='synthetic_optical_flow_ou', version='smooth-ou-v2',
+                    theta=self.theta, mu=self.mu, sigma=self.sigma, dt=self.dt,
+                    clearance_start_m=self.clearance_start_m,
+                    clearance_full_m=self.clearance_full_m, tof_range_m=self.tof_range_m,
+                    gate_tau_s=self.gate_tau_s, state_decay_tau_s=self.state_decay_tau_s)
+
+    def _ou_step(self, target_gain: float) -> np.ndarray:
+        # Advance on every physics step, including avoidance. Exact OU update
+        # for the coefficients held over this step; near obstacles the state
+        # decays towards zero instead of freezing a stale offset.
+        rate = self.theta + (1. - target_gain) / self.state_decay_tau_s
+        decay = np.exp(-rate * self.dt)
+        variance_time = -np.expm1(-2. * rate * self.dt) / (2. * rate) if rate else self.dt
         noise = self.rng.normal(size=2).astype(np.float32)
-        dx = self.theta * (self.mu - self.state) * self.dt + self.sigma * np.sqrt(self.dt) * noise
-        self.state += dx
-        return self.state.copy()
+        mean = self.mu * target_gain
+        self.state[:] = mean + (self.state - mean) * decay + self.sigma * target_gain * np.sqrt(variance_time) * noise
+        # Distance can jump when an object leaves the FoV. A spatial ramp alone
+        # cannot smooth that transition; filter its gain in physical time too.
+        self.gain += (target_gain - self.gain) * -np.expm1(-self.dt / self.gate_tau_s)
+        return (self.state * self.gain).astype(np.float32)
 
     def reset(self, **kwargs) -> Any:
         self.state = np.zeros(2, dtype=np.float32)
+        self.gain = 0.
+        seed = kwargs.get('seed')
+        self.rng = np.random.default_rng(self.seed if seed is None else seed)
         result = self.env.reset(**kwargs)
         # Handle cases where reset returns just obs, or (obs, info)
         if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
             obs, info = result
-            return self._inject_noise(obs), info
+            return self._inject_noise(obs, advance=False), info
         else:
-            return self._inject_noise(result)
+            return self._inject_noise(result, advance=False)
 
     def step(self, action: Any, **kwargs) -> Tuple[Any, float, bool, Dict[str, Any]]:
         # Fast evaluator env step returns: (obs_flow, obs_tof), cost, done, info
@@ -2121,23 +2157,27 @@ class OpticalFlowOUWrapper:
             return self._inject_noise(obs), reward, term, trunc, info
         return result
 
-    def _inject_noise(self, obs: Any) -> Any:
-        if isinstance(obs, tuple) and len(obs) == 2:
-            obs_flow, obs_tof = obs
-            tof = np.asarray(obs_tof).ravel()
-            min_dist = np.min(tof) if tof.size > 0 else 1.0
-            if min_dist > self.clearance_threshold:
-                ou_noise = self._ou_step()
-                obs_flow = obs_flow + ou_noise
-            return (obs_flow, obs_tof)
+    def _inject_noise(self, obs: Any, *, advance: bool = True) -> Any:
+        pair = isinstance(obs, tuple) and len(obs) == 2
+        if pair:
+            flow, tof = (np.asarray(x, dtype=np.float32) for x in obs)
         else:
             obs_np = np.asarray(obs, dtype=np.float32).copy()
-            tof = obs_np[FLOW_DIM:(FLOW_DIM + TOF_DIM)] if obs_np.size >= SENSOR_DIM_BASE else np.ones(TOF_DIM, dtype=np.float32)
-            min_dist = np.min(tof) if tof.size > 0 else 1.0
-            if min_dist > self.clearance_threshold:
-                ou_noise = self._ou_step()
-                obs_np[0:FLOW_DIM] += ou_noise
-            return obs_np
+            if obs_np.ndim != 1 or obs_np.size < SENSOR_DIM_BASE:
+                raise ValueError('OU wrapper requires flow[2] and normalized ToF[64]')
+            flow, tof = obs_np[:FLOW_DIM], obs_np[FLOW_DIM:FLOW_DIM + TOF_DIM]
+        if (flow.shape != (FLOW_DIM,) or tof.size != TOF_DIM
+                or not np.isfinite(flow).all() or not np.isfinite(tof).all()
+                or np.any(tof < 0) or np.any(tof > 1)):
+            raise ValueError('OU wrapper requires finite flow and normalized ToF in [0, 1]')
+        distance_m = float(np.min(tof)) * self.tof_range_m
+        target = float(np.clip((distance_m - self.clearance_start_m) /
+                              (self.clearance_full_m - self.clearance_start_m), 0., 1.))
+        perturbation = self._ou_step(target) if advance else np.zeros(FLOW_DIM, dtype=np.float32)
+        if pair:
+            return flow + perturbation, obs[1]
+        obs_np[:FLOW_DIM] += perturbation
+        return obs_np
 
     def __getattr__(self, name):
         return getattr(self.env, name)

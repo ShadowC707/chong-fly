@@ -83,7 +83,7 @@ def test_generator_stops_at_termination_instead_of_resetting_inside_sequence(mon
     from types import SimpleNamespace
     class Env:
         dt = .004
-        tof = SimpleNamespace(max_range=3.5)
+        tof = SimpleNamespace(max_range=3.5, geometry_version='test-double')
         physics = SimpleNamespace(quat=np.array([1, 0, 0, 0]),
                                   quaternion_to_euler=lambda q: [0, 0, 0])
         def step(self, *args, **kwargs):

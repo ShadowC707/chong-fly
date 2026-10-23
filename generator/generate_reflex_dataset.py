@@ -24,6 +24,7 @@ from configs.flight_config import (
 )
 from generator.reflex_contract import (
     DATASET_VERSION, TEACHER_VERSION, LEGACY_TEACHER_VERSION, BRAKING_TEACHER_VERSION,
+    BRAKE_FIRST_TEACHER_VERSION,
     DEFAULT_DATASET_PATH, SCENARIOS, BEHAVIORS, REQUIRED_PATHS,
 )
 from simulation.drone_env import DroneSimulationEnv, RoomBoundaries, BoxObstacle
@@ -39,6 +40,8 @@ class LegacyExpertReflexPolicy:
     threat selects right, with no hidden random label. Sustained clearance
     releases the turn. This heuristic is not a verified flight controller.
     """
+    aggregation_version = 'active-ray-mean-v1'
+
     def __init__(self, distance_threshold_m=APF_DISTANCE_THRESHOLD_M,
                  max_sensor_range_m=TOF_RAYCASTER_MAX_RANGE_M,
                  noise_std_pwm=APF_NOISE_STD_PWM, seed=None,
@@ -83,8 +86,7 @@ class LegacyExpertReflexPolicy:
         active = d < self.d0
         force = np.zeros(64)
         force[active] = self.k_repulsive * (1/d[active] - 1/self.d0) / d[active]**2
-        mean_repulsion = float(force[active].mean()) if active.any() else 0.
-        force_x = float((force * -self.nx)[active].mean()) if active.any() else 0.
+        mean_repulsion, force_x = self._summarize_repulsion(force, active)
         braking = self.max_pitch_brake_pwm * mean_repulsion / (self.repulsion_scale + mean_repulsion)
         if self.latched_turn is None and active.any():
             self.latched_turn = 1 if force_x >= -1e-6 else -1
@@ -100,6 +102,11 @@ class LegacyExpertReflexPolicy:
         if self.noise_std_pwm:
             pwm += self.rng.normal(0, self.noise_std_pwm, 4).astype(np.float32)
         return np.clip(pwm, self.pwm_min, self.pwm_max)
+
+    def _summarize_repulsion(self, force, active):
+        """Historical active-ray mean; preserve old label replay exactly."""
+        return (float(force[active].mean()) if active.any() else 0.,
+                float((force * -self.nx)[active].mean()) if active.any() else 0.)
 
     def _navigation_action(self, obs, braking, yaw, dt, active):
         return (self.pwm_level_roll + self.flow_gain_pwm * obs[1],
@@ -186,8 +193,14 @@ def make_teacher(version, **parameters):
         return LegacyExpertReflexPolicy(**parameters)
     if version == BRAKING_TEACHER_VERSION:
         return BrakingExpertReflexPolicy(**parameters)
-    if version == TEACHER_VERSION:
+    if version == BRAKE_FIRST_TEACHER_VERSION:
         return ExpertReflexPolicy(**parameters)
+    if version == TEACHER_VERSION:
+        from generator.continuous_reflex_teacher import CorrectedExpertReflexPolicy
+        return CorrectedExpertReflexPolicy(**parameters)
+    if version == 'geometry-reflex-continuous-v1':
+        from generator.continuous_reflex_teacher import ContinuousReflexTeacher
+        return ContinuousReflexTeacher(**parameters)
     raise ValueError(f'Unknown teacher version: {version}')
 
 
@@ -235,7 +248,8 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
                             noise_std_pwm=APF_NOISE_STD_PWM, seed=42, output_path=None,
                             pwm_hover=PWM_HOVER, pwm_level_roll=PWM_LEVEL_ROLL,
                             pwm_cruise_pitch=PWM_CRUISE_PITCH, pwm_neutral_yaw=PWM_NEUTRAL_YAW,
-                            pwm_min=PWM_MIN, pwm_max=PWM_MAX, scene_profile='standard-v1'):
+                            pwm_min=PWM_MIN, pwm_max=PWM_MAX, scene_profile='standard-v1',
+                            teacher_version=TEACHER_VERSION):
     """One continuous trajectory per row, explicit valid-prefix padding on termination.
 
     dt is the policy period, a multiple of the 4 ms physics tick. Optional
@@ -251,36 +265,44 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
         raise ValueError('num_episodes and seq_len must be positive integers')
     if scene_profile not in {'standard-v1', 'varied-v1'}:
         raise ValueError('Unknown scene_profile')
+    make_teacher(teacher_version, noise_std_pwm=0)  # Reject unknown identity before collection.
     if not np.isfinite(dt) or dt <= 0: raise ValueError('dt must be positive and finite')
     ratio = dt/DEFAULT_DT
     if ratio < 1 or not math.isclose(ratio, round(ratio), abs_tol=1e-8, rel_tol=0):
         raise ValueError('Control dt must be an integer multiple of physics dt')
     if not np.isfinite(noise_std_pwm) or noise_std_pwm < 0:
         raise ValueError('Execution noise must be finite and nonnegative')
+
     # Scene selection cannot depend on trajectory length or an early crash.
     episode_seeds = np.random.default_rng(seed).integers(0, 2**31-1, size=num_episodes)
     rng = np.random.default_rng(np.random.SeedSequence(seed).spawn(1)[0])
+
     X = np.zeros((num_episodes, seq_len, SENSOR_DIM), dtype=np.float32)
     Y = np.full((num_episodes, seq_len, 4), PWM_MID, dtype=np.float32)
     applied_actions = np.full_like(Y, PWM_MID)
     valid = np.zeros((num_episodes, seq_len), dtype=bool)
     behavior = np.full((num_episodes, seq_len), -1, dtype=np.int64)
     scenarios, records = [], []
+
     for ep in range(num_episodes):
         name = SCENARIOS[ep % len(SCENARIOS)]
         scenarios.append(name)
         ep_seed = int(episode_seeds[ep])
         env, obs = (_make_scenario(name, ep_seed) if scene_profile == 'standard-v1'
                     else _make_scenario(name, ep_seed, profile=scene_profile))
-        expert = ExpertReflexPolicy(distance_threshold_m=distance_threshold_m,
+
+        expert = make_teacher(teacher_version, distance_threshold_m=distance_threshold_m,
             max_sensor_range_m=env.tof.max_range, noise_std_pwm=0, seed=ep_seed,
             pwm_hover=pwm_hover, pwm_level_roll=pwm_level_roll, pwm_cruise_pitch=pwm_cruise_pitch,
             pwm_neutral_yaw=pwm_neutral_yaw, pwm_min=pwm_min, pwm_max=pwm_max)
+
         memory = EgocentricMemoryWrapper()
         altitude = AltitudeHold()
         ticks, done, info = 0, False, {}
+
         try:
             for t in range(seq_len):
+
                 yaw = float(env.physics.quaternion_to_euler(env.physics.quat)[2])
                 ring = memory.update(obs[2:66], current_yaw_rad=-yaw)
                 x = np.concatenate([obs, ring]).astype(np.float32)
@@ -288,6 +310,7 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
                 action = label.copy()
                 action[1:] = np.clip(action[1:] + rng.normal(0, noise_std_pwm, 3), pwm_min, pwm_max)
                 sample = sample_from_observation(env.get_isaac_obs())
+
                 try:
                     action = altitude.apply(action, sample, now_s=ticks*DEFAULT_DT)
                 except AltitudeTelemetryError as exc:
@@ -301,11 +324,13 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
                 X[ep, t], Y[ep, t], valid[ep, t] = x, label, True
                 applied_actions[ep, t] = action
                 behavior[ep, t] = _behavior(x, label)
+
                 for _ in range(round(ratio)):
                     obs, _, done, info = env.step(action, action_type='pwm')
                     ticks += 1
                     if done: break
                 if done: break
+
             records.append({'seed': ep_seed, 'scenario': name, 'valid_steps': int(valid[ep].sum()),
                             'physics_ticks': ticks, 'duration_s': ticks*DEFAULT_DT,
                             'terminated': bool(done), 'crashed': bool(info.get('crashed', False)),
@@ -315,14 +340,17 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
                 records[-1]['failure_reason'] = info.get('failure_reason')
         finally:
             env.close()
+
     counts = Counter(BEHAVIORS[int(b)] for b in behavior[valid])
     dataset = {'X': torch.from_numpy(X), 'Y': torch.from_numpy(Y),
                'applied_actions': torch.from_numpy(applied_actions),
                'valid': torch.from_numpy(valid), 'behavior': torch.from_numpy(behavior),
-               'metadata': {'dataset_version': DATASET_VERSION, 'teacher_version': TEACHER_VERSION,
+               'metadata': {'dataset_version': DATASET_VERSION, 'teacher_version': teacher_version,
+                   'teacher_aggregation_version': expert.aggregation_version,
                    'coordinate_version': COORDINATE_VERSION, 'observation_source': 'geometric_raycast',
                    'dt': dt, 'physics_dt': DEFAULT_DT, 'tof_max_range_m': TOF_RAYCASTER_MAX_RANGE_M,
                    'sensor_dim': SENSOR_DIM, 'action_dim': 4, 'seed': seed,
+                   'sensor_geometry_version': env.tof.geometry_version,
                    'scene_profile':scene_profile,
                    'episode_seed_schedule_version':'independent-scene-seeds-v1',
                    'control_contract': control_contract(),
@@ -333,6 +361,7 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
                    'scenario_counts': dict(Counter(scenarios)), 'behavior_names': list(BEHAVIORS),
                    'behavior_counts': dict(counts), 'episodes': records,
                    'required_sensor_motor_paths': deepcopy(REQUIRED_PATHS)}}
+
     if output_path is not None:
         os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
         torch.save(dataset, output_path)
@@ -343,6 +372,7 @@ def generate_reflex_dataset(num_episodes=60, seq_len=100, dt=CONTROL_DT,
         report['applied_action_max'] = applied_actions[valid].max(axis=0).tolist()
         path = Path(output_path)
         path.with_name(path.stem + '_report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+
     return dataset
 
 

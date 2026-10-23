@@ -24,6 +24,7 @@ def dataset():
             "valid": torch.ones(3, 5, dtype=torch.bool), "behavior": torch.zeros(3, 5, dtype=torch.long),
             "metadata": {"dt": .02, "dataset_version": DATASET_VERSION,
                          "teacher_version": TEACHER_VERSION, "coordinate_version": COORDINATE_VERSION,
+                         "teacher_aggregation_version": 'max-brake-force-weighted-direction-v1',
                          "tof_max_range_m": 3.5, "episode_scenarios": ['test']*3,
                          "control_contract": control_contract(),
                          "behavior_names": ['test'], "required_sensor_motor_paths": REQUIRED_PATHS}}

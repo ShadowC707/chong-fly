@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from configs.flight_config import CONTROL_DT, DEFAULT_DT
-from generator.prepare_flywire_candidates import publication, write_json
+from artifacts.io import publication, write_json
 from generator.source_contract import file_sha256
 from optimizer.search_pipeline import validate_demonstration_context
 from simulation.altitude_control import AltitudeTelemetryError, sample_from_observation

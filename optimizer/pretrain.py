@@ -14,7 +14,7 @@ import hashlib
 import json
 from collections import Counter
 import sys
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -25,7 +25,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from configs.flight_config import PWM_MID, PWM_HALF, PWM_MIN, PWM_MAX, SENSOR_DIM, COORDINATE_VERSION, TOF_RAYCASTER_MAX_RANGE_M
-from generator.reflex_contract import DATASET_VERSION, TEACHER_VERSION, DEFAULT_DATASET_PATH, REQUIRED_PATHS
+from generator.reflex_contract import DATASET_VERSION, TEACHER_VERSION, DEFAULT_DATASET_PATH, REQUIRED_PATHS, TEACHER_AGGREGATION_VERSION
 from simulation.control_contract import control_contract, NAVIGATION_INDICES, NAVIGATION_CHANNELS
 
 
@@ -42,6 +42,7 @@ def pretrain_policy(
     research_only: bool = False,
     loss_mode: str = 'behavior-v1',
     yaw_balance: float = .5,
+    post_step_callback: Optional[Callable[[torch.nn.Module], None]] = None,
 ) -> Any:
     """
     Rapidly pre-trains a policy using Behavioral Cloning on reflex demonstration sequences.
@@ -58,8 +59,11 @@ def pretrain_policy(
     validation_fraction : held-out fraction within each scenario (default: 0.2).
     device : torch device (default: cpu or policy device).
     research_only : explicit opt-in for structurally valid but unapproved artifacts.
-    loss_mode : behavior-v1, channel-v2 (yaw direction), or channel-v3 (yaw amplitude bins).
+    loss_mode : behavior-v1, channel-v2 (direction), channel-v3 (amplitude),
+                or experimental channel-v4 (also balances post-turn neutral frames).
     yaw_balance : mix of empirical yaw frequencies and equal group mass.
+    post_step_callback : optional experiment constraint, called after the native
+                         topology/sign projection on every optimizer update.
 
     Returns
     -------
@@ -71,9 +75,11 @@ def pretrain_policy(
 
     if type(research_only) is not bool:
         raise ValueError('research_only must be an explicit boolean')
+    if post_step_callback is not None and not callable(post_step_callback):
+        raise ValueError('post_step_callback must be callable')
     if getattr(policy, 'training_admission', None) is False and not research_only:
         raise ValueError('Artifact lacks training admission; use research_only=True for a bounded diagnostic')
-    if loss_mode not in {'behavior-v1', 'channel-v2', 'channel-v3'}:
+    if loss_mode not in {'behavior-v1', 'channel-v2', 'channel-v3', 'channel-v4'}:
         raise ValueError('Unknown loss_mode')
     if not np.isfinite(yaw_balance) or not 0 <= yaw_balance <= 1:
         raise ValueError('yaw_balance must be in [0, 1]')
@@ -94,6 +100,8 @@ def pretrain_policy(
     if (metadata.get('dataset_version') != DATASET_VERSION
             or metadata.get('teacher_version') != TEACHER_VERSION):
         raise ValueError('Incompatible reflex dataset/teacher version; regenerate with generator.generate_reflex_dataset')
+    if metadata.get('teacher_aggregation_version') != TEACHER_AGGREGATION_VERSION:
+        raise ValueError('Incompatible teacher aggregation version')
     if (metadata.get('coordinate_version') != COORDINATE_VERSION
             or metadata.get('tof_max_range_m') != TOF_RAYCASTER_MAX_RANGE_M):
         raise ValueError('Dataset coordinate or ToF range contract does not match the simulator')
@@ -194,10 +202,12 @@ def pretrain_policy(
     class_weights[present] = counts.sum() / (present.sum()*counts[present])
     frame_weights = class_weights[labels_sub.clamp_min(0)] * valid_sub
     channel_weights = None
-    if loss_mode in {'channel-v2', 'channel-v3'}:
+    recovery_steps = max(1, int(round(1./dataset_dt))) if loss_mode == 'channel-v4' else None
+    if loss_mode in {'channel-v2', 'channel-v3', 'channel-v4'}:
         from optimizer.navigation_loss import navigation_weights, navigation_loss
         channel_weights = navigation_weights(Y_sub, valid_sub, labels_sub, len(names),
-                                             yaw_balance=yaw_balance, amplitude_bins=loss_mode == 'channel-v3')
+                                             yaw_balance=yaw_balance, amplitude_bins=loss_mode in {'channel-v3', 'channel-v4'},
+                                             recovery_steps=recovery_steps)
     yaw_delta = Y_sub[..., 3]-PWM_MID
     yaw_counts = {'neutral':int(((yaw_delta.abs() <= 1) & valid_sub).sum()),
                   'right':int(((yaw_delta > 1) & valid_sub).sum()),
@@ -274,6 +284,8 @@ def pretrain_policy(
                 # Enforce biological synapse connectivity mask on W_macro
                 if hasattr(policy, "post_step") and callable(policy.post_step):
                     policy.post_step()
+                if post_step_callback is not None:
+                    post_step_callback(policy)
 
 
             loss_numerator += float(numerator)
@@ -331,7 +343,8 @@ def pretrain_policy(
             "loss_contract": {"version":loss_mode,
                               "yaw_balance":yaw_balance if loss_mode != 'behavior-v1' else None,
                               "yaw_group_threshold_pwm":1. if loss_mode != 'behavior-v1' else None,
-                              "yaw_amplitude_threshold_pwm":200. if loss_mode == 'channel-v3' else None,
+                              "yaw_amplitude_threshold_pwm":200. if loss_mode in {'channel-v3', 'channel-v4'} else None,
+                              "yaw_recovery_window_s":recovery_steps*dataset_dt if recovery_steps else None,
                               "normalizer":'expected-training-batch-mass' if loss_mode != 'behavior-v1'
                                            else 'observed-batch-behavior-mass'},
             "validation_loss_history": validation_history,
@@ -341,6 +354,7 @@ def pretrain_policy(
             "control_contract": control_contract(),
             "dataset_version": DATASET_VERSION,
             "teacher_version": TEACHER_VERSION,
+            "teacher_aggregation_version": TEACHER_AGGREGATION_VERSION,
             "coordinate_version": COORDINATE_VERSION,
             "dataset_sha256": dataset_sha256,
             "loss_history": loss_history,

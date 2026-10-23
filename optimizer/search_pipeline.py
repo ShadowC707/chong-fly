@@ -9,7 +9,8 @@ import numpy as np
 import torch
 
 from configs.flight_config import CONTROL_DT
-from generator.prepare_flywire_candidates import publication, write_json
+from generator.reflex_contract import TEACHER_VERSION
+from artifacts.io import publication, write_json
 from generator.source_contract import file_sha256
 from optimizer.candidate_selection import CandidatePool, contract_sha256
 from optimizer.diagnose_candidate import heldout_predictions, prediction_metrics
@@ -28,7 +29,7 @@ DEFAULT_CONFIG = {'epochs':30, 'batch_size':8, 'seed':42, 'device':'cpu',
     'learning_rate_max':.005, 'tau_choices':[.05, .1, .2],
     'scene_steps':500, 'scene_seeds':[20261009]}
 
-GATE = {'version':'navigation-research-gate-v2', 'clear_yaw_max_pwm':20.,
+GATE = {'version':'navigation-research-gate-v3', 'clear_yaw_max_pwm':20.,
     'turn_final_error_max_pwm':100., 'onset_max_s':.2, 'recovery_max_s':.8,
     'roll_mae_max_pwm':25., 'pitch_mae_max_pwm':35., 'turn_mae_max_pwm':100.,
     'mean_forward_speed_min_mps':.1, 'minimum_clearance_m':.1}
@@ -50,7 +51,7 @@ def validate_search_config(value):
             raise ValueError(f'{key} must be an explicit boolean')
     if config['neutral_origin'] and config['sensor_encoding'] == 'distance-v1':
         raise ValueError('Neutral origin requires threat/proximity encoding')
-    if config['loss_mode'] not in {'behavior-v1', 'channel-v2', 'channel-v3'}:
+    if config['loss_mode'] not in {'behavior-v1', 'channel-v2', 'channel-v3', 'channel-v4'}:
         raise ValueError('Unknown loss mode')
     if not math.isfinite(config['yaw_balance']) or not 0 <= config['yaw_balance'] <= 1:
         raise ValueError('Invalid yaw balance')
@@ -78,6 +79,8 @@ def assess_navigation(temporal, heldout, scenes, *, spatial=None):
         {(row.get('obstacle_side'), row.get('normalized_distance')) for row in cases} != expected):
         reasons.append('missing_temporal_cases')
     spatial = spatial or {}
+    if temporal.get('teacher_version') != TEACHER_VERSION or spatial.get('teacher_version') != TEACHER_VERSION:
+        reasons.append('teacher_reference_mismatch')
     spatial_cases = spatial.get('cases', [])
     expected_spatial = {(side, distance, width) for side, distance in expected for width in (1,2,4)}
     if (spatial.get('dt') != CONTROL_DT or len(spatial_cases) != 12 or
@@ -276,7 +279,7 @@ def run_search(source, candidates, dataset, output, *, config=None, research_onl
         'simulation/altitude_control.py',
         'simulation/avionics_filter.py', 'simulation/control_contract.py', 'simulation/memory.py',
         'simulation/pmw3901_emulator.py', 'configs/flight_config.py', 'generator/reflex_contract.py',
-        'generator/generate_reflex_dataset.py']
+        'generator/generate_reflex_dataset.py', 'generator/continuous_reflex_teacher.py']
     experiment = {'format_version':'registry-search-contract-v1', **pool.identity,
         'dataset_sha256':dataset_hash, 'study_name':study_name, 'config':config, 'functional_gate':GATE,
         'benchmark_version':BENCHMARK_VERSION, 'control_contract':control_contract(),

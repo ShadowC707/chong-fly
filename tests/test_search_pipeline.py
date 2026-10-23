@@ -33,13 +33,14 @@ def test_functional_gate_accepts_complete_current_engineering_evidence():
         'direction_correct':True, 'threat_yaw_pwm':1620. if side == 'left' else 1380.,
         'threat_target_yaw_pwm':1620. if side == 'left' else 1380., 'onset_s':.1,
         'recovery_settle_s':.2} for side in ('left','right') for distance in (.1,.2)]
-    temporal = {'dt':CONTROL_DT, 'cases':cases}
+    from generator.reflex_contract import TEACHER_VERSION
+    temporal = {'dt':CONTROL_DT, 'teacher_version':TEACHER_VERSION, 'cases':cases}
     heldout = {'channel_mae_pwm':{'roll':5., 'pitch':20.},
                'yaw_groups':{'right':{'mae_pwm':50.}, 'left':{'mae_pwm':50.}}}
     scenes = [{'scenario':name, 'benchmark_version':BENCHMARK_VERSION,
         'control_contract':control_contract(), 'feasible':True, 'mean_fwd_speed':.3,
         'min_clearance_m':.2, 'saccades_yaw_count':1} for name in SCENES]
-    spatial = {'dt':CONTROL_DT, 'cases':[{**row, 'active_columns':width}
+    spatial = {'dt':CONTROL_DT, 'teacher_version':TEACHER_VERSION, 'cases':[{**row, 'active_columns':width}
                for row in cases for width in (1,2,4)]}
     assert assess_navigation(temporal, heldout, scenes, spatial=spatial)['passed'] is True
     spatial['cases'][0]['threat_yaw_pwm'] = 1900

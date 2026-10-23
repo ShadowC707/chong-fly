@@ -235,10 +235,10 @@ class PWMOutputLayer(nn.Module):
     """
     Affine transform: raw NN logits → RC PWM microseconds.
 
-    Throttle  ch[0]: sigmoid(x) ∈ [0,1]  → 1000 + out × 1000  ∈ [1000, 2000]
-    Roll      ch[1]: tanh(x)   ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
-    Pitch     ch[2]: tanh(x)   ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
-    Yaw       ch[3]: tanh(x)   ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
+    Throttle  ch[0]: sigmoid(x) ∈ [0,1]  → 1000 + out × 1000   ∈ [1000, 2000]
+    Roll      ch[1]: tanh(x)    ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
+    Pitch     ch[2]: tanh(x)    ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
+    Yaw       ch[3]: tanh(x)    ∈ [-1,1]  → 1500 + out × 500   ∈ [1000, 2000]
     """
 
     def forward(self, logits: torch.Tensor) -> torch.Tensor:
