@@ -200,7 +200,7 @@ def test_build_real_pipeline_with_tiny_explicitly_mocked_acquisition(tmp_path,mo
 
 @pytest.mark.parametrize('winerror', [5, 32, 33])
 def test_publication_retries_transient_windows_lock(tmp_path, monkeypatch, winerror):
-    import generator.source_contract as contract
+    import artifacts.io as contract
     original = contract.os.rename
     calls = []
     def rename(source, destination):
@@ -220,7 +220,7 @@ def test_publication_retries_transient_windows_lock(tmp_path, monkeypatch, winer
 
 
 def test_publication_permanent_lock_is_bounded_and_leaves_no_ready_output(tmp_path, monkeypatch):
-    import generator.source_contract as contract
+    import artifacts.io as contract
     calls = []
     def rename(*args):
         calls.append(1)

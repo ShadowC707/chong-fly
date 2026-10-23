@@ -1,0 +1,12 @@
+# Hash-verified artifacts must survive checkout without newline conversion.
+/data/edge/** -text
+/data/releases/** -text
+/data/selection/mvp_frozen_core_v1/trial_00003/after/** -text
+# build_system compares these executing modules with exact bundled bytes.
+/edge/system.py -text
+/edge/runtime.py -text
+/edge/flight_bridge.py -text
+/edge/sensors.py -text
+/edge/benchmark.py -text
+/simulation/altitude_control.py -text
+/simulation/xy_coordinator.py -text

@@ -301,7 +301,8 @@ def test_invalid_polarity_override_is_rejected(tmp_path, csv_parquet_stub, value
 
 def test_publish_retries_transient_windows_rename_lock_without_copying(monkeypatch, tmp_path, csv_parquet_stub):
     from generator import source_contract
-    rename = source_contract.os.rename
+    from artifacts import io as artifact_io
+    rename = artifact_io.os.rename
     attempts = []
     def locked_once(src, dst):
         attempts.append(1)
@@ -310,7 +311,7 @@ def test_publish_retries_transient_windows_rename_lock_without_copying(monkeypat
             error.winerror = 5
             raise error
         return rename(src, dst)
-    monkeypatch.setattr(source_contract.os, 'rename', locked_once)
+    monkeypatch.setattr(artifact_io.os, 'rename', locked_once)
     source_contract.write_bundle(*tables(), tmp_path/'bundle', {'source_kind': 'synthetic', 'seed': 42}, {})
     assert len(attempts) == 2
     assert (tmp_path/'bundle/source_manifest.json').is_file()

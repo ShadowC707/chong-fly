@@ -8,12 +8,12 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import numbers
-import os
 import re
 from pathlib import Path
 import tempfile
-import time
 import warnings
+
+from artifacts.io import file_sha256, publish_directory
 
 import numpy as np
 import pandas as pd
@@ -61,14 +61,6 @@ def validate_graph(nodes, edges):
     return nodes.reset_index(drop=True), edges.reset_index(drop=True)
 
 
-def file_sha256(path):
-    digest = hashlib.sha256()
-    with Path(path).open('rb') as stream:
-        for block in iter(lambda: stream.read(1024*1024), b''):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def manifest_sha256(manifest):
     return hashlib.sha256(json.dumps(manifest, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
@@ -98,24 +90,6 @@ def validate_source(source):
             raise ValueError('Invalid or snapshot-mismatched published annotation source')
         if source.get('completeness') != 'query-count-checked':
             raise ValueError('CAVE source requires count-checked query completeness')
-
-
-def publish_directory(stage, output):
-    """Atomically rename a prepared directory, retrying only transient Windows locks.
-
-    Callers own staging cleanup. Existing destinations are never replaced.
-    """
-    stage, output = Path(stage), Path(output)
-    for attempt in range(4):
-        if output.exists():
-            raise FileExistsError(f'Output appeared during preparation: {output}')
-        try:
-            os.rename(stage, output)
-            return
-        except OSError as exc:
-            if getattr(exc, 'winerror', None) not in (5, 32, 33) or attempt == 3:
-                raise
-            time.sleep(.05 * 2**attempt)
 
 
 def write_bundle(nodes, edges, output, source, summary):

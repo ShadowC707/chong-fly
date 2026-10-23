@@ -6,11 +6,11 @@ All publication is atomic and refuses existing output directories.
 """
 import argparse
 import contextlib
+from artifacts.io import publication, write_json
 from datetime import datetime, timezone
 import io
 import json
 from pathlib import Path
-import tempfile
 
 import numpy as np
 import pandas as pd
@@ -19,7 +19,7 @@ import scipy.sparse as sp
 from generator.filtered_candidates import (SYNAPSE_VIEW, CONNECTION_VIEW, fetch_view, clean_synapses,
     SIGN_ASSUMPTIONS, assign_polarities, select_bridges, compare_reachability)
 from generator.published_annotations import select_annotations, annotation_source, ANNOTATION_SHA256
-from generator.source_contract import file_sha256, manifest_sha256, write_bundle, read_bundle, publish_directory
+from generator.source_contract import file_sha256, manifest_sha256, write_bundle, read_bundle
 
 DEFAULT_CONFIG = Path('configs/filtered_candidates_783_v1.json')
 ANNOTATIONS = Path('data/annotations_flywire783_v2_1_0/neurons.tsv')
@@ -46,22 +46,6 @@ def validate_config(config):
         raise ValueError('Unsupported sensor contract')
     if config.get('families') != ['saccade_core_identity','interface_identity','bridge_identity','bridge_role_minimum']:
         raise ValueError('Unsupported candidate families')
-
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, allow_nan=False), encoding='utf-8')
-
-
-@contextlib.contextmanager
-def publication(output):
-    output = Path(output).resolve()
-    if output.exists():
-        raise FileExistsError('Refusing to replace existing source/candidates')
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='.prepare-', dir=output.parent) as tmp:
-        stage = Path(tmp)/'result'; stage.mkdir()
-        yield stage
-        publish_directory(stage, output)
 
 
 def select_seeds(config, annotations):

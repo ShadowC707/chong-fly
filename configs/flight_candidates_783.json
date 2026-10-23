@@ -1,0 +1,111 @@
+{
+  "format_version": "flight-candidate-registry-v1",
+  "materialization_version": 783,
+  "annotation_sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+  "purpose": "Research candidate identities and directed connectivity audits; not an RC mapping or training configuration",
+  "identity_policy": "Resolved means exact identity in the pinned annotation table. Correspondence to experimentally studied cells is a separate evidence question.",
+  "rc_mapping": null,
+  "candidates": {
+    "LPLC2": {
+      "annotation_status": "resolved",
+      "selector": {"namespace": "hemibrain_type", "value": "LPLC2"},
+      "evidence": {
+        "context": "flight avoidance",
+        "source": "https://doi.org/10.1016/j.cub.2022.12.014",
+        "claim": "Published candidate sensory population for DNp06-mediated evasive flight",
+        "identity_basis": "Exact published type label; sensor-to-neuron encoding remains an engineering hypothesis"
+      }
+    },
+    "DNp06": {
+      "annotation_status": "resolved",
+      "selector": {
+        "namespace": "hemibrain_type", "value": "DNp06",
+        "root_ids": ["720575940611644529", "720575940622673860"]
+      },
+      "evidence": {
+        "context": "flight avoidance",
+        "source": "https://doi.org/10.1016/j.cub.2022.12.014",
+        "claim": "Candidate descending output for evasive flight",
+        "identity_basis": "Exact annotation label; independent morphology-to-experimental-cell crosswalk not established here"
+      }
+    },
+    "DNp15": {
+      "annotation_status": "resolved",
+      "selector": {
+        "namespace": "hemibrain_type", "value": "DNp15",
+        "root_ids": ["720575940616293855", "720575940623431351"]
+      },
+      "evidence": {
+        "context": "optic flow physiology",
+        "source": "https://doi.org/10.1038/s41593-025-01948-9",
+        "claim": "Candidate descending optic-flow pathway; does not establish an RC yaw decoder",
+        "identity_basis": "Exact annotation label; independent experimental crosswalk pending"
+      }
+    },
+    "VES041": {
+      "annotation_status": "resolved",
+      "selector": {
+        "namespace": "hemibrain_type", "value": "VES041",
+        "root_ids": ["720575940627253604", "720575940635202204"]
+      },
+      "evidence": {
+        "context": "flight saccade suppression",
+        "source": "https://doi.org/10.1016/j.cub.2023.12.047",
+        "claim": "Candidate inhibitory control of the saccade network",
+        "identity_basis": "Exact annotation label; independent experimental crosswalk pending"
+      }
+    },
+    "DNa01": {
+      "annotation_status": "ambiguous",
+      "review_required": "cell_type and hemibrain_type identify different pairs; do not union or choose arbitrarily",
+      "candidate_root_sets": {
+        "cell_type": ["720575940627787609", "720575940644438551"],
+        "hemibrain_type": ["720575940618167579", "720575940626328707"]
+      },
+      "evidence": {"context": "walking steering", "source": "https://doi.org/10.7554/eLife.102230"}
+    },
+    "DNa02": {
+      "annotation_status": "resolved",
+      "selector": {
+        "namespace": "hemibrain_type", "value": "DNa02",
+        "root_ids": ["720575940604737708", "720575940629327659"]
+      },
+      "evidence": {"context": "walking steering", "source": "https://doi.org/10.7554/eLife.102230",
+        "claim": "Walking evidence alone does not validate flight yaw mapping"}
+    },
+    "DNp09": {
+      "annotation_status": "ambiguous",
+      "review_required": "Four hemibrain_type matches include two cell_type DNp71 records; resolve correspondence to experimental P9 cells",
+      "candidate_root_sets": {
+        "hemibrain_type": ["720575940625673196", "720575940633095137", "720575940635872101", "720575940627652358"]
+      },
+      "evidence": {"context": "forward walking", "source": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9435592/",
+        "claim": "Does not establish a drone thrust command"}
+    },
+    "DNb01": {
+      "annotation_status": "ambiguous",
+      "review_required": "Four hemibrain_type matches include two cell_type DNb09 records; resolve experimental saccade pair before selecting",
+      "candidate_root_sets": {
+        "hemibrain_type": ["720575940616826380", "720575940648636292", "720575940625878160", "720575940630758418"]
+      },
+      "evidence": {"context": "flight saccades", "source": "https://doi.org/10.1016/j.cub.2023.12.047"}
+    },
+    "DNae014": {
+      "annotation_status": "unresolved",
+      "review_required": "No exact type label in this release. Paper suggests hemibrain PS017 correspondence; author root IDs or morphology crosswalk needed before selecting.",
+      "evidence": {"context": "flight saccades", "source": "https://doi.org/10.1016/j.cub.2023.12.047"}
+    },
+    "DNg02": {
+      "annotation_status": "unresolved",
+      "review_required": "No exact type label in this release; inspect author-defined population and subtype nomenclature before expansion",
+      "evidence": {"context": "flight wingbeat amplitude", "source": "https://doi.org/10.1016/j.cub.2022.01.008"}
+    }
+  },
+  "pathways": {
+    "lplc2_dnp06": {
+      "pre": ["LPLC2"],
+      "post": ["DNp06"],
+      "purpose": "Direct unsigned synapse count and laterality audit; no RC axis or neurotransmitter sign assigned"
+    }
+  }
+}

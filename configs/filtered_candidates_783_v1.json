@@ -1,0 +1,57 @@
+{
+  "format_version": "filtered-flight-candidates-v1",
+  "datastack": "flywire_fafb_public",
+  "materialization_version": 783,
+  "annotation_sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+  "identity_registry": "configs/flight_candidates_783_saccades.json",
+  "synapse_view": "valid_synapses_nt_np_v6",
+  "discovery_view": "valid_connection_v2",
+  "seed_candidates": ["LPLC2", "DNp06", "DNp15", "VES041", "DNae014", "DNb01"],
+  "flow_selectors": {
+    "HSN": {"namespace": "hemibrain_type", "value": "HSN"},
+    "HSE": {"namespace": "hemibrain_type", "value": "HSE"},
+    "HSS": {"namespace": "hemibrain_type", "value": "HSS"},
+    "VS1": {"namespace": "cell_type", "value": "VS1"},
+    "VS2": {"namespace": "cell_type", "value": "VS2"},
+    "VS3": {"namespace": "cell_type", "value": "VS3"},
+    "VS4": {"namespace": "cell_type", "value": "VS4"},
+    "VS5": {"namespace": "cell_type", "value": "VS5"},
+    "VS6": {"namespace": "cell_type", "value": "VS6"},
+    "VS7": {"namespace": "cell_type", "value": "VS7"},
+    "VS8": {"namespace": "cell_type", "value": "VS8"}
+  },
+  "pair_min": 5,
+  "bridge_budget": 64,
+  "bridge_min_prediction_confidence": 0.5,
+  "bridge_rule": "Measured sensory -> x -> descending output, each leg >= pair_min; rank min(sum inputs, sum outputs), then numeric root ID; fast transmitter annotations only",
+  "families": ["saccade_core_identity", "interface_identity", "bridge_identity", "bridge_role_minimum"],
+  "sensor_contract": {
+    "dimension": 74,
+    "flow": [0, 2],
+    "tof": [2, 66],
+    "memory": [66, 74],
+    "memory_mapping": "disconnected",
+    "light_sensors": "not_integrated",
+    "encoding_status": "engineering_hypothesis_not_retinotopically_validated"
+  },
+  "mapping": {
+    "sensor_groups": {
+      "optic_flow": {"cell_types": ["HSN", "HSE", "HSS", "VS1", "VS2", "VS3", "VS4", "VS5", "VS6", "VS7", "VS8"]},
+      "tof_depth": {"cell_types": ["LPLC2"]}
+    },
+    "motor_groups": {
+      "throttle": {"cell_types": ["DNp06"]},
+      "roll": {"cell_types": ["DNp06", "DNp15"]},
+      "pitch": {"cell_types": ["DNp06", "DNp15"]},
+      "yaw": {"cell_types": ["DNae014", "DNb01"]}
+    }
+  },
+  "decoder_status": "engineering hypothesis; learned masked roll/pitch/yaw readouts; no validated biological RC axes or laterality sign; throttle head unused by navigation-only learning",
+  "polarity_policy": {"acetylcholine": 1, "gaba": -1, "glutamate": -1},
+  "polarity_status": "Known NT or top NT prediction retained per root; all receptor signs are model assumptions; unknown/monoaminergic types fail closed",
+  "quality_sources": [
+    "https://www.nature.com/articles/s41586-024-07558-y",
+    "https://fafbseg-py.readthedocs.io/en/latest/_modules/fafbseg/flywire/synapses.html",
+    "https://github.com/navis-org/fafbseg-py/blob/master/changelog.md"
+  ]
+}
