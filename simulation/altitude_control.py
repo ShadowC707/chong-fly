@@ -93,15 +93,25 @@ class AltitudeHold:
         self._velocity = self._integral = 0.
         self.fault = None
         self.last_command = None
+        self._last_sample = None
 
     def _reject(self, reason):
         self.fault = reason
         raise AltitudeTelemetryError(reason)
 
-    def update(self, sample, *, now_s):
+    def synchronize_output(self, pwm, *, now_s):
+        """Track the operator output on AUTO entry without resetting the estimator."""
+        if (self.fault is not None or self._now is None or now_s != self._now
+                or not math.isfinite(pwm) or not self.config.min_pwm <= pwm <= self.config.max_pwm):
+            self._reject('Cannot synchronize altitude output outside the current valid tick/bounds')
+        self._pwm = float(pwm)
+
+    def update(self, sample, *, now_s, allow_hold=False, integrate=True):
         if self.fault is not None:
             raise AltitudeTelemetryError(f'Latched altitude fault; reset required: {self.fault}')
         c = self.config
+        if type(allow_hold) is not bool or type(integrate) is not bool:
+            self._reject('Altitude update flags must be boolean')
         if not isinstance(sample, AltitudeSample): self._reject('Missing altitude sample')
         values = (sample.range_m, sample.roll_rad, sample.pitch_rad, sample.timestamp_s, now_s)
         try:
@@ -111,7 +121,7 @@ class AltitudeHold:
         if not finite or not isinstance(sample.valid, (bool, np.bool_)) or not sample.valid:
             self._reject('Invalid range/attitude telemetry')
         age = now_s - sample.timestamp_s
-        if sample.timestamp_s < 0 or age < -1e-8 or age > c.max_age_s:
+        if sample.timestamp_s < 0 or age < -1e-8 or age > c.max_age_s+(1e-8 if allow_hold else 0.):
             self._reject('Stale or future altitude telemetry')
         if not c.min_range_m <= sample.range_m <= c.max_range_m:
             self._reject('Altitude range outside operating bounds')
@@ -120,18 +130,27 @@ class AltitudeHold:
             self._reject('Excessive tilt for range altitude control')
         height = (sample.range_m + c.emitter_below_center_m)*cosine
         dt = 0. if self._time is None else sample.timestamp_s - self._time
+        held = allow_hold and self._time is not None and dt == 0.
         if self._time is not None:
-            if dt <= 0 or dt > c.max_sample_gap_s or now_s <= self._now:
+            if (dt < 0 or (dt == 0 and not held) or dt > c.max_sample_gap_s or now_s <= self._now
+                    or (allow_hold and now_s-self._now > c.max_sample_gap_s)):
                 self._reject('Nonmonotonic or interrupted altitude telemetry')
-            delta = height-self._height
-            if abs(delta) > c.range_jump_slack_m+c.max_vertical_speed_mps*dt:
-                self._reject('Abrupt range change: surface discontinuity or invalid sample')
-            alpha = -math.expm1(-dt/c.velocity_filter_tau_s)
-            velocity = self._velocity + alpha*(delta/dt-self._velocity)
+            if held:
+                if sample != self._last_sample:
+                    self._reject('Changed range/attitude payload under held timestamp')
+                velocity = self._velocity
+            else:
+                delta = height-self._height
+                if abs(delta) > c.range_jump_slack_m+c.max_vertical_speed_mps*dt:
+                    self._reject('Abrupt range change: surface discontinuity or invalid sample')
+                alpha = -math.expm1(-dt/c.velocity_filter_tau_s)
+                velocity = self._velocity + alpha*(delta/dt-self._velocity)
         else:
             velocity = 0.  # no derivative kick on engagement
         error = c.target_height_m-height
-        integral = float(np.clip(self._integral+error*dt, -c.integral_limit, c.integral_limit))
+        control_dt = (0. if self._now is None else now_s-self._now) if allow_hold else dt
+        integral = (float(np.clip(self._integral+error*control_dt, -c.integral_limit, c.integral_limit))
+                    if integrate else self._integral)
         acceleration = c.kp*error-c.kd*velocity+c.ki*integral
         bounded_acceleration = float(np.clip(acceleration, -c.max_acceleration_mps2, c.max_acceleration_mps2))
         # Reference motor model: thrust proportional to squared normalized RC.
@@ -148,14 +167,15 @@ class AltitudeHold:
         if not (pushing_high or pushing_low): self._integral = integral
         self._time, self._now, self._height = sample.timestamp_s, now_s, height
         self._velocity, self._pwm = velocity, pwm
+        self._last_sample = sample
         self.last_command = AltitudeCommand(pwm, height, velocity, limited)
         return self.last_command
 
-    def apply(self, navigation_pwm, sample, *, now_s):
+    def apply(self, navigation_pwm, sample, *, now_s, allow_hold=False, integrate=True):
         result = np.asarray(navigation_pwm, dtype=float).copy()
         if result.shape != (4,) or not np.isfinite(result).all() or np.any(result < 1000) or np.any(result > 2000):
             raise ValueError('Navigation command must be four finite PWM values in [1000, 2000]')
-        result[0] = self.update(sample, now_s=now_s).throttle_pwm
+        result[0] = self.update(sample, now_s=now_s,allow_hold=allow_hold,integrate=integrate).throttle_pwm
         return result
 
     def contract(self):
