@@ -10,6 +10,7 @@
 | Як працюють held-сенсори та SHADOW → AUTO? | [Сенсори й handover](SENSOR_HANDOVER_UK.md) |
 | Що перевірено для доставки, watchdog і повторного входу? | [Приймач і транспорт](TRANSPORT_RECEIVER_UK.md) |
 | Що прибрали, що залишили, як відновити? | [Очищення](REPOSITORY_CLEANUP_UK.md) |
+| Чим завершено очищення і чому залишився дослідницький код? | [Другий прохід і класифікація](CLEANUP_COMPLETION_UK.md) |
 | Як упорядкована Git-історія? | [Серія migration-bugfixes](GIT_HISTORY_UK.md) |
 | Чому відійшли від попередніх ідей? | [Рішення MVP](MVP_DECISIONS_UK.md) |
 
