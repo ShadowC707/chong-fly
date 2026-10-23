@@ -4,9 +4,10 @@ No socket, FC connection, weight change or controller tuning. Simulated clocks
 have distinct origins with an explicitly known mapping for sensor timestamps.
 """
 import argparse
-from collections import Counter
+from collections import Counter, deque
 from dataclasses import asdict, dataclass, replace
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -26,6 +27,44 @@ PI_ORIGIN = 10.
 RX_ORIGIN = 1000.
 
 
+def within_roundtrip_budget(seconds):
+    # The strict 20 ms requirement must not depend on subtraction roundoff
+    # between the distinct simulated clock origins.
+    return math.isfinite(seconds) and 0 <= seconds < .02-1e-9
+
+
+class PiComputeQueue:
+    """One FIFO worker, polled on physics ticks; no overlapping inference.
+
+    The control tick is evaluated at completion (including age validation).
+    This is a fixed service-time model, not a measured OS/CPU scheduler.
+    """
+    def __init__(self, delay_s):
+        if not math.isfinite(delay_s) or delay_s < 0:
+            raise ValueError('Pi compute delay must be finite and nonnegative')
+        self.delay_s = delay_s
+        self.waiting = deque()
+        self.active = None
+
+    def _start(self, now_s):
+        if self.active is None and self.waiting:
+            payload, received = self.waiting.popleft()
+            self.active = dict(payload=payload, received_s=received,
+                               started_s=now_s, due_s=now_s+self.delay_s)
+
+    def submit(self, payload, *, now_s):
+        self.waiting.append((payload, now_s))
+        self._start(now_s)
+
+    def drain(self, now_s):
+        ready = []
+        while self.active is not None and self.active['due_s'] <= now_s+1e-10:
+            ready.append(dict(self.active, completed_s=now_s))
+            self.active = None
+            self._start(now_s)
+        return ready
+
+
 @dataclass(frozen=True)
 class Case:
     name: str
@@ -39,6 +78,7 @@ class Case:
     altitude_delivery_hold_s: float = 0.
     uplink_delay_s: float = .004
     horizon_s: float = 10.
+    pi_compute_delay_s: float = 0.
 
 
 CASES = (
@@ -84,6 +124,7 @@ def map_frame(frame, sequence):
 
 
 def physical_case(config, case):
+    compute = PiComputeQueue(case.pi_compute_delay_s)
     receiver = SessionReceiver()
     link_config = LinkConfig(uplink_delay_s=case.uplink_delay_s,
                             jitter_s=case.jitter_s, seed=20261023)
@@ -162,37 +203,7 @@ def physical_case(config, case):
                 sequence += 1
             for delivery in link.drain(t):
                 if delivery.direction == 'uplink':
-                    packet = delivery.payload
-                    if packet['session_id'] != session:
-                        events.append(dict(time_s=t, reason='old_sensor_session_ignored'))
-                        continue
-                    result = system.tick(packet['frame'], now_s=PI_ORIGIN+t,
-                        request=packet['request'], manual_pwm=packet['manual_pwm'],
-                        stop_requested=packet['stop_requested'])
-                    trace = result['trace']
-                    key = (trace.session_id, trace.sequence)
-                    traces[key] = trace
-                    extras[key] = dict(manual_pwm=packet['manual_pwm'],
-                        sensor_sent_global_s=packet['sensor_sent_global_s'],
-                        issue_global_s=t,
-                        range_capture_age_s=PI_ORIGIN+t-(packet['frame'].altitude.timestamp_s),
-                        range_capture_angles_rad=(list(packet['frame'].altitude.value[1:])
-                            if isinstance(packet['frame'],SensorSnapshot) else
-                            [packet['frame'].altitude.roll_rad,packet['frame'].altitude.pitch_rad]),
-                        current_angles_rad=np.asarray(env.get_isaac_obs().attitude_euler[:2]).tolist(),
-                        estimated_height_m=(None if system.runtime.altitude.last_command is None
-                                            else system.runtime.altitude.last_command.height_m),
-                        actual_height_m=float(env.physics.pos[2]),
-                        manual_to_first_issue_pwm=None if result['lease'] is None
-                        or result['reason']!='engaged' else float(np.max(abs(
-                            np.asarray(result['lease'].pwm)-packet['manual_pwm']))))
-                    response = CommandPacket(session, trace.sequence, result['lease'])
-                    fault_frame = abs(packet['sensor_sent_global_s']-case.fault_at_s)<1e-9
-                    link.send('downlink', response, now_s=t,
-                        drop=case.fault=='response_loss' and fault_frame,
-                        delay_s=.064 if case.fault=='response_delay' and fault_frame else None)
-                    if case.fault=='old_duplicate' and abs(packet['sensor_sent_global_s']-3.98)<1e-9:
-                        link.send('downlink', response, now_s=t, delay_s=2.4)
+                    compute.submit(delivery.payload, now_s=t)
                 else:
                     packet = delivery.payload
                     event = receiver.receive(packet, now_s=rx_now)
@@ -203,6 +214,41 @@ def physical_case(config, case):
                         traces[key] = observe_receiver(trace, session_id=packet.session_id,
                             sequence=packet.sequence, accepted_pwm=event.accepted_pwm,
                             receiver_time_s=rx_now, reason=event.reason)
+            for job in compute.drain(t):
+                packet = job['payload']
+                if packet['session_id'] != session:
+                    events.append(dict(time_s=t, reason='old_sensor_session_ignored'))
+                    continue
+                result = system.tick(packet['frame'], now_s=PI_ORIGIN+t,
+                    request=packet['request'], manual_pwm=packet['manual_pwm'],
+                    stop_requested=packet['stop_requested'])
+                trace = result['trace']
+                key = (trace.session_id, trace.sequence)
+                traces[key] = trace
+                extras[key] = dict(manual_pwm=packet['manual_pwm'],
+                    sensor_sent_global_s=packet['sensor_sent_global_s'],
+                    issue_global_s=t,
+                    pi_received_global_s=job['received_s'],
+                    pi_started_global_s=job['started_s'],
+                    pi_due_global_s=job['due_s'],
+                    range_capture_age_s=PI_ORIGIN+t-(packet['frame'].altitude.timestamp_s),
+                    range_capture_angles_rad=(list(packet['frame'].altitude.value[1:])
+                        if isinstance(packet['frame'],SensorSnapshot) else
+                        [packet['frame'].altitude.roll_rad,packet['frame'].altitude.pitch_rad]),
+                    current_angles_rad=np.asarray(env.get_isaac_obs().attitude_euler[:2]).tolist(),
+                    estimated_height_m=(None if system.runtime.altitude.last_command is None
+                                        else system.runtime.altitude.last_command.height_m),
+                    actual_height_m=float(env.physics.pos[2]),
+                    manual_to_first_issue_pwm=None if result['lease'] is None
+                    or result['reason']!='engaged' else float(np.max(abs(
+                        np.asarray(result['lease'].pwm)-packet['manual_pwm']))))
+                response = CommandPacket(session, trace.sequence, result['lease'])
+                fault_frame = abs(packet['sensor_sent_global_s']-case.fault_at_s)<1e-9
+                link.send('downlink', response, now_s=t,
+                    drop=case.fault=='response_loss' and fault_frame,
+                    delay_s=.064 if case.fault=='response_delay' and fault_frame else None)
+                if case.fault=='old_duplicate' and abs(packet['sensor_sent_global_s']-3.98)<1e-9:
+                    link.send('downlink', response, now_s=t, delay_s=2.4)
             selected = receiver.output(now_s=rx_now, fallback_pwm=fallback_pwm)
             applied = selected['applied_pwm']
             angles = env.get_isaac_obs().attitude_euler
@@ -239,6 +285,10 @@ def physical_case(config, case):
         accepted_count=len(accepted), issued_count=sum(r['issued_pwm'] is not None for r in trace_rows),
         unobserved_issued_count=sum(r['issued_pwm'] is not None and r['receiver_status']=='unobserved' for r in trace_rows),
         max_accepted_roundtrip_s=max(latencies, default=None),
+        max_pi_queue_wait_s=max((r['pi_started_global_s']-r['pi_received_global_s']
+                                for r in trace_rows), default=None),
+        max_pi_service_elapsed_s=max((r['issue_global_s']-r['pi_started_global_s']
+                                     for r in trace_rows), default=None),
         max_altitude_age_auto_s=max(ages, default=None),
         max_altitude_age_maneuver_s=max((r['range_capture_age_s'] for r in maneuver_traces),default=None),
         max_capture_current_angle_difference_deg=max((float(np.rad2deg(np.max(abs(
@@ -264,7 +314,7 @@ def physical_case(config, case):
         resets=resets)
     expected_trip = bool(case.fault in ('response_loss','response_delay','sensor_loss') or case.reentry)
     checks = dict(full_horizon=not done and abs(metric['completed_s']-case.horizon_s)<1e-8,
-        entered_auto=bool(auto), bounded_accepted_latency=bool(latencies) and max(latencies)<.02,
+        entered_auto=bool(auto), bounded_accepted_latency=bool(latencies) and within_roundtrip_budget(max(latencies)),
         expected_trip=bool(trips)==expected_trip,
         trip_has_no_accepted=all(r['accepted_pwm'] is None and r['source']=='fallback' for r in rows if r['tripped']),
         reentry_after_reset=(len(active_intervals)==2 and active_intervals[-1]>=reentry+1.5) if case.reentry
@@ -332,24 +382,29 @@ def plot(output, reports):
     fig.tight_layout(); fig.savefig(output/'maneuver_comparison.png',dpi=150); plt.close(fig)
 
 
-def run(config_path, output):
+def run(config_path, output, *, pi_compute_delay_s=0.):
+    PiComputeQueue(pi_compute_delay_s)  # reject invalid settings before creating output
     output = Path(output)
     output.mkdir(parents=True, exist_ok=False)
     config = RunConfig.from_json(config_path)
-    protocol = dict(version='transport-loop-v3', cases=[asdict(c) for c in CASES],
+    cases = tuple(replace(c, pi_compute_delay_s=pi_compute_delay_s) for c in CASES)
+    protocol = dict(version='transport-loop-v4', cases=[asdict(c) for c in cases],
         config=config.to_dict(), physics_dt_s=DT, control_period_s=.02,
         clock_origins=dict(pi=PI_ORIGIN,receiver=RX_ORIGIN),
         clock_mapping='Known constant offsets only; no estimated drift or hardware clock sync.',
         acceptance='All explicit checks in report; height/maneuver errors descriptive, no flight qualification.',
-        ordering='local revoke/reset, watchdog poll, sensor send, delivery, receiver selection, physics',
-        link='Two seeded datagram queues; service every 4 ms; no retries; Pi compute time zero.',
+        ordering='local revoke/reset, watchdog poll, sensor send, link delivery, Pi completion, receiver selection, physics',
+        link='Two seeded datagram queues; service every 4 ms; no retries.',
+        pi_compute=dict(delay_s=pi_compute_delay_s, workers=1, queue='FIFO',
+            evaluation='Control tick and sensor age validation at completion; polled every 4 ms.',
+            limitation='Fixed service-time assumption, not measured Pi latency; no serialization or OS jitter.'),
         fallback='Sensor-only local altitude hold plus flow damping; simulation reference, not G4/ESP firmware.',
         source_sha256={str(p):sha256(p) for p in map(Path, [__file__, 'edge/session_receiver.py',
             'edge/transport.py','simulation/receiver_fallback.py','simulation/sensor_schedule.py',
             'simulation/benchmark_scenes.py','simulation/drone_env.py'])})
     (output/'protocol.json').write_text(json.dumps(protocol,indent=2)+'\n',encoding='utf-8')
     results=[]
-    for case in CASES:
+    for case in cases:
         r=physical_case(config,case)
         for kind in ('traces','physics','receiver_events','link_events'):
             with (output/(case.name+'_'+kind+'.jsonl')).open('x',encoding='utf-8') as f:
@@ -367,8 +422,10 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',type=Path,default=Path('configs/mvp_runtime_v3.json'))
     p.add_argument('--out-dir',type=Path,required=True)
+    p.add_argument('--pi-compute-delay-s',type=float,default=0.,
+                   help='Assumed single-worker service time; completion is polled every 4 ms')
     args=p.parse_args()
-    report=run(args.config,args.out_dir)
+    report=run(args.config,args.out_dir,pi_compute_delay_s=args.pi_compute_delay_s)
     if not report['passed']: raise SystemExit(1)
 
 

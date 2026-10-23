@@ -1,0 +1,2606 @@
+{
+  "version": "pi-compute-audit-v1",
+  "plan": "plan.json",
+  "zero_delay_parity": [
+    {
+      "case": "normal",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "bounded_jitter",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "response_loss",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "response_expiry",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "sensor_loss",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "manual_reentry",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "watchdog_reentry",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "old_session_reentry",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_sync",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_multi",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_latency",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_held",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_loss",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    },
+    {
+      "case": "maneuver_manual_reentry",
+      "exact_rows_equal": {
+        "physics": true,
+        "receiver_events": true,
+        "link_events": true,
+        "traces": true
+      }
+    }
+  ],
+  "parity_exclusions": [
+    "manifest_sha256 (source identity changed in previous integration work)",
+    "new compute timing fields"
+  ],
+  "runs": {
+    "zero_final": {
+      "report_sha256": "aa82b9a663ab0696c06e59da2351a5f28b948453fb08a5351ae275e3cdd52a6e",
+      "protocol": {
+        "version": "transport-loop-v4",
+        "cases": [
+          {
+            "name": "normal",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "bounded_jitter",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.002,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "response_loss",
+            "fault": "response_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "response_expiry",
+            "fault": "response_delay",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "sensor_loss",
+            "fault": "sensor_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "manual_reentry",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "watchdog_reentry",
+            "fault": "response_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "old_session_reentry",
+            "fault": "old_duplicate",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_sync",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "sync",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_multi",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_latency",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.012,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_held",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.02,
+            "uplink_delay_s": 0.012,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_loss",
+            "fault": "response_loss",
+            "fault_at_s": 6.24,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          },
+          {
+            "name": "maneuver_manual_reentry",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.0
+          }
+        ],
+        "config": {
+          "bundle_dir": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\edge\\k306_tau025_integrated_v1",
+          "expected_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+          "coordinator_mode": "both",
+          "coordinator_preset": "original_v1",
+          "levy_explore": false,
+          "stop_hover": true,
+          "seed": 20261021,
+          "bridge": {
+            "ready_dwell_s": 0.5,
+            "max_age_s": 0.04,
+            "min_step_s": 0.01,
+            "max_step_s": 0.03,
+            "max_flow": 0.015,
+            "flow_filter_tau_s": 0.12,
+            "height_tolerance_m": 0.1,
+            "max_vertical_speed_mps": 0.1,
+            "max_tilt_rad": 0.15,
+            "clear_m": 0.95,
+            "max_throttle_difference_pwm": 15.0,
+            "max_attitude_difference_pwm": 35.0,
+            "max_yaw_difference_pwm": 20.0,
+            "lease_s": 0.04
+          },
+          "session_id": "mvp-integrated-v1-offline",
+          "transport_mode": "offline",
+          "sensor_mode": "multi_rate_v1",
+          "sensor_budgets": {
+            "flow_max_age_s": 0.04,
+            "tof_max_age_s": 0.1,
+            "altitude_max_age_s": 0.06,
+            "attitude_max_age_s": 0.04
+          },
+          "handover_mode": "freeze_sync_v1"
+        },
+        "physics_dt_s": 0.004,
+        "control_period_s": 0.02,
+        "clock_origins": {
+          "pi": 10.0,
+          "receiver": 1000.0
+        },
+        "clock_mapping": "Known constant offsets only; no estimated drift or hardware clock sync.",
+        "acceptance": "All explicit checks in report; height/maneuver errors descriptive, no flight qualification.",
+        "ordering": "local revoke/reset, watchdog poll, sensor send, link delivery, Pi completion, receiver selection, physics",
+        "link": "Two seeded datagram queues; service every 4 ms; no retries.",
+        "pi_compute": {
+          "delay_s": 0.0,
+          "workers": 1,
+          "queue": "FIFO",
+          "evaluation": "Control tick and sensor age validation at completion; polled every 4 ms.",
+          "limitation": "Fixed service-time assumption, not measured Pi latency; no serialization or OS jitter."
+        },
+        "fallback": "Sensor-only local altitude hold plus flow damping; simulation reference, not G4/ESP firmware.",
+        "source_sha256": {
+          "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\evaluate\\validate_transport_loop.py": "bab7d1888bf118835d8b68b7acdb90ea425a4904278639706efb9b8eb3391415",
+          "edge\\session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+          "edge\\transport.py": "027a09b8073e045e27ce7f191d513a4f873cdcaf8b9b4598e5f47dac1e731133",
+          "simulation\\receiver_fallback.py": "a2e1ed633020251f92cd16cad992fc958bc0b0fc53fb8fbe80f7f73f050dc19a",
+          "simulation\\sensor_schedule.py": "8924ee9e8520ca906f947bbe3101da2bc06b00187d0ad4e5a5ac18592965a115",
+          "simulation\\benchmark_scenes.py": "e91385ccad898a4c4c021f25afdde331cc26a229df75de18b9271388d77b0489",
+          "simulation\\drone_env.py": "8028b810c98e446a1b1f8dfc2e187b702c61212a1e715f83211c4ac2b490711e"
+        }
+      },
+      "passed_count": 14,
+      "total": 14,
+      "cases": [
+        {
+          "case": "normal",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 7.992,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.18952446261548406,
+            "final_height_m": 0.9973849654197693,
+            "final_speed_mps": 0.010978099890053272,
+            "last_second_max_speed_mps": 0.016404679940792973,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "bounded_jitter",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 7.992,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.016000000000053305,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.010627210140228271,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.1902952201148509,
+            "final_height_m": 0.9964964985847473,
+            "final_speed_mps": 0.01109575480222702,
+            "last_second_max_speed_mps": 0.01641435643633217,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8893727898597718,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "response_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 2.012,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 101,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20114755027256814,
+            "final_height_m": 0.9972258806228638,
+            "final_speed_mps": 0.009969389997422695,
+            "last_second_max_speed_mps": 0.015897524956197128,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 299
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.016617572776703796,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "response_expiry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 2.012,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 101,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20114755027256814,
+            "final_height_m": 0.9972258806228638,
+            "final_speed_mps": 0.009969389997422695,
+            "last_second_max_speed_mps": 0.015897524956197128,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 3,
+              "sequence_rejected": 297
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.016617572776703796,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "sensor_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 2.012,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 100,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20114755027256814,
+            "final_height_m": 0.9972258806228638,
+            "final_speed_mps": 0.009969389997422695,
+            "last_second_max_speed_mps": 0.015897524956197128,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 299
+            },
+            "bridge_faults": {
+              "Control deadline missed": 299
+            },
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "manual_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008,
+              6.008
+            ],
+            "auto_duration_s": 5.984,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.18941013698816567,
+            "final_height_m": 0.9943058490753174,
+            "final_speed_mps": 0.01093654427677393,
+            "last_second_max_speed_mps": 0.016390899843464823,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909,
+              0.6000000000001364
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "manual_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "watchdog_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008,
+              7.008
+            ],
+            "auto_duration_s": 5.0040000000000004,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 250,
+            "issued_count": 251,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.188551147318544,
+            "final_height_m": 0.9930699467658997,
+            "final_speed_mps": 0.010914222337305546,
+            "last_second_max_speed_mps": 0.01637731948225039,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 250,
+              "watchdog_expired": 49,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909,
+              0.6000000000001364
+            ],
+            "resets": [
+              {
+                "time_s": 5.5,
+                "session_id": "watchdog_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "old_session_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008,
+              6.008
+            ],
+            "auto_duration_s": 5.984,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009913027286529541,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.18941013698816567,
+            "final_height_m": 0.9943058490753174,
+            "final_speed_mps": 0.01093654427677393,
+            "last_second_max_speed_mps": 0.016390899843464823,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25,
+              "session_mismatch": 1
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8900869727134705,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909,
+              0.6000000000001364
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "old_session_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "maneuver_sync",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 7.992,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.0040000000000048885,
+            "max_altitude_age_maneuver_s": 0.004000000000001336,
+            "max_capture_current_angle_difference_deg": 0.21158474633500876,
+            "max_estimated_height_error_maneuver_m": 0.006378770522655786,
+            "max_height_error_auto_m": 0.00864565372467041,
+            "max_height_error_maneuver_m": 0.004364669322967529,
+            "maneuver_duration_s": 0.38,
+            "max_tilt_deg": 10.258077553108206,
+            "final_height_m": 0.9968376755714417,
+            "final_speed_mps": 0.4731002449989319,
+            "last_second_max_speed_mps": 0.47292017907251227,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.3530806929562722,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_multi",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 7.992,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": 0.02400000000000091,
+            "max_capture_current_angle_difference_deg": 1.2663973268431117,
+            "max_estimated_height_error_maneuver_m": 0.006392188999649995,
+            "max_height_error_auto_m": 0.012813806533813477,
+            "max_height_error_maneuver_m": 0.008173584938049316,
+            "maneuver_duration_s": 0.404,
+            "max_tilt_deg": 11.373317670977059,
+            "final_height_m": 0.9953312873840332,
+            "final_speed_mps": 0.4674500823020935,
+            "last_second_max_speed_mps": 0.4672436994482609,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.42425699981376663,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_latency",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.016
+            ],
+            "auto_duration_s": 7.984,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.01600000000005375,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.03200000000000358,
+            "max_altitude_age_maneuver_s": 0.03200000000000358,
+            "max_capture_current_angle_difference_deg": 1.5034527023667443,
+            "max_estimated_height_error_maneuver_m": 0.0066088890136988265,
+            "max_height_error_auto_m": 0.011470437049865723,
+            "max_height_error_maneuver_m": 0.007315278053283691,
+            "maneuver_duration_s": 0.40800000000000003,
+            "max_tilt_deg": 11.132492884805226,
+            "final_height_m": 0.995523989200592,
+            "final_speed_mps": 0.46433699131011963,
+            "last_second_max_speed_mps": 0.46412171440584116,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.3999302417409988,
+            "entry_actual_throttle_jump_pwm": [
+              1.7999999999997272
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_held",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.016
+            ],
+            "auto_duration_s": 7.984,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.01600000000005375,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.052000000000003155,
+            "max_altitude_age_maneuver_s": 0.0519999999999996,
+            "max_capture_current_angle_difference_deg": 2.5834695346858405,
+            "max_estimated_height_error_maneuver_m": 0.007111208149160331,
+            "max_height_error_auto_m": 0.011856555938720703,
+            "max_height_error_maneuver_m": 0.006872892379760742,
+            "maneuver_duration_s": 0.40800000000000003,
+            "max_tilt_deg": 11.133248474482158,
+            "final_height_m": 0.9956179857254028,
+            "final_speed_mps": 0.4642472267150879,
+            "last_second_max_speed_mps": 0.46403369404851846,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.4001092900925939,
+            "entry_actual_throttle_jump_pwm": [
+              1.7999999999997272
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008
+            ],
+            "auto_duration_s": 4.252,
+            "trips": [
+              {
+                "time_s": 6.26,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 212,
+            "issued_count": 213,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": 0.02400000000000091,
+            "max_capture_current_angle_difference_deg": 0.8940751774492541,
+            "max_estimated_height_error_maneuver_m": 0.004716405340708274,
+            "max_height_error_auto_m": 0.009924590587615967,
+            "max_height_error_maneuver_m": 0.00284576416015625,
+            "maneuver_duration_s": 0.152,
+            "max_tilt_deg": 9.794604821693236,
+            "final_height_m": 0.9922088384628296,
+            "final_speed_mps": 0.009921924211084843,
+            "last_second_max_speed_mps": 0.016754122432234363,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 212,
+              "watchdog_expired": 187
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.029178068176753804,
+            "min_clearance_m": 0.46156227588653576,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_manual_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.008,
+              6.008
+            ],
+            "auto_duration_s": 5.984,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.008000000000056406,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.0,
+            "max_altitude_age_auto_s": 0.02400000000000091,
+            "max_altitude_age_maneuver_s": 0.02400000000000091,
+            "max_capture_current_angle_difference_deg": 1.11185703979558,
+            "max_estimated_height_error_maneuver_m": 0.00457910434537423,
+            "max_height_error_auto_m": 0.009924590587615967,
+            "max_height_error_maneuver_m": 0.004826664924621582,
+            "maneuver_duration_s": 0.352,
+            "max_tilt_deg": 9.946437365621682,
+            "final_height_m": 0.9969144463539124,
+            "final_speed_mps": 0.05565159022808075,
+            "last_second_max_speed_mps": 0.2375113127780902,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.48264878988266,
+            "entry_actual_throttle_jump_pwm": [
+              0.599999999999909,
+              0.6000000000001364
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "maneuver_manual_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "two_ms_final": {
+      "report_sha256": "e77725e70c5fe4c9c98e945ca0f318adb4879274be481c59f08d4fcd8b12d78b",
+      "protocol": {
+        "version": "transport-loop-v4",
+        "cases": [
+          {
+            "name": "normal",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "bounded_jitter",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.002,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "response_loss",
+            "fault": "response_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "response_expiry",
+            "fault": "response_delay",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "sensor_loss",
+            "fault": "sensor_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "manual_reentry",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "watchdog_reentry",
+            "fault": "response_loss",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "old_session_reentry",
+            "fault": "old_duplicate",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "clear",
+            "maneuver": false,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_sync",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "sync",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_multi",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_latency",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.012,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_held",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.02,
+            "uplink_delay_s": 0.012,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_loss",
+            "fault": "response_loss",
+            "fault_at_s": 6.24,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": false,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          },
+          {
+            "name": "maneuver_manual_reentry",
+            "fault": "",
+            "fault_at_s": 4.0,
+            "profile": "multi",
+            "jitter_s": 0.0,
+            "reentry": true,
+            "scene": "obstacle_left",
+            "maneuver": true,
+            "altitude_delivery_hold_s": 0.0,
+            "uplink_delay_s": 0.004,
+            "horizon_s": 10.0,
+            "pi_compute_delay_s": 0.002
+          }
+        ],
+        "config": {
+          "bundle_dir": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\edge\\k306_tau025_integrated_v1",
+          "expected_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+          "coordinator_mode": "both",
+          "coordinator_preset": "original_v1",
+          "levy_explore": false,
+          "stop_hover": true,
+          "seed": 20261021,
+          "bridge": {
+            "ready_dwell_s": 0.5,
+            "max_age_s": 0.04,
+            "min_step_s": 0.01,
+            "max_step_s": 0.03,
+            "max_flow": 0.015,
+            "flow_filter_tau_s": 0.12,
+            "height_tolerance_m": 0.1,
+            "max_vertical_speed_mps": 0.1,
+            "max_tilt_rad": 0.15,
+            "clear_m": 0.95,
+            "max_throttle_difference_pwm": 15.0,
+            "max_attitude_difference_pwm": 35.0,
+            "max_yaw_difference_pwm": 20.0,
+            "lease_s": 0.04
+          },
+          "session_id": "mvp-integrated-v1-offline",
+          "transport_mode": "offline",
+          "sensor_mode": "multi_rate_v1",
+          "sensor_budgets": {
+            "flow_max_age_s": 0.04,
+            "tof_max_age_s": 0.1,
+            "altitude_max_age_s": 0.06,
+            "attitude_max_age_s": 0.04
+          },
+          "handover_mode": "freeze_sync_v1"
+        },
+        "physics_dt_s": 0.004,
+        "control_period_s": 0.02,
+        "clock_origins": {
+          "pi": 10.0,
+          "receiver": 1000.0
+        },
+        "clock_mapping": "Known constant offsets only; no estimated drift or hardware clock sync.",
+        "acceptance": "All explicit checks in report; height/maneuver errors descriptive, no flight qualification.",
+        "ordering": "local revoke/reset, watchdog poll, sensor send, link delivery, Pi completion, receiver selection, physics",
+        "link": "Two seeded datagram queues; service every 4 ms; no retries.",
+        "pi_compute": {
+          "delay_s": 0.002,
+          "workers": 1,
+          "queue": "FIFO",
+          "evaluation": "Control tick and sensor age validation at completion; polled every 4 ms.",
+          "limitation": "Fixed service-time assumption, not measured Pi latency; no serialization or OS jitter."
+        },
+        "fallback": "Sensor-only local altitude hold plus flow damping; simulation reference, not G4/ESP firmware.",
+        "source_sha256": {
+          "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\evaluate\\validate_transport_loop.py": "bab7d1888bf118835d8b68b7acdb90ea425a4904278639706efb9b8eb3391415",
+          "edge\\session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+          "edge\\transport.py": "027a09b8073e045e27ce7f191d513a4f873cdcaf8b9b4598e5f47dac1e731133",
+          "simulation\\receiver_fallback.py": "a2e1ed633020251f92cd16cad992fc958bc0b0fc53fb8fbe80f7f73f050dc19a",
+          "simulation\\sensor_schedule.py": "8924ee9e8520ca906f947bbe3101da2bc06b00187d0ad4e5a5ac18592965a115",
+          "simulation\\benchmark_scenes.py": "e91385ccad898a4c4c021f25afdde331cc26a229df75de18b9271388d77b0489",
+          "simulation\\drone_env.py": "8028b810c98e446a1b1f8dfc2e187b702c61212a1e715f83211c4ac2b490711e"
+        }
+      },
+      "passed_count": 11,
+      "total": 14,
+      "cases": [
+        {
+          "case": "normal",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 7.988,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.18967136504349222,
+            "final_height_m": 0.9973952770233154,
+            "final_speed_mps": 0.011062243953347206,
+            "last_second_max_speed_mps": 0.016451735092592103,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "bounded_jitter",
+          "passed": false,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": false,
+            "bounded_accepted_latency": false,
+            "expected_trip": false,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": false,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [],
+            "auto_duration_s": 0.0,
+            "trips": [
+              {
+                "time_s": 0.12,
+                "reason": "sequence_rejected",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 0,
+            "issued_count": 0,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": null,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": null,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": null,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20115804902037437,
+            "final_height_m": 0.9980185627937317,
+            "final_speed_mps": 0.00997947994619608,
+            "last_second_max_speed_mps": 0.015903236000067236,
+            "receiver_reasons": {
+              "awaiting_command": 5,
+              "sequence_rejected": 495
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8905744791030884,
+            "entry_actual_throttle_jump_pwm": [],
+            "resets": []
+          }
+        },
+        {
+          "case": "response_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 2.008,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 101,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.02800000000000047,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.2011473501693698,
+            "final_height_m": 0.9972242116928101,
+            "final_speed_mps": 0.00996935460716486,
+            "last_second_max_speed_mps": 0.015897499936555173,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 299
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.016488793251717447,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "response_expiry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 2.008,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 101,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.02800000000000047,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.2011473501693698,
+            "final_height_m": 0.9972242116928101,
+            "final_speed_mps": 0.00996935460716486,
+            "last_second_max_speed_mps": 0.015897499936555173,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 2,
+              "sequence_rejected": 298
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.016488793251717447,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "sensor_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 2.008,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 100,
+            "issued_count": 100,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.02800000000000047,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.2011473501693698,
+            "final_height_m": 0.9972242116928101,
+            "final_speed_mps": 0.00996935460716486,
+            "last_second_max_speed_mps": 0.015897499936555173,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 100,
+              "watchdog_expired": 299
+            },
+            "bridge_faults": {
+              "Control deadline missed": 299
+            },
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "manual_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012,
+              6.0120000000000005
+            ],
+            "auto_duration_s": 5.976,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.189539857221543,
+            "final_height_m": 0.9943282008171082,
+            "final_speed_mps": 0.011020702309906483,
+            "last_second_max_speed_mps": 0.016439154994085083,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818,
+              0.8606062394517267
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "manual_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "watchdog_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012,
+              7.0120000000000005
+            ],
+            "auto_duration_s": 4.996,
+            "trips": [
+              {
+                "time_s": 4.0200000000000005,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 250,
+            "issued_count": 251,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.1885695434725781,
+            "final_height_m": 0.993079662322998,
+            "final_speed_mps": 0.010997109115123749,
+            "last_second_max_speed_mps": 0.01642458114843315,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 250,
+              "watchdog_expired": 49,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818,
+              1.1526376325791716
+            ],
+            "resets": [
+              {
+                "time_s": 5.5,
+                "session_id": "watchdog_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "old_session_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012,
+              6.0120000000000005
+            ],
+            "auto_duration_s": 5.976,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": 0.009906530380249023,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.189539857221543,
+            "final_height_m": 0.9943282008171082,
+            "final_speed_mps": 0.011020702309906483,
+            "last_second_max_speed_mps": 0.016439154994085083,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25,
+              "session_mismatch": 1
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.890093469619751,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818,
+              0.8606062394517267
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "old_session_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        },
+        {
+          "case": "maneuver_sync",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 7.988,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.008000000000002672,
+            "max_altitude_age_maneuver_s": 0.008000000000002672,
+            "max_capture_current_angle_difference_deg": 0.4352149581581581,
+            "max_estimated_height_error_maneuver_m": 0.006483799854924643,
+            "max_height_error_auto_m": 0.009301543235778809,
+            "max_height_error_maneuver_m": 0.004435241222381592,
+            "maneuver_duration_s": 0.388,
+            "max_tilt_deg": 10.569081679228274,
+            "final_height_m": 0.9967362284660339,
+            "final_speed_mps": 0.47191518545150757,
+            "last_second_max_speed_mps": 0.4717318512744603,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.3675300764884972,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_multi",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 7.988,
+            "trips": [],
+            "accepted_count": 400,
+            "issued_count": 400,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": 0.028000000000002245,
+            "max_capture_current_angle_difference_deg": 1.4533524110310545,
+            "max_estimated_height_error_maneuver_m": 0.006501688968258423,
+            "max_height_error_auto_m": 0.012910008430480957,
+            "max_height_error_maneuver_m": 0.008176207542419434,
+            "maneuver_duration_s": 0.404,
+            "max_tilt_deg": 11.363840783503665,
+            "final_height_m": 0.9953377842903137,
+            "final_speed_mps": 0.4672822952270508,
+            "last_second_max_speed_mps": 0.46707710638924405,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 400
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.4172368822443686,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_latency",
+          "passed": false,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": false,
+            "bounded_accepted_latency": false,
+            "expected_trip": false,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": false,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": false,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [],
+            "auto_duration_s": 0.0,
+            "trips": [
+              {
+                "time_s": 0.02,
+                "reason": "sequence_rejected",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 0,
+            "issued_count": 0,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": null,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": null,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": null,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20115804902037437,
+            "final_height_m": 0.9980185627937317,
+            "final_speed_mps": 0.00997947994619608,
+            "last_second_max_speed_mps": 0.015903236000067236,
+            "receiver_reasons": {
+              "sequence_rejected": 499
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8905744791030884,
+            "entry_actual_throttle_jump_pwm": [],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_held",
+          "passed": false,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": false,
+            "bounded_accepted_latency": false,
+            "expected_trip": false,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": false,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": false,
+            "held_age_exercised": false
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [],
+            "auto_duration_s": 0.0,
+            "trips": [
+              {
+                "time_s": 0.02,
+                "reason": "sequence_rejected",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 0,
+            "issued_count": 0,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": null,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": null,
+            "max_altitude_age_maneuver_s": null,
+            "max_capture_current_angle_difference_deg": null,
+            "max_estimated_height_error_maneuver_m": null,
+            "max_height_error_auto_m": null,
+            "max_height_error_maneuver_m": null,
+            "maneuver_duration_s": 0.0,
+            "max_tilt_deg": 0.20115804902037437,
+            "final_height_m": 0.9980185627937317,
+            "final_speed_mps": 0.00997947994619608,
+            "last_second_max_speed_mps": 0.015903236000067236,
+            "receiver_reasons": {
+              "sequence_rejected": 499
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.8905744791030884,
+            "entry_actual_throttle_jump_pwm": [],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_loss",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012
+            ],
+            "auto_duration_s": 4.248,
+            "trips": [
+              {
+                "time_s": 6.26,
+                "reason": "watchdog_expired",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 212,
+            "issued_count": 213,
+            "unobserved_issued_count": 1,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": 0.028000000000002245,
+            "max_capture_current_angle_difference_deg": 1.0485083159041813,
+            "max_estimated_height_error_maneuver_m": 0.004756073360262514,
+            "max_height_error_auto_m": 0.009921014308929443,
+            "max_height_error_maneuver_m": 0.002859055995941162,
+            "maneuver_duration_s": 0.14400000000000002,
+            "max_tilt_deg": 9.642510169255392,
+            "final_height_m": 0.9922875761985779,
+            "final_speed_mps": 0.009918869473040104,
+            "last_second_max_speed_mps": 0.0166765927332602,
+            "receiver_reasons": {
+              "awaiting_command": 100,
+              "accepted": 212,
+              "watchdog_expired": 187
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.029131033868635307,
+            "min_clearance_m": 0.45965933799743663,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818
+            ],
+            "resets": []
+          }
+        },
+        {
+          "case": "maneuver_manual_reentry",
+          "passed": true,
+          "checks": {
+            "full_horizon": true,
+            "entered_auto": true,
+            "bounded_accepted_latency": true,
+            "expected_trip": true,
+            "trip_has_no_accepted": true,
+            "reentry_after_reset": true,
+            "first_issue_tracks_manual": true,
+            "reset_shadow_integral_zero": true,
+            "old_session_ignored": true,
+            "watchdog_timing": true,
+            "revocation_immediate": true,
+            "reset_clears_hidden_and_integral": true,
+            "maneuver_exercised": true,
+            "held_age_exercised": true
+          },
+          "metrics": {
+            "completed_s": 10.0,
+            "crashed": false,
+            "terminated": false,
+            "auto_entries_s": [
+              2.012,
+              6.0120000000000005
+            ],
+            "auto_duration_s": 5.976,
+            "trips": [
+              {
+                "time_s": 4.0,
+                "reason": "authority_revoked",
+                "accepted_pwm": null
+              }
+            ],
+            "accepted_count": 300,
+            "issued_count": 300,
+            "unobserved_issued_count": 0,
+            "max_accepted_roundtrip_s": 0.012000000000052857,
+            "max_pi_queue_wait_s": 0.0,
+            "max_pi_service_elapsed_s": 0.004000000000001336,
+            "max_altitude_age_auto_s": 0.028000000000002245,
+            "max_altitude_age_maneuver_s": 0.028000000000002245,
+            "max_capture_current_angle_difference_deg": 1.257911243686194,
+            "max_estimated_height_error_maneuver_m": 0.004518253492870272,
+            "max_height_error_auto_m": 0.009921014308929443,
+            "max_height_error_maneuver_m": 0.004781901836395264,
+            "maneuver_duration_s": 0.368,
+            "max_tilt_deg": 10.125501019997321,
+            "final_height_m": 0.9972230792045593,
+            "final_speed_mps": 0.0537230484187603,
+            "last_second_max_speed_mps": 0.26121985890007215,
+            "receiver_reasons": {
+              "awaiting_command": 175,
+              "accepted": 300,
+              "authority_revoked": 25
+            },
+            "bridge_faults": {},
+            "entry_issue_manual_jumps_pwm": [
+              0.0,
+              0.0
+            ],
+            "shadow_integral_max_abs": 0.0,
+            "min_clearance_m": 0.48038220405578624,
+            "entry_actual_throttle_jump_pwm": [
+              1.199999999999818,
+              0.8606198663346731
+            ],
+            "resets": [
+              {
+                "time_s": 4.5,
+                "session_id": "maneuver_manual_reentry-1",
+                "hidden_max_abs": 0.0,
+                "altitude_integral": 0.0,
+                "bridge_state": "MANUAL"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "validation": {
+    "tests_passed": 807,
+    "tests_elapsed_s": 83.56,
+    "offline_release_self_check": {
+      "passed": true,
+      "accepted_commands": 40,
+      "watchdog_tripped": true,
+      "old_session_rejected": true
+    },
+    "runtime_and_weights_changed": false
+  },
+  "limitation": "Fixed service-time assumption, not measured hardware latency. Old source bundles remain immutable."
+}
