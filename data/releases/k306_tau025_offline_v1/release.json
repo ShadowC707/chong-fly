@@ -1,0 +1,22 @@
+{
+  "version": "chong-offline-release-v1",
+  "bundle_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+  "files": {
+    "bundle/altitude_control.py": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e",
+    "bundle/benchmark.py": "a9eb44b07199cd82dbb8baba916b615587ea7ef1ab407ba8be7daf313841c963",
+    "bundle/flight_bridge.py": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256",
+    "bundle/metadata.json": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+    "bundle/metadata.sha256": "cb895ee0525ac07ed0b4f88b56086bcdfcf787b7c490fe9d4d354dd3ec6fd958",
+    "bundle/model.npz": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+    "bundle/requirements.txt": "bf7b26c4da979ceddfab749091066030cb412bbb91c8d45e458d7c0000dbf872",
+    "bundle/runtime.py": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2",
+    "bundle/sensors.py": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9",
+    "bundle/system.py": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220",
+    "bundle/xy_coordinator.py": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b",
+    "README.txt": "08bb6c3fd7f142263a78574ad03311bb0028ad6f82515cf31a432a7147960428",
+    "run.py": "ccde7ef427901fd2e9f16b85c6e140729e1dbbf182182fd1895b5810f01095ce",
+    "run_config.json": "0f6c19f1bd99856c1b654dd18a268bc2e63d7b09a9a10178a236cda1173a7950",
+    "session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+    "transport.py": "027a09b8073e045e27ce7f191d513a4f873cdcaf8b9b4598e5f47dac1e731133"
+  }
+}

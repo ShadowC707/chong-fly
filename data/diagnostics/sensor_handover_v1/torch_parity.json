@@ -1,0 +1,116 @@
+{
+  "version": "numpy-parity-v2",
+  "execution": "bundled",
+  "passed": true,
+  "candidate": "bridge_role_k306",
+  "steps": 2000,
+  "simulated_time_s": 40.0,
+  "source_checkpoint_sha256": "aa42f769aeddecbc2dc322ac2a5b10d52c9c0e8d37156e1386980f78abb9e587",
+  "bundle_metadata_sha256": "685e67d78a34e1ca7a0ddc965c5c58f3bd2d01e5dadcc4150d0f00964bc71899",
+  "max_network_pwm_error": 0.0001220703125,
+  "max_hidden_state_error": 2.980232238769531e-07,
+  "pipelines": [
+    {
+      "mode": "baseline",
+      "preset": "original_v1",
+      "levy_stop": false,
+      "max_applied_pwm_error": 0.0001220703125,
+      "intervention_reason_mismatches": 0
+    },
+    {
+      "mode": "both",
+      "preset": "original_v1",
+      "levy_stop": false,
+      "max_applied_pwm_error": 0.0001220703125,
+      "intervention_reason_mismatches": 0
+    },
+    {
+      "mode": "both",
+      "preset": "near_zero_v1",
+      "levy_stop": false,
+      "max_applied_pwm_error": 0.0001220703125,
+      "intervention_reason_mismatches": 0
+    },
+    {
+      "mode": "both",
+      "preset": "original_v1",
+      "levy_stop": true,
+      "max_applied_pwm_error": 0.0001220703125,
+      "intervention_reason_mismatches": 0
+    }
+  ],
+  "execution_evidence": {
+    "version": "isolated-bundle-replay-v1",
+    "isolated_python": true,
+    "execution_directory": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle",
+    "executed_modules": {
+      "runtime.py": {
+        "path": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle\\runtime.py",
+        "sha256": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2"
+      },
+      "altitude_control.py": {
+        "path": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle\\altitude_control.py",
+        "sha256": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e"
+      },
+      "xy_coordinator.py": {
+        "path": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle\\xy_coordinator.py",
+        "sha256": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b"
+      },
+      "flight_bridge.py": {
+        "path": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle\\flight_bridge.py",
+        "sha256": "2933670748e88d1776079a5edd2287d638b64c07f60e94134077f1d1fd05cf14"
+      },
+      "sensors.py": {
+        "path": "C:\\Users\\Hanabi\\.codex\\visualizations\\2026\\10\\03\\01a1032c-1900-72f0-bcf7-b8bf6da8ed7f\\chong-bundle-replay-eqezqzue\\bundle\\sensors.py",
+        "sha256": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9"
+      }
+    },
+    "assembly": false,
+    "assembly_manifests": [],
+    "forbidden_modules_loaded": [],
+    "numpy_version": "2.5.2",
+    "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+    "limitation": "Import isolation for trusted code, not a security sandbox; no Bridge/Gate execution.",
+    "source_bundle": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\edge\\k306_tau025_hold_v1",
+    "bundle_metadata_sha256": "685e67d78a34e1ca7a0ddc965c5c58f3bd2d01e5dadcc4150d0f00964bc71899",
+    "cases": [
+      {
+        "coordinator_mode": "baseline",
+        "coordinator_preset": "original_v1",
+        "levy_explore": false,
+        "stop_hover": false,
+        "seed": 20261021
+      },
+      {
+        "coordinator_mode": "both",
+        "coordinator_preset": "original_v1",
+        "levy_explore": false,
+        "stop_hover": false,
+        "seed": 20261021
+      },
+      {
+        "coordinator_mode": "both",
+        "coordinator_preset": "near_zero_v1",
+        "levy_explore": false,
+        "stop_hover": false,
+        "seed": 20261021
+      },
+      {
+        "coordinator_mode": "both",
+        "coordinator_preset": "original_v1",
+        "levy_explore": true,
+        "stop_hover": true,
+        "seed": 20261021
+      }
+    ],
+    "steps": 2000
+  },
+  "tolerance": {
+    "pwm_atol": 0.02,
+    "pwm_rtol": 0,
+    "hidden_atol": 2e-05,
+    "hidden_rtol": 0.0002
+  },
+  "conditions": "Same deterministic temporal stimuli as repository parity; each case starts with fresh state.",
+  "limitation": "Synchronous numerical replay; no Bridge/Gate, transport, sensor hold, or flight admission."
+}

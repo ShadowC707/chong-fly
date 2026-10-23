@@ -1,0 +1,51 @@
+{
+  "heights_m": [
+    0.92,
+    1.0,
+    1.08
+  ],
+  "delta_pwm": [
+    0.0,
+    -15.0,
+    15.0
+  ],
+  "variants": [
+    [
+      "legacy",
+      "sync"
+    ],
+    [
+      "freeze_sync_v1",
+      "sync"
+    ],
+    [
+      "freeze_sync_v1",
+      "multi"
+    ]
+  ],
+  "shadow_s": 5.0,
+  "telemetry_horizon_s": 8.0,
+  "physical_horizon_s": 9.0,
+  "auto_request_s": 5.0,
+  "manual_return_s": 8.0,
+  "physical_manual_trim_from_s": 4.5,
+  "control_dt_s": 0.02,
+  "physics_dt_s": 0.004,
+  "multi_rate_hz": {
+    "flow": 50,
+    "tof": 15,
+    "altitude": 30,
+    "attitude": 50
+  },
+  "physics_enabled": true,
+  "limits": {
+    "first_command_jump_pwm": 0.0,
+    "issued_throttle_step_pwm": 3.0,
+    "new_shadow_integral": 0.0
+  },
+  "limitations": [
+    "Telemetry grid uses fixed height and exact manual-versus-supervised delta.",
+    "Physical grid applies manual trim to actual plant; safe admission denial is an outcome.",
+    "Manual fallback is a simulation controller, not ESP firmware. Gate/transport are absent."
+  ]
+}

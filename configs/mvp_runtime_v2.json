@@ -1,0 +1,20 @@
+{
+  "bundle_dir": "../data/edge/k306_tau025_hold_v1",
+  "expected_metadata_sha256": "685e67d78a34e1ca7a0ddc965c5c58f3bd2d01e5dadcc4150d0f00964bc71899",
+  "coordinator_mode": "both",
+  "coordinator_preset": "original_v1",
+  "levy_explore": false,
+  "stop_hover": true,
+  "seed": 20261021,
+  "session_id": "mvp-hold-v1-offline",
+  "transport_mode": "offline",
+  "sensor_mode": "multi_rate_v1",
+  "sensor_budgets": {
+    "flow_max_age_s": 0.04,
+    "tof_max_age_s": 0.10,
+    "altitude_max_age_s": 0.06,
+    "attitude_max_age_s": 0.04
+  },
+  "handover_mode": "freeze_sync_v1",
+  "bridge": {}
+}

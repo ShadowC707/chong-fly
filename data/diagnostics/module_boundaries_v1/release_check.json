@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "mode": "offline_synthetic_telemetry_no_physics",
+  "accepted_commands": 40,
+  "accepted_sessions": [
+    "self-check-0",
+    "self-check-1"
+  ],
+  "watchdog_tripped": true,
+  "old_session_rejected": true,
+  "forbidden_modules_loaded": [],
+  "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+  "release_sha256": "726248862613d3be2716239037aed1698b8fa629b558c0b238b31aa6a54c937c",
+  "numpy_version": "2.5.2",
+  "bundle_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+  "limitation": "Synthetic clear telemetry; no hardware I/O, real-time scheduler or physical fallback validation."
+}

@@ -1,0 +1,342 @@
+{
+  "format": "chong-fly-numpy-v1",
+  "solver": "exponential_euler",
+  "sensor_encoding": "proximity-v1",
+  "matrix_orientation": "source_target_h_at_W",
+  "dtype": "float32",
+  "dt": 0.02,
+  "hidden_size": 306,
+  "sensor_dim": 74,
+  "tof_range_m": 3.5,
+  "proximity_threshold_m": 0.8,
+  "action_order": [
+    "throttle",
+    "roll",
+    "pitch",
+    "yaw"
+  ],
+  "pwm": {
+    "min": 1000.0,
+    "mid": 1500.0,
+    "half": 500.0,
+    "max": 2000.0
+  },
+  "source": {
+    "candidate": "bridge_role_k306",
+    "checkpoint_sha256": "aa42f769aeddecbc2dc322ac2a5b10d52c9c0e8d37156e1386980f78abb9e587",
+    "report_sha256": "d80eae6517e284eca5bc5ade13e094382717cd41f9cf837e928f50ee8922bbf1",
+    "graph_meta_sha256": "4a1476944b7ccfed2289e26017ebb507770dc16a5f63f3829a95c31145af4ee4",
+    "continuation": {
+      "tau_scale": [
+        0.25,
+        0.5
+      ],
+      "recurrent_scale": [
+        0.75
+      ],
+      "epochs": 10,
+      "learning_rate": 0.001,
+      "loss_mode": "channel-v4",
+      "device": "cpu",
+      "frozen_parameters": [
+        "tau_raw",
+        "A",
+        "_w_macro_param"
+      ],
+      "recovery_window_s": 1.0,
+      "decoder_norm_policy": "monitor_only",
+      "selected_tau_scale": 0.25,
+      "selected_recurrent_scale": 0.75,
+      "optimizer_reset": true,
+      "scales_are_initialization_only": false
+    },
+    "training_constraints": {
+      "version": "frozen-recurrent-core-v1",
+      "frozen_parameters": [
+        "tau_raw",
+        "A",
+        "_w_macro_param"
+      ],
+      "w_max_norm": 4.746003150939941,
+      "norm": "frobenius",
+      "projection_order": "native_post_step_then_verify",
+      "W_reference_sha256": "a2db635b66f8e1565b3438c95223a2734528d47d59e6219aba9d07479f8d9e81",
+      "initial_decoder_norms": {
+        "frobenius": 1.0580074787139893,
+        "yaw_l2": 0.790624737739563
+      },
+      "decoder_norm_policy": "monitor_only"
+    },
+    "mvp_admission": {
+      "passed": false,
+      "reasons": [
+        "broad_joint"
+      ],
+      "thresholds": {
+        "version": "course-mvp-navigation-v1",
+        "direction_required": 12,
+        "recovery_required": 12,
+        "recovery_max_s": 0.8,
+        "tolerance_pwm": 20.0,
+        "broad_joint_required": 4,
+        "narrow_required": 8,
+        "narrow_min_signed_yaw_pwm": 80.0,
+        "scenes_required": 7
+      },
+      "direction_passed": 12,
+      "recovery_passed": 12,
+      "broad_joint_passed": 3,
+      "narrow_amplitude_passed": 8,
+      "narrow_cases": [
+        {
+          "obstacle_side": "left",
+          "normalized_distance": 0.1,
+          "active_columns": 1,
+          "signed_yaw_pwm": 228.2598876953125,
+          "passed": true
+        },
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.1,
+          "active_columns": 1,
+          "signed_yaw_pwm": 152.3555908203125,
+          "passed": true
+        },
+        {
+          "obstacle_side": "left",
+          "normalized_distance": 0.1,
+          "active_columns": 2,
+          "signed_yaw_pwm": 305.6810302734375,
+          "passed": true
+        },
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.1,
+          "active_columns": 2,
+          "signed_yaw_pwm": 268.8140869140625,
+          "passed": true
+        },
+        {
+          "obstacle_side": "left",
+          "normalized_distance": 0.2,
+          "active_columns": 1,
+          "signed_yaw_pwm": 119.8253173828125,
+          "passed": true
+        },
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "active_columns": 1,
+          "signed_yaw_pwm": 107.3974609375,
+          "passed": true
+        },
+        {
+          "obstacle_side": "left",
+          "normalized_distance": 0.2,
+          "active_columns": 2,
+          "signed_yaw_pwm": 202.84375,
+          "passed": true
+        },
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "active_columns": 2,
+          "signed_yaw_pwm": 158.3953857421875,
+          "passed": true
+        }
+      ],
+      "scenes_passed": 7,
+      "scene_results": [
+        {
+          "scenario": "clear",
+          "passed": true
+        },
+        {
+          "scenario": "obstacle_left",
+          "passed": true
+        },
+        {
+          "scenario": "obstacle_right",
+          "passed": true
+        },
+        {
+          "scenario": "obstacle_center",
+          "passed": true
+        },
+        {
+          "scenario": "fast_center",
+          "passed": true
+        },
+        {
+          "scenario": "drift_left",
+          "passed": true
+        },
+        {
+          "scenario": "drift_right",
+          "passed": true
+        }
+      ],
+      "scope": "course_simulation_experiment_not_flight_admission"
+    },
+    "training_ready": false
+  },
+  "neural_contract": {
+    "dynamics_version": "leaky-rate-v1",
+    "matrix_orientation": "source_target",
+    "coordinate_version": "flu-rc-right-v1",
+    "routing_version": "connectome-routing-v1",
+    "solver": "exponential_euler",
+    "default_dt": 0.02,
+    "mode": "masked",
+    "architecture": {
+      "hidden_size": 306,
+      "input_size": 74,
+      "backbone_units": 64,
+      "backbone_layers": 2,
+      "backbone_act": "lecun_tanh",
+      "backbone_dropout": 0.0,
+      "connectivity": "structured",
+      "synapse_sign_policy": "initial-sign-projection-v1",
+      "input_routing": {
+        "version": "connectome-routing-v1",
+        "mask_sha256": "fcf5f3ced1d50661bd1e5eb0c280ad7da8f738f66004a3d8ddbb9694dd067d75",
+        "shape": [
+          306,
+          74
+        ]
+      },
+      "sensor_encoding": "proximity-v1",
+      "sensor_encoding_parameters": {
+        "threshold_m": 0.8,
+        "max_range_m": 3.5
+      },
+      "neutral_origin": "zero-drive-yaw-v1"
+    },
+    "initial_sign_sha256": "19b79fe484044a70b25f2c1d0a558b0c37f2e450f18ba8ea2d3991b0aebbe1c3"
+  },
+  "control_contract": {
+    "version": "navigation-altitude-v1",
+    "action_order": [
+      "throttle",
+      "roll",
+      "pitch",
+      "yaw"
+    ],
+    "learned_channels": [
+      "roll",
+      "pitch",
+      "yaw"
+    ],
+    "learned_indices": [
+      1,
+      2,
+      3
+    ],
+    "altitude": {
+      "version": "range-altitude-v1",
+      "throttle_owner": "altitude_controller",
+      "navigation_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "config": {
+        "target_height_m": 1.0,
+        "hover_pwm": 1213.0,
+        "kp": 4.0,
+        "kd": 3.0,
+        "ki": 0.8,
+        "integral_limit": 0.5,
+        "velocity_filter_tau_s": 0.12,
+        "max_acceleration_mps2": 3.0,
+        "gravity_mps2": 9.81,
+        "min_pwm": 1100.0,
+        "max_pwm": 1400.0,
+        "slew_pwm_per_s": 150.0,
+        "min_range_m": 0.08,
+        "max_range_m": 3.5,
+        "min_tilt_cosine": 0.7,
+        "emitter_below_center_m": 0.018,
+        "max_age_s": 0.06,
+        "max_sample_gap_s": 0.1,
+        "max_vertical_speed_mps": 3.0,
+        "range_jump_slack_m": 0.03
+      }
+    }
+  },
+  "xy_config": {
+    "flow_filter_tau_s": 0.06,
+    "stopped_flow": 0.02,
+    "forward_flow": 0.06,
+    "threat_m": 0.8,
+    "clear_m": 0.95,
+    "clear_dwell_s": 0.8,
+    "acquire_yaw_pwm": 20.0
+  },
+  "xy_presets": {
+    "original_v1": {
+      "flow_filter_tau_s": 0.06,
+      "stopped_flow": 0.02,
+      "forward_flow": 0.06,
+      "threat_m": 0.8,
+      "clear_m": 0.95,
+      "clear_dwell_s": 0.8,
+      "acquire_yaw_pwm": 20.0
+    },
+    "near_zero_v1": {
+      "flow_filter_tau_s": 0.06,
+      "stopped_flow": -0.025,
+      "forward_flow": 0.005,
+      "threat_m": 0.8,
+      "clear_m": 0.95,
+      "clear_dwell_s": 0.8,
+      "acquire_yaw_pwm": 60.0
+    }
+  },
+  "default_coordinator_mode": "baseline",
+  "parameter_bytes": 475520,
+  "optional_behaviors": {
+    "version": "xy-coordinator-v2",
+    "default_enabled": false,
+    "config": {
+      "levy_alpha": 1.8,
+      "levy_min_s": 1.5,
+      "levy_max_s": 6.0,
+      "search_duration_s": 0.28,
+      "search_amplitude_pwm": 110.0,
+      "search_clear_m": 1.15,
+      "search_preempt_m": 0.95,
+      "reflex_preempt_pwm": 25.0,
+      "side_tie_m": 0.05,
+      "stop_critical_m": 0.5,
+      "stop_gain_pwm": 400.0,
+      "stop_limit_pwm": 100.0,
+      "stop_transition_s": 0.12,
+      "hover_flow": 0.0075,
+      "hover_dwell_s": 0.5,
+      "pause_search_wait": false,
+      "target_half_gate": false,
+      "target_half_mean_m": 1.8,
+      "target_half_min_m": 1.2
+    }
+  },
+  "export_torch_version": "2.6.0+cu124",
+  "export_numpy_version": "2.5.2",
+  "limitations": [
+    "Research checkpoint; export does not grant flight admission.",
+    "Checksum detects changed files, not authenticity against an attacker rewriting the whole bundle.",
+    "Neural throttle is a placeholder; use FlightRuntime with valid altitude telemetry.",
+    "No serial/Bluetooth, motor arming, scheduler, or hardware authority arbiter included."
+  ],
+  "files": {
+    "altitude_control.py": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e",
+    "benchmark.py": "a9eb44b07199cd82dbb8baba916b615587ea7ef1ab407ba8be7daf313841c963",
+    "flight_bridge.py": "2933670748e88d1776079a5edd2287d638b64c07f60e94134077f1d1fd05cf14",
+    "model.npz": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+    "requirements.txt": "bf7b26c4da979ceddfab749091066030cb412bbb91c8d45e458d7c0000dbf872",
+    "runtime.py": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2",
+    "sensors.py": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9",
+    "system.py": "2d454ea81c5afb42d4d3be5ec9c7f21d1c68bbd1d3b211a243258b1589929112",
+    "xy_coordinator.py": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b"
+  }
+}
