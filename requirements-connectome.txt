@@ -1,0 +1,6 @@
+# Optional acquisition/Parquet dependencies, in addition to requirements.txt.
+# Verified together by tests/test_cave_client_integration.py.
+caveclient==8.2.1
+pyarrow==25.0.1
+pandas==2.3.3
+numpy==2.5.3

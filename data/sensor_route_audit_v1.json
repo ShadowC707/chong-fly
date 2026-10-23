@@ -1,0 +1,153 @@
+{
+  "audit_version": "sensor-routes-v1",
+  "source_sha256": "8db6abbbbcf8a1fd6c15f8e7477f33f81ffe3f8aca3e376128d6c5a9aaec7e40",
+  "source_nodes": 12942,
+  "source_nonzero_edges": 32394,
+  "source_sensor_motor_paths": {
+    "lptc_flow": {
+      "minimum_hops": {
+        "throttle": 1,
+        "roll": 1,
+        "pitch": 1,
+        "yaw": 1
+      },
+      "reachable_motor_counts": {
+        "throttle": 4,
+        "roll": 8,
+        "pitch": 8,
+        "yaw": 4
+      },
+      "reachable_readout_rank": 4
+    },
+    "lc_looming": {
+      "minimum_hops": {
+        "throttle": 1,
+        "roll": 1,
+        "pitch": 1,
+        "yaw": null
+      },
+      "reachable_motor_counts": {
+        "throttle": 4,
+        "roll": 8,
+        "pitch": 8,
+        "yaw": 0
+      },
+      "reachable_readout_rank": 3
+    }
+  },
+  "source_direct_sensor_successor_types": {
+    "lptc_flow": [
+      "CH",
+      "DNa01",
+      "DNa02",
+      "DNa11",
+      "DNp01",
+      "DNp02",
+      "DNp04",
+      "DNp09",
+      "DNp11",
+      "LPi1-2",
+      "LPi2-1",
+      "LPi3-4",
+      "LPi4-3",
+      "dCH",
+      "vCH"
+    ],
+    "lc_looming": [
+      "DNa11",
+      "DNp01",
+      "DNp02",
+      "DNp04",
+      "DNp09",
+      "DNp11"
+    ]
+  },
+  "models": [
+    {
+      "k": 128,
+      "reducer": "role_degree",
+      "declared_source_kind": "synthetic",
+      "sensor_motor_paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 4,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 4
+          },
+          "reachable_readout_rank": 4
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": null
+          },
+          "reachable_motor_counts": {
+            "throttle": 4,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 0
+          },
+          "reachable_readout_rank": 3
+        }
+      },
+      "required_routes": {
+        "lptc_flow->roll": "present_in_both",
+        "lptc_flow->pitch": "present_in_both",
+        "lc_looming->pitch": "present_in_both",
+        "lc_looming->yaw": "missing_in_source_or_mapping"
+      }
+    },
+    {
+      "k": 256,
+      "reducer": "role_degree",
+      "declared_source_kind": "synthetic",
+      "sensor_motor_paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 4,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 4
+          },
+          "reachable_readout_rank": 4
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": null
+          },
+          "reachable_motor_counts": {
+            "throttle": 4,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 0
+          },
+          "reachable_readout_rank": 3
+        }
+      },
+      "required_routes": {
+        "lptc_flow->roll": "present_in_both",
+        "lptc_flow->pitch": "present_in_both",
+        "lc_looming->pitch": "present_in_both",
+        "lc_looming->yaw": "missing_in_source_or_mapping"
+      }
+    }
+  ]
+}

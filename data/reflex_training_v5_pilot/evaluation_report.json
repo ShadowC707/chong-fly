@@ -1,0 +1,764 @@
+{
+  "metadata": {
+    "dataset_version": "reflex-v3",
+    "teacher_version": "geometry-reflex-v5",
+    "teacher_aggregation_version": "max-brake-force-weighted-direction-v1",
+    "coordinate_version": "flu-rc-right-v1",
+    "observation_source": "geometric_raycast",
+    "dt": 0.02,
+    "physics_dt": 0.004,
+    "tof_max_range_m": 3.5,
+    "sensor_dim": 74,
+    "action_dim": 4,
+    "seed": 20261016,
+    "sensor_geometry_version": "point-rays-solid-v2",
+    "scene_profile": "varied-v1",
+    "episode_seed_schedule_version": "independent-scene-seeds-v1",
+    "control_contract": {
+      "version": "navigation-altitude-v1",
+      "action_order": [
+        "throttle",
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_indices": [
+        1,
+        2,
+        3
+      ],
+      "altitude": {
+        "version": "range-altitude-v1",
+        "throttle_owner": "altitude_controller",
+        "navigation_channels": [
+          "roll",
+          "pitch",
+          "yaw"
+        ],
+        "config": {
+          "target_height_m": 1.0,
+          "hover_pwm": 1213.0,
+          "kp": 4.0,
+          "kd": 3.0,
+          "ki": 0.8,
+          "integral_limit": 0.5,
+          "velocity_filter_tau_s": 0.12,
+          "max_acceleration_mps2": 3.0,
+          "gravity_mps2": 9.81,
+          "min_pwm": 1100.0,
+          "max_pwm": 1400.0,
+          "slew_pwm_per_s": 150.0,
+          "min_range_m": 0.08,
+          "max_range_m": 3.5,
+          "min_tilt_cosine": 0.7,
+          "emitter_below_center_m": 0.018,
+          "max_age_s": 0.06,
+          "max_sample_gap_s": 0.1,
+          "max_vertical_speed_mps": 3.0,
+          "range_jump_slack_m": 0.03
+        }
+      }
+    },
+    "num_episodes": 32,
+    "seq_len": 250,
+    "distance_threshold_m": 0.8,
+    "execution_noise_std_pwm": 0,
+    "teacher_parameters": {
+      "distance_threshold_m": 0.8,
+      "max_sensor_range_m": 3.5,
+      "noise_std_pwm": 0.0,
+      "k_repulsive": 20.0,
+      "max_pitch_brake_pwm": 280.0,
+      "repulsion_scale": 600.0,
+      "yaw_gain": 0.2,
+      "min_dist_clamp": 0.1,
+      "pwm_hover": 1213.0,
+      "pwm_level_roll": 1500.0,
+      "pwm_cruise_pitch": 1600.0,
+      "pwm_neutral_yaw": 1500.0,
+      "pwm_min": 1000.0,
+      "pwm_max": 2000.0,
+      "flow_gain_pwm": 400.0,
+      "release_margin_m": 0.15,
+      "clear_hold_s": 0.12,
+      "brake_release_flow": 0.03,
+      "brake_settle_s": 0.2,
+      "brake_flow_scale": 0.1,
+      "cruise_recovery_s": 0.2,
+      "turn_full_flow": 0.05,
+      "turn_stop_flow": 0.12
+    },
+    "label_noise_std_pwm": 0.0,
+    "episode_scenarios": [
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward"
+    ],
+    "scenario_counts": {
+      "clear": 4,
+      "obstacle_left": 4,
+      "obstacle_right": 4,
+      "obstacle_center": 4,
+      "drift_left": 4,
+      "drift_right": 4,
+      "drift_forward": 4,
+      "drift_backward": 4
+    },
+    "behavior_names": [
+      "cruise",
+      "turn_right",
+      "turn_left",
+      "brake_left_drift",
+      "brake_right_drift",
+      "brake_forward"
+    ],
+    "behavior_counts": {
+      "cruise": 6108,
+      "brake_forward": 259,
+      "turn_right": 404,
+      "brake_right_drift": 248,
+      "brake_left_drift": 204,
+      "turn_left": 307
+    },
+    "episodes": [
+      {
+        "seed": 1542444242,
+        "scenario": "clear",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9414894643129339,
+          "initial_speed_mps": 0.5413417220115662,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 741192977,
+        "scenario": "obstacle_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 1.0247187620157492,
+          "obstacle_width_m": 0.3669794355926227,
+          "initial_height_m": 1.1932144278650545,
+          "initial_speed_mps": 1.4821749925613403,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 886916459,
+        "scenario": "obstacle_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.862701087158811,
+          "obstacle_width_m": 0.3942242015421673,
+          "initial_height_m": 0.9898393514488448,
+          "initial_speed_mps": 1.1000038385391235,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1195536281,
+        "scenario": "obstacle_center",
+        "valid_steps": 19,
+        "physics_ticks": 95,
+        "duration_s": 0.38,
+        "terminated": true,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.6631569403524379,
+          "obstacle_width_m": 0.5218229901771311,
+          "initial_height_m": 1.1881364800815692,
+          "initial_speed_mps": 1.4074534177780151,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": "Abrupt range change: surface discontinuity or invalid sample"
+      },
+      {
+        "seed": 2013979138,
+        "scenario": "drift_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.2617935215528697,
+          "initial_speed_mps": 0.8769291639328003,
+          "initial_lateral_speed_mps": 0.561593770980835
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1343846251,
+        "scenario": "drift_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9755990726637996,
+          "initial_speed_mps": 0.9891175031661987,
+          "initial_lateral_speed_mps": -0.7203150987625122
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1644325851,
+        "scenario": "drift_forward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.4874859786656403,
+          "initial_speed_mps": 1.3166083097457886,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1068475682,
+        "scenario": "drift_backward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9476444612364432,
+          "initial_speed_mps": -2.172929525375366,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 378631617,
+        "scenario": "clear",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.1848318558944133,
+          "initial_speed_mps": 1.0731472969055176,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1551913875,
+        "scenario": "obstacle_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.96452282897617,
+          "obstacle_width_m": 0.4154033591239793,
+          "initial_height_m": 0.8868996963565634,
+          "initial_speed_mps": 1.2157610654830933,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 2035017701,
+        "scenario": "obstacle_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.7841724625833904,
+          "obstacle_width_m": 0.3229847226339811,
+          "initial_height_m": 0.9685679858334464,
+          "initial_speed_mps": 0.7396501898765564,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 551363744,
+        "scenario": "obstacle_center",
+        "valid_steps": 11,
+        "physics_ticks": 55,
+        "duration_s": 0.22,
+        "terminated": true,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.3612447437084637,
+          "obstacle_width_m": 0.2997327930554975,
+          "initial_height_m": 1.2943973965959188,
+          "initial_speed_mps": 0.5498016476631165,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": "Abrupt range change: surface discontinuity or invalid sample"
+      },
+      {
+        "seed": 1203993522,
+        "scenario": "drift_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9567301889924827,
+          "initial_speed_mps": 0.7861118316650391,
+          "initial_lateral_speed_mps": 0.5137154459953308
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 428097512,
+        "scenario": "drift_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.0420333309617313,
+          "initial_speed_mps": 0.49415287375450134,
+          "initial_lateral_speed_mps": -0.7161735892295837
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 167468791,
+        "scenario": "drift_forward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.4250654092478117,
+          "initial_speed_mps": 1.1735035181045532,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1181025204,
+        "scenario": "drift_backward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.2272603248187899,
+          "initial_speed_mps": -1.1665146350860596,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 219885261,
+        "scenario": "clear",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.2384262890749111,
+          "initial_speed_mps": 1.161996603012085,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1476464826,
+        "scenario": "obstacle_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.5572572771257999,
+          "obstacle_width_m": 0.5157236972488688,
+          "initial_height_m": 0.9352101224828031,
+          "initial_speed_mps": 0.15710905194282532,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 711959270,
+        "scenario": "obstacle_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.9243839859007719,
+          "obstacle_width_m": 0.8023600768449533,
+          "initial_height_m": 1.3609401832755728,
+          "initial_speed_mps": 0.3668266534805298,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1773526475,
+        "scenario": "obstacle_center",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.8015872368032667,
+          "obstacle_width_m": 0.7926523421767961,
+          "initial_height_m": 0.8556037575155404,
+          "initial_speed_mps": 1.331552505493164,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 104061082,
+        "scenario": "drift_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.2623085247637165,
+          "initial_speed_mps": 0.302463173866272,
+          "initial_lateral_speed_mps": 0.3308910131454468
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 246596809,
+        "scenario": "drift_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9948023950344693,
+          "initial_speed_mps": 1.3244212865829468,
+          "initial_lateral_speed_mps": -0.50822514295578
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1774741870,
+        "scenario": "drift_forward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.2808545293687614,
+          "initial_speed_mps": 1.5636390447616577,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1591945001,
+        "scenario": "drift_backward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.0720894314726137,
+          "initial_speed_mps": -1.6992604732513428,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1552667446,
+        "scenario": "clear",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9135393834736444,
+          "initial_speed_mps": 1.4392478466033936,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 31284232,
+        "scenario": "obstacle_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.41246981019366213,
+          "obstacle_width_m": 0.5979578422173015,
+          "initial_height_m": 0.8602754206968393,
+          "initial_speed_mps": 0.7115512490272522,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1741694931,
+        "scenario": "obstacle_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.7716550590270206,
+          "obstacle_width_m": 0.5063906544782383,
+          "initial_height_m": 1.4025774586990596,
+          "initial_speed_mps": 1.2531743049621582,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 321614676,
+        "scenario": "obstacle_center",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "obstacle_distance_m": 0.8713541843235685,
+          "obstacle_width_m": 0.6105945695533933,
+          "initial_height_m": 1.3370226323332566,
+          "initial_speed_mps": 1.0454556941986084,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 64767893,
+        "scenario": "drift_left",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.9417512279398352,
+          "initial_speed_mps": 1.4470529556274414,
+          "initial_lateral_speed_mps": 0.4028092920780182
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 1070888134,
+        "scenario": "drift_right",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.8713362786691131,
+          "initial_speed_mps": 1.3264663219451904,
+          "initial_lateral_speed_mps": -0.28134265542030334
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 576757498,
+        "scenario": "drift_forward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 0.8998638951213699,
+          "initial_speed_mps": 1.7514946460723877,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      },
+      {
+        "seed": 2018154543,
+        "scenario": "drift_backward",
+        "valid_steps": 250,
+        "physics_ticks": 1250,
+        "duration_s": 5.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "scene_parameters": {
+          "profile": "varied-v1",
+          "initial_height_m": 1.4586036422712747,
+          "initial_speed_mps": -1.1335541009902954,
+          "initial_lateral_speed_mps": 0.0
+        },
+        "failure_reason": null
+      }
+    ],
+    "required_sensor_motor_paths": {
+      "lptc_flow": [
+        "roll",
+        "pitch"
+      ],
+      "lc_looming": [
+        "pitch",
+        "yaw"
+      ]
+    }
+  },
+  "valid_frames": 7530,
+  "crashed_episodes": 0,
+  "action_min": [
+    1213.0,
+    1423.5194091796875,
+    1160.086669921875,
+    1150.0
+  ],
+  "action_max": [
+    1213.0,
+    1555.520263671875,
+    1841.2178955078125,
+    1850.0
+  ],
+  "applied_action_min": [
+    1189.0775146484375,
+    1423.5194091796875,
+    1160.086669921875,
+    1150.0
+  ],
+  "applied_action_max": [
+    1222.03076171875,
+    1555.520263671875,
+    1841.2178955078125,
+    1850.0
+  ]
+}

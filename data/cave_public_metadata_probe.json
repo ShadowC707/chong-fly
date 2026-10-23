@@ -1,0 +1,60 @@
+{
+  "requested_datastack": "flywire_fafb_public",
+  "requested_version": null,
+  "checked_at_utc": "2026-10-05T06:34:01.677280+00:00",
+  "operation": "metadata_and_optional_single_row_schema_probe",
+  "stage": "list_tables",
+  "versions": {
+    "caveclient": "8.2.1",
+    "pandas": "2.3.3",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "prod.flywire-daf.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "prod.flywire-daf.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "prod.flywire-daf.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "prod.flywire-daf.com",
+      "status": 200
+    }
+  ],
+  "available_versions": [
+    630,
+    783
+  ],
+  "inspected_version": 783,
+  "tables": [
+    "hierarchical_neuron_annotations",
+    "neuron_information_v2",
+    "synapses_nt_v1",
+    "nuclei_v1",
+    "proofread_neurons",
+    "fly_synapses_neuropil_v6"
+  ],
+  "schema_checks": [],
+  "status": "metadata_available"
+}

@@ -1,0 +1,35 @@
+{
+  "passed": true,
+  "full_suite": {
+    "passed": 801,
+    "seconds": 69.57
+  },
+  "final_targeted_suite": {
+    "passed": 18
+  },
+  "physical_source_hashes_match": {
+    "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\evaluate\\validate_transport_loop.py": true,
+    "edge\\session_receiver.py": true,
+    "edge\\transport.py": true,
+    "simulation\\receiver_fallback.py": true,
+    "simulation\\sensor_schedule.py": true,
+    "simulation\\benchmark_scenes.py": true,
+    "simulation\\drone_env.py": true
+  },
+  "code_sha256": {
+    "artifacts/io.py": "4815d55284841ddd00d31be62def4eee08a761797550a3f81210821773e3f2d6",
+    "artifacts/research.py": "0b7e7605cbc31185f1ca9e194e5dbfc8089d31422cceda74d0f5759240596ce4",
+    "core/invariants.py": "5dd6b9beddbddbbc9acb05cb47c97b7a1a8a71a7fd01fc9c9deb702798293732",
+    "simulation/sensor_schedule.py": "8924ee9e8520ca906f947bbe3101da2bc06b00187d0ad4e5a5ac18592965a115",
+    "edge/flight_bridge.py": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256",
+    "edge/system.py": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220",
+    "edge/session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+    "edge/release.py": "e9a830847b5f345f7cbda32dd3773ab78fdcc14be6d59c1f5d19816100d8c166",
+    "edge/release_entrypoint.py": "ccde7ef427901fd2e9f16b85c6e140729e1dbbf182182fd1895b5810f01095ce",
+    "evaluate/validate_module_refactor.py": "b28559300bde60f1ad918d4e8446f6f3af99290f381ad4b81785403b08994b59",
+    "evaluate/validate_transport_loop.py": "2d3f237edd650b7cc346f01f423dabaa0817c33e625cb2c3c00a063da031c3db",
+    "test_imports.py": "2f55d3e424e80b98c470c6d148a81d10fcf7b5342b30b0e0bcd143ba850d2b68",
+    "scratch_apply_gpu.py": "53b72dca0cadce9d3ae65c3191773c93b4b18b261d4edd0da4053b8c680ef211",
+    "tests/test_module_boundaries.py": "0b9ff87686fa61533d702e45e38c5673403bdfc618e089b4417762d4da5b22a4"
+  }
+}

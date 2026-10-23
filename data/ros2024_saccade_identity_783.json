@@ -1,0 +1,141 @@
+{
+  "source": {
+    "doi": "10.1016/j.cub.2023.12.047",
+    "table": "S3",
+    "pdf_page": 9,
+    "url": "https://authors.library.caltech.edu/records/58xe4-e8z69/files/1-s2.0-S0960982223017475-mmc1.pdf",
+    "sha256": "6b58e8aabaf36cd1baf56d339a98703aa9c00c9bc39e90439d318823e3485fbf",
+    "bytes": 8098850,
+    "local_path": "data/research_sources/ros2024_supplement.pdf"
+  },
+  "annotation_sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+  "materialization_version": 783,
+  "records": [
+    {
+      "root_id": "720575940609488942",
+      "paper_type": "DNae014",
+      "cell_type": "DNa15",
+      "hemibrain_type": "PS017",
+      "side": "right"
+    },
+    {
+      "root_id": "720575940631759663",
+      "paper_type": "DNae014",
+      "cell_type": "DNa15",
+      "hemibrain_type": "PS017",
+      "side": "left"
+    },
+    {
+      "root_id": "720575940630758418",
+      "paper_type": "DNb01",
+      "cell_type": "",
+      "hemibrain_type": "DNb01",
+      "side": "right"
+    },
+    {
+      "root_id": "720575940625878160",
+      "paper_type": "DNb01",
+      "cell_type": "",
+      "hemibrain_type": "DNb01",
+      "side": "left"
+    },
+    {
+      "root_id": "720575940635202204",
+      "paper_type": "VES041",
+      "cell_type": "",
+      "hemibrain_type": "VES041",
+      "side": "right"
+    },
+    {
+      "root_id": "720575940627253604",
+      "paper_type": "VES041",
+      "cell_type": "",
+      "hemibrain_type": "VES041",
+      "side": "left"
+    }
+  ],
+  "side_policy": "Sides come from pinned annotations; Table S3 provides no side column. Table S1 rounded confidences appear left/right reversed relative to these annotations; not used to relabel sides.",
+  "selection": {
+    "strategy": "induced_exact_published_labels",
+    "target_classes": [
+      "DNae014",
+      "DNb01",
+      "VES041"
+    ],
+    "label_namespace_policy": "explicit_selectors_with_strict_fallback",
+    "resolved_selectors": {
+      "DNae014": {
+        "namespace": "root_id",
+        "root_ids": [
+          "720575940609488942",
+          "720575940631759663"
+        ],
+        "expected_annotations": {
+          "720575940609488942": {
+            "cell_type": "DNa15",
+            "hemibrain_type": "PS017",
+            "side": "right"
+          },
+          "720575940631759663": {
+            "cell_type": "DNa15",
+            "hemibrain_type": "PS017",
+            "side": "left"
+          }
+        },
+        "identity_locked": true
+      },
+      "DNb01": {
+        "namespace": "root_id",
+        "root_ids": [
+          "720575940625878160",
+          "720575940630758418"
+        ],
+        "expected_annotations": {
+          "720575940625878160": {
+            "cell_type": "",
+            "hemibrain_type": "DNb01",
+            "side": "left"
+          },
+          "720575940630758418": {
+            "cell_type": "",
+            "hemibrain_type": "DNb01",
+            "side": "right"
+          }
+        },
+        "identity_locked": true
+      },
+      "VES041": {
+        "namespace": "root_id",
+        "root_ids": [
+          "720575940627253604",
+          "720575940635202204"
+        ],
+        "expected_annotations": {
+          "720575940627253604": {
+            "cell_type": "",
+            "hemibrain_type": "VES041",
+            "side": "left"
+          },
+          "720575940635202204": {
+            "cell_type": "",
+            "hemibrain_type": "VES041",
+            "side": "right"
+          }
+        },
+        "identity_locked": true
+      }
+    },
+    "label_namespace_conflicts": [],
+    "matched_counts": {
+      "DNae014": 2,
+      "DNb01": 2,
+      "VES041": 2
+    },
+    "missing_types": [],
+    "excluded_super_classes": [],
+    "excluded_cell_types": [],
+    "intermediate_neurons_outside_whitelist": "not_included",
+    "annotation_rows": 139255,
+    "selected_nodes": 6
+  }
+}

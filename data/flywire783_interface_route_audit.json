@@ -1,0 +1,710 @@
+{
+  "audit_version": "sensor-routes-v1",
+  "source_sha256": "2502c7e0ceaf31b75d5b342eb121921367ac4364f1bcdf1dd3f3719cd71cf6ed",
+  "source_acquisition": {
+    "source_kind": "cave",
+    "source_manifest_sha256": "1e969ffff485a52babe7796e266829bf4de8e9cac4c1629fac490041bdfbefcd",
+    "acquisition": {
+      "source_kind": "cave",
+      "datastack": "flywire_fafb_public",
+      "materialization_version": 783,
+      "annotation_table": null,
+      "synapse_table": "synapses_nt_v1",
+      "completeness": "query-count-checked",
+      "selection": {
+        "strategy": "induced_exact_published_labels",
+        "target_classes": [
+          "DNa01",
+          "DNa02",
+          "DNa11",
+          "DNp01",
+          "DNp02",
+          "DNp04",
+          "DNp09",
+          "DNp11",
+          "HSE",
+          "HSN",
+          "HSS",
+          "LC4",
+          "LPLC2",
+          "VS1",
+          "VS10",
+          "VS2",
+          "VS3",
+          "VS4",
+          "VS5",
+          "VS6",
+          "VS7",
+          "VS8",
+          "VS9"
+        ],
+        "matched_counts": {
+          "DNa01": 4,
+          "DNa02": 2,
+          "DNa11": 2,
+          "DNp01": 2,
+          "DNp02": 2,
+          "DNp04": 2,
+          "DNp09": 4,
+          "DNp11": 2,
+          "HSE": 2,
+          "HSN": 2,
+          "HSS": 2,
+          "LC4": 104,
+          "LPLC2": 210,
+          "VS1": 2,
+          "VS10": 0,
+          "VS2": 2,
+          "VS3": 2,
+          "VS4": 2,
+          "VS5": 2,
+          "VS6": 2,
+          "VS7": 2,
+          "VS8": 2,
+          "VS9": 0
+        },
+        "missing_types": [
+          "VS10",
+          "VS9"
+        ],
+        "excluded_super_classes": [
+          "courtship",
+          "lamina_monopolar",
+          "mushroom_body",
+          "neuroendocrine"
+        ],
+        "excluded_cell_types": [
+          "APL",
+          "APL_MB",
+          "Am",
+          "DA1",
+          "DA2",
+          "DA3",
+          "DA4",
+          "DAL",
+          "DAN",
+          "DC1",
+          "DC2",
+          "DC3",
+          "DM1",
+          "DM2",
+          "DM3",
+          "DM4",
+          "DM5",
+          "DM6",
+          "DP1l",
+          "DP1m",
+          "KCab",
+          "KCab-p",
+          "KCabn",
+          "KCg-m",
+          "KCg-s",
+          "L1",
+          "L2",
+          "L3",
+          "L4",
+          "L5",
+          "MBON01",
+          "MBON02",
+          "MBON03",
+          "MBON04",
+          "MBON05",
+          "MBON06",
+          "MBON07",
+          "MBON08",
+          "MBON09",
+          "MBON10",
+          "OAN",
+          "P1a",
+          "V",
+          "VA1d",
+          "VA1v",
+          "VA2",
+          "VA3",
+          "VA4",
+          "VA5",
+          "VA6",
+          "VA7l",
+          "VA7m",
+          "VL1",
+          "VL2a",
+          "VL2p",
+          "dsx-F",
+          "dsx-M",
+          "fru-F",
+          "fru-M",
+          "pC1",
+          "pC2l",
+          "pC2m"
+        ],
+        "intermediate_neurons_outside_whitelist": "not_included",
+        "annotation_rows": 139255,
+        "selected_nodes": 356,
+        "scope": "interface",
+        "cell_mapping_sha256": "3f52a87a380c3bb1c8927fe23eda6135f6350882b766142ea54b614e6ce1dc99",
+        "interface_groups": {
+          "sensor_groups.optic_flow": {
+            "nodes": 22,
+            "sides": {
+              "right": 11,
+              "left": 11
+            }
+          },
+          "sensor_groups.tof_depth": {
+            "nodes": 314,
+            "sides": {
+              "left": 162,
+              "right": 152
+            }
+          },
+          "motor_groups.throttle": {
+            "nodes": 6,
+            "sides": {
+              "left": 3,
+              "right": 3
+            }
+          },
+          "motor_groups.yaw": {
+            "nodes": 6,
+            "sides": {
+              "right": 3,
+              "left": 3
+            }
+          },
+          "motor_groups.pitch_roll": {
+            "nodes": 8,
+            "sides": {
+              "left": 4,
+              "right": 4
+            }
+          }
+        }
+      },
+      "annotation_source": {
+        "kind": "published_annotations",
+        "repository": "flyconnectome/flywire_annotations",
+        "release": "v2.1.0",
+        "commit": "ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0",
+        "sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+        "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0/supplemental_files/Supplemental_file1_neuron_annotations.tsv",
+        "materialization_version": 783,
+        "type_matching": "exact_cell_type_or_hemibrain_type",
+        "paper_doi": "10.1038/s41586-024-07686-5"
+      },
+      "synapse_rows": 205368,
+      "cell_mapping_sha256": "3f52a87a380c3bb1c8927fe23eda6135f6350882b766142ea54b614e6ce1dc99",
+      "synapse_quality_filter": "none; all returned rows between selected roots"
+    },
+    "polarity_contract": {
+      "method": "local_cell_type_heuristic",
+      "mapping": {
+        "DNa01": 1,
+        "DNa02": 1,
+        "DNa11": 1,
+        "DNp01": 1,
+        "DNp02": 1,
+        "DNp04": 1,
+        "DNp09": 1,
+        "DNp11": 1,
+        "HSE": 1,
+        "HSN": 1,
+        "HSS": 1,
+        "LC4": 1,
+        "LPLC2": 1,
+        "VS1": 1,
+        "VS2": 1,
+        "VS3": 1,
+        "VS4": 1,
+        "VS5": 1,
+        "VS6": 1,
+        "VS7": 1,
+        "VS8": 1
+      },
+      "biologically_verified": false
+    }
+  },
+  "source_nodes": 356,
+  "source_nonzero_edges": 17104,
+  "source_sensor_motor_paths": {
+    "lptc_flow": {
+      "minimum_hops": {
+        "throttle": 2,
+        "roll": 2,
+        "pitch": 2,
+        "yaw": 1
+      },
+      "reachable_motor_counts": {
+        "throttle": 6,
+        "roll": 8,
+        "pitch": 8,
+        "yaw": 6
+      },
+      "reachable_readout_rank": 4
+    },
+    "lc_looming": {
+      "minimum_hops": {
+        "throttle": 1,
+        "roll": 1,
+        "pitch": 1,
+        "yaw": 2
+      },
+      "reachable_motor_counts": {
+        "throttle": 6,
+        "roll": 8,
+        "pitch": 8,
+        "yaw": 6
+      },
+      "reachable_readout_rank": 4
+    }
+  },
+  "source_direct_sensor_successor_types": {
+    "lptc_flow": [
+      "DNa02",
+      "HSE",
+      "HSN",
+      "HSS",
+      "LPLC2",
+      "VS1",
+      "VS2",
+      "VS3",
+      "VS4",
+      "VS5",
+      "VS6",
+      "VS7",
+      "VS8"
+    ],
+    "lc_looming": [
+      "DNp01",
+      "DNp02",
+      "DNp04",
+      "DNp09",
+      "DNp11",
+      "HSE",
+      "HSN",
+      "HSS",
+      "LC4",
+      "LPLC2",
+      "VS1",
+      "VS2",
+      "VS3",
+      "VS4",
+      "VS5",
+      "VS6",
+      "VS7",
+      "VS8"
+    ]
+  },
+  "models": [],
+  "minimum_role_preserving_k": 356,
+  "scope": "interface_only; no inferred intermediate neurons",
+  "synapse_quality_filter": "none during acquisition",
+  "edge_count_sensitivity": [
+    {
+      "minimum_synapses_per_edge": 1,
+      "edges": 17104,
+      "paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": 2,
+            "roll": 2,
+            "pitch": 2,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 6,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 6
+          },
+          "reachable_readout_rank": 4
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 2
+          },
+          "reachable_motor_counts": {
+            "throttle": 6,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 6
+          },
+          "reachable_readout_rank": 4
+        }
+      }
+    },
+    {
+      "minimum_synapses_per_edge": 5,
+      "edges": 3059,
+      "paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": 2,
+            "roll": 2,
+            "pitch": 2,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 6,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 6
+          },
+          "reachable_readout_rank": 4
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 2
+          },
+          "reachable_motor_counts": {
+            "throttle": 6,
+            "roll": 8,
+            "pitch": 8,
+            "yaw": 6
+          },
+          "reachable_readout_rank": 4
+        }
+      }
+    },
+    {
+      "minimum_synapses_per_edge": 10,
+      "edges": 1169,
+      "paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": 2,
+            "roll": 2,
+            "pitch": 2,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 5,
+            "roll": 7,
+            "pitch": 7,
+            "yaw": 3
+          },
+          "reachable_readout_rank": 4
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 3
+          },
+          "reachable_motor_counts": {
+            "throttle": 5,
+            "roll": 7,
+            "pitch": 7,
+            "yaw": 2
+          },
+          "reachable_readout_rank": 4
+        }
+      }
+    },
+    {
+      "minimum_synapses_per_edge": 20,
+      "edges": 690,
+      "paths": {
+        "lptc_flow": {
+          "minimum_hops": {
+            "throttle": null,
+            "roll": null,
+            "pitch": null,
+            "yaw": 1
+          },
+          "reachable_motor_counts": {
+            "throttle": 0,
+            "roll": 0,
+            "pitch": 0,
+            "yaw": 2
+          },
+          "reachable_readout_rank": 1
+        },
+        "lc_looming": {
+          "minimum_hops": {
+            "throttle": 1,
+            "roll": 1,
+            "pitch": 1,
+            "yaw": 3
+          },
+          "reachable_motor_counts": {
+            "throttle": 4,
+            "roll": 7,
+            "pitch": 7,
+            "yaw": 2
+          },
+          "reachable_readout_rank": 4
+        }
+      }
+    }
+  ],
+  "label_namespace_audit": [
+    {
+      "requested_label": "DNa01",
+      "nodes": 4,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        "DNa01",
+        "DNae001"
+      ],
+      "source_hemibrain_types": [
+        "DNa01",
+        "VES006"
+      ]
+    },
+    {
+      "requested_label": "DNa02",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "DNa02"
+      ]
+    },
+    {
+      "requested_label": "DNa11",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "DNa11"
+      ],
+      "source_hemibrain_types": [
+        "VES008"
+      ]
+    },
+    {
+      "requested_label": "DNp01",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "DNp01"
+      ],
+      "source_hemibrain_types": [
+        "Giant Fiber"
+      ]
+    },
+    {
+      "requested_label": "DNp02",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "DNp02"
+      ]
+    },
+    {
+      "requested_label": "DNp04",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "DNp04"
+      ]
+    },
+    {
+      "requested_label": "DNp09",
+      "nodes": 4,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 4,
+      "source_cell_types": [
+        "",
+        "DNp71"
+      ],
+      "source_hemibrain_types": [
+        "DNp09"
+      ]
+    },
+    {
+      "requested_label": "DNp11",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "DNp11"
+      ]
+    },
+    {
+      "requested_label": "HSE",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "HSE"
+      ]
+    },
+    {
+      "requested_label": "HSN",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "HSN"
+      ]
+    },
+    {
+      "requested_label": "HSS",
+      "nodes": 2,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 2,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "HSS"
+      ]
+    },
+    {
+      "requested_label": "LC4",
+      "nodes": 104,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 104,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "LC4"
+      ]
+    },
+    {
+      "requested_label": "LPLC2",
+      "nodes": 210,
+      "source_cell_type_matches": 0,
+      "source_hemibrain_type_matches": 210,
+      "source_cell_types": [
+        ""
+      ],
+      "source_hemibrain_types": [
+        "LPLC2"
+      ]
+    },
+    {
+      "requested_label": "VS1",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS1"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS2",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS2"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS3",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS3"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS4",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS4"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS5",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS5"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS6",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS6"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS7",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS7"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    },
+    {
+      "requested_label": "VS8",
+      "nodes": 2,
+      "source_cell_type_matches": 2,
+      "source_hemibrain_type_matches": 0,
+      "source_cell_types": [
+        "VS8"
+      ],
+      "source_hemibrain_types": [
+        "VS"
+      ]
+    }
+  ],
+  "not_established": [
+    "biological motor mapping",
+    "neurotransmitter signs",
+    "functional control",
+    "flight safety"
+  ]
+}

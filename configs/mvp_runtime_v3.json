@@ -1,0 +1,20 @@
+{
+  "bundle_dir": "../data/edge/k306_tau025_integrated_v1",
+  "expected_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+  "coordinator_mode": "both",
+  "coordinator_preset": "original_v1",
+  "levy_explore": false,
+  "stop_hover": true,
+  "seed": 20261021,
+  "session_id": "mvp-integrated-v1-offline",
+  "transport_mode": "offline",
+  "sensor_mode": "multi_rate_v1",
+  "sensor_budgets": {
+    "flow_max_age_s": 0.04,
+    "tof_max_age_s": 0.1,
+    "altitude_max_age_s": 0.06,
+    "attitude_max_age_s": 0.04
+  },
+  "handover_mode": "freeze_sync_v1",
+  "bridge": {}
+}

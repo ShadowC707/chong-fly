@@ -1,0 +1,64 @@
+{
+  "experiment_fingerprint": "2fc48f9c2a377cf7a39ddc4dfbd8566f9466a0513f984e4d31dd9a421c7f129e",
+  "training_ready": false,
+  "completed_trials": 4,
+  "feasible_pareto_trials": [],
+  "trials": [
+    {
+      "number": 0,
+      "parameters": {
+        "candidate": "bridge_role_k301",
+        "tau_scale": 0.5,
+        "recurrent_scale": 0.75
+      },
+      "values": [
+        0.74,
+        72.17972819010417,
+        15.326872825622559
+      ],
+      "passed": false
+    },
+    {
+      "number": 1,
+      "parameters": {
+        "candidate": "bridge_role_k306",
+        "tau_scale": 0.5,
+        "recurrent_scale": 0.75
+      },
+      "values": [
+        0.7000000000000001,
+        76.07715861002605,
+        16.829755783081055
+      ],
+      "passed": false
+    },
+    {
+      "number": 2,
+      "parameters": {
+        "candidate": "bridge_role_k301",
+        "tau_scale": 0.25,
+        "recurrent_scale": 0.75
+      },
+      "values": [
+        0.42,
+        63.892008463541664,
+        16.620609283447266
+      ],
+      "passed": false
+    },
+    {
+      "number": 3,
+      "parameters": {
+        "candidate": "bridge_role_k306",
+        "tau_scale": 0.25,
+        "recurrent_scale": 0.75
+      },
+      "values": [
+        0.4,
+        71.02293904622395,
+        17.83048439025879
+      ],
+      "passed": false
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "format_version": "functional-probe-plan-v1",
+  "hypothesis": "In this trained candidate, LT51 contributes to the evoked yaw response to a unilateral synthetic ToF stimulus.",
+  "groups": [
+    {"name": "looming_input", "field": "sensor_roles", "value": "lc_looming", "purpose": "input interruption control"},
+    {"name": "yaw_readout", "field": "motor_roles", "value": "yaw", "purpose": "output interruption control"},
+    {"name": "lt51", "field": "cell_type", "value": "hemibrain_type:LT51", "purpose": "candidate intermediate"}
+  ],
+  "matched_controls_for": "lt51",
+  "matched_control_count": 3,
+  "control_seed": 42
+}

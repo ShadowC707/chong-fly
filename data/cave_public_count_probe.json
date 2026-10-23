@@ -1,0 +1,103 @@
+{
+  "datastack": "flywire_fafb_public",
+  "version": 783,
+  "queries": [
+    {
+      "table": "hierarchical_neuron_annotations",
+      "get_counts": true,
+      "limit": 1,
+      "shape": [
+        1,
+        12
+      ],
+      "columns": [
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "pt_position"
+      ],
+      "count_values": null
+    },
+    {
+      "table": "hierarchical_neuron_annotations",
+      "get_counts": false,
+      "limit": 1,
+      "shape": [
+        1,
+        12
+      ],
+      "columns": [
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "pt_position"
+      ],
+      "count_values": null
+    },
+    {
+      "table": "synapses_nt_v1",
+      "get_counts": true,
+      "limit": 1,
+      "shape": [
+        1,
+        1
+      ],
+      "columns": [
+        "count"
+      ],
+      "count_values": [
+        {
+          "count": 2083
+        }
+      ]
+    },
+    {
+      "table": "synapses_nt_v1",
+      "get_counts": false,
+      "limit": 1,
+      "shape": [
+        1,
+        19
+      ],
+      "columns": [
+        "id",
+        "created",
+        "superceded_id",
+        "valid",
+        "connection_score",
+        "cleft_score",
+        "gaba",
+        "ach",
+        "glut",
+        "oct",
+        "ser",
+        "da",
+        "valid_nt",
+        "pre_pt_supervoxel_id",
+        "pre_pt_root_id",
+        "post_pt_supervoxel_id",
+        "post_pt_root_id",
+        "pre_pt_position",
+        "post_pt_position"
+      ],
+      "count_values": null
+    }
+  ],
+  "status": "complete"
+}

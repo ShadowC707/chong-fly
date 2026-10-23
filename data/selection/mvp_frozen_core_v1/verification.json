@@ -1,0 +1,93 @@
+{
+  "dataset_unchanged": true,
+  "rows": [
+    {
+      "candidate": "bridge_role_k301",
+      "tau_scale": 0.5,
+      "frozen_core_exact": true,
+      "baseline_matches_previous": true,
+      "clear_drive_zero": true,
+      "direction": 12,
+      "recovery": 12,
+      "broad_joint": 3,
+      "narrow": 6,
+      "max_recovery_s": 0.74,
+      "decoder_frobenius_ratio": 1.1364031958776009,
+      "decoder_yaw_norm_ratio": 1.1532625509320191,
+      "broad_amplitude_failures": [
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "threat_yaw_pwm": 1261.8631591796875,
+          "threat_target_yaw_pwm": 1380.0
+        }
+      ]
+    },
+    {
+      "candidate": "bridge_role_k306",
+      "tau_scale": 0.5,
+      "frozen_core_exact": true,
+      "baseline_matches_previous": true,
+      "clear_drive_zero": true,
+      "direction": 12,
+      "recovery": 12,
+      "broad_joint": 3,
+      "narrow": 8,
+      "max_recovery_s": 0.7000000000000001,
+      "decoder_frobenius_ratio": 1.1513354613580975,
+      "decoder_yaw_norm_ratio": 1.1939875224678957,
+      "broad_amplitude_failures": [
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "threat_yaw_pwm": 1274.456298828125,
+          "threat_target_yaw_pwm": 1380.0
+        }
+      ]
+    },
+    {
+      "candidate": "bridge_role_k301",
+      "tau_scale": 0.25,
+      "frozen_core_exact": true,
+      "baseline_matches_previous": true,
+      "clear_drive_zero": true,
+      "direction": 12,
+      "recovery": 12,
+      "broad_joint": 3,
+      "narrow": 8,
+      "max_recovery_s": 0.42,
+      "decoder_frobenius_ratio": 1.1023273836115186,
+      "decoder_yaw_norm_ratio": 1.1193002529853489,
+      "broad_amplitude_failures": [
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "threat_yaw_pwm": 1270.42578125,
+          "threat_target_yaw_pwm": 1380.0
+        }
+      ]
+    },
+    {
+      "candidate": "bridge_role_k306",
+      "tau_scale": 0.25,
+      "frozen_core_exact": true,
+      "baseline_matches_previous": true,
+      "clear_drive_zero": true,
+      "direction": 12,
+      "recovery": 12,
+      "broad_joint": 3,
+      "narrow": 8,
+      "max_recovery_s": 0.4,
+      "decoder_frobenius_ratio": 1.1401104875264922,
+      "decoder_yaw_norm_ratio": 1.1942921706252834,
+      "broad_amplitude_failures": [
+        {
+          "obstacle_side": "right",
+          "normalized_distance": 0.2,
+          "threat_yaw_pwm": 1274.58349609375,
+          "threat_target_yaw_pwm": 1380.0
+        }
+      ]
+    }
+  ]
+}

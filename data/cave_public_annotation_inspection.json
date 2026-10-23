@@ -1,0 +1,394 @@
+{
+  "datastack": "flywire_fafb_public",
+  "version": 783,
+  "hierarchical_neuron_annotations": {
+    "columns": [
+      "id",
+      "created",
+      "valid",
+      "target_id",
+      "classification_system",
+      "cell_type",
+      "id_ref",
+      "created_ref",
+      "valid_ref",
+      "pt_supervoxel_id",
+      "pt_root_id",
+      "pt_position"
+    ],
+    "sample": [
+      {
+        "id": 601615,
+        "pt_root_id": 720575940628857210,
+        "cell_type": "central",
+        "classification_system": "super_class"
+      },
+      {
+        "id": 473637,
+        "pt_root_id": 720575940628857210,
+        "cell_type": "intrinsic",
+        "classification_system": "flow"
+      },
+      {
+        "id": 879934,
+        "pt_root_id": 720575940626838909,
+        "cell_type": "CB0924",
+        "classification_system": "cell_type"
+      },
+      {
+        "id": 601616,
+        "pt_root_id": 720575940626838909,
+        "cell_type": "central",
+        "classification_system": "super_class"
+      },
+      {
+        "id": 473638,
+        "pt_root_id": 720575940626838909,
+        "cell_type": "intrinsic",
+        "classification_system": "flow"
+      },
+      {
+        "id": 601617,
+        "pt_root_id": 720575940626046919,
+        "cell_type": "central",
+        "classification_system": "super_class"
+      },
+      {
+        "id": 473639,
+        "pt_root_id": 720575940626046919,
+        "cell_type": "intrinsic",
+        "classification_system": "flow"
+      },
+      {
+        "id": 601618,
+        "pt_root_id": 720575940630311383,
+        "cell_type": "central",
+        "classification_system": "super_class"
+      },
+      {
+        "id": 473640,
+        "pt_root_id": 720575940630311383,
+        "cell_type": "intrinsic",
+        "classification_system": "flow"
+      },
+      {
+        "id": 601619,
+        "pt_root_id": 720575940633370649,
+        "cell_type": "visual_projection",
+        "classification_system": "super_class"
+      },
+      {
+        "id": 473641,
+        "pt_root_id": 720575940633370649,
+        "cell_type": "intrinsic",
+        "classification_system": "flow"
+      },
+      {
+        "id": 879935,
+        "pt_root_id": 720575940638709326,
+        "cell_type": "LTe07",
+        "classification_system": "cell_type"
+      }
+    ]
+  },
+  "neuron_information_v2": {
+    "columns": [
+      "id",
+      "created",
+      "superceded_id",
+      "valid",
+      "tag",
+      "user_id",
+      "pt_supervoxel_id",
+      "pt_root_id",
+      "pt_position"
+    ],
+    "sample": [
+      {
+        "id": 1,
+        "pt_root_id": 720575940620306785,
+        "tag": "putative fru"
+      },
+      {
+        "id": 2,
+        "pt_root_id": 720575940620306785,
+        "tag": "putative fru"
+      },
+      {
+        "id": 3,
+        "pt_root_id": 720575940620306785,
+        "tag": "aIP1c"
+      },
+      {
+        "id": 4,
+        "pt_root_id": 720575940620306785,
+        "tag": "aIP1c"
+      },
+      {
+        "id": 5,
+        "pt_root_id": 720575940607848203,
+        "tag": "putative fru"
+      },
+      {
+        "id": 6,
+        "pt_root_id": 720575940607848203,
+        "tag": "putative fru"
+      },
+      {
+        "id": 7,
+        "pt_root_id": 720575940607848203,
+        "tag": "aIP1c, put_AVL08ob"
+      },
+      {
+        "id": 8,
+        "pt_root_id": 720575940607848203,
+        "tag": "aIP1c, put_AVL08ob"
+      },
+      {
+        "id": 9,
+        "pt_root_id": 720575940630087542,
+        "tag": "putative fru"
+      },
+      {
+        "id": 10,
+        "pt_root_id": 720575940630087542,
+        "tag": "putative fru"
+      },
+      {
+        "id": 11,
+        "pt_root_id": 720575940630087542,
+        "tag": "aSP8a, aSP8"
+      },
+      {
+        "id": 12,
+        "pt_root_id": 720575940630087542,
+        "tag": "aSP8a, aSP8"
+      }
+    ]
+  },
+  "target_sample": [
+    {
+      "id": 746480,
+      "pt_root_id": 720575940644438551,
+      "cell_type": "DNa01",
+      "classification_system": "cell_type"
+    },
+    {
+      "id": 747071,
+      "pt_root_id": 720575940627787609,
+      "cell_type": "DNa01",
+      "classification_system": "cell_type"
+    }
+  ],
+  "one_root_annotations": [
+    {
+      "id": 746480,
+      "pt_root_id": 720575940644438551,
+      "cell_type": "DNa01",
+      "classification_system": "cell_type"
+    },
+    {
+      "id": 511038,
+      "pt_root_id": 720575940644438551,
+      "cell_type": "descending",
+      "classification_system": "super_class"
+    },
+    {
+      "id": 383060,
+      "pt_root_id": 720575940644438551,
+      "cell_type": "efferent",
+      "classification_system": "flow"
+    }
+  ],
+  "systems": {
+    "side": {
+      "count_shape": [
+        0,
+        12
+      ],
+      "count_columns": [
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "pt_position"
+      ],
+      "count_sample": [],
+      "sample": []
+    },
+    "hemisphere": {
+      "count_shape": [
+        0,
+        12
+      ],
+      "count_columns": [
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "pt_position"
+      ],
+      "count_sample": [],
+      "sample": []
+    },
+    "super_class": {
+      "count_shape": [
+        139255,
+        12
+      ],
+      "count_columns": [
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "pt_position"
+      ],
+      "count_sample": [
+        {
+          "id": 771969,
+          "created": 1696050591441,
+          "valid": true,
+          "target_id": 135,
+          "classification_system": "super_class",
+          "cell_type": "motor",
+          "id_ref": 135,
+          "created_ref": 1687157012694,
+          "valid_ref": true,
+          "pt_supervoxel_id": 78536398189730110,
+          "pt_root_id": 720575940628372613,
+          "pt_position": [
+            462134,
+            314944,
+            202595
+          ]
+        },
+        {
+          "id": 771970,
+          "created": 1696050591441,
+          "valid": true,
+          "target_id": 131206,
+          "classification_system": "super_class",
+          "cell_type": "descending",
+          "id_ref": 131206,
+          "created_ref": 1704743193536,
+          "valid_ref": true,
+          "pt_supervoxel_id": 79097217839414238,
+          "pt_root_id": 720575940620156283,
+          "pt_position": [
+            492890,
+            187909,
+            204117
+          ]
+        }
+      ],
+      "sample": [
+        {
+          "id": 601615,
+          "pt_root_id": 720575940628857210,
+          "cell_type": "central",
+          "classification_system": "super_class"
+        },
+        {
+          "id": 601616,
+          "pt_root_id": 720575940626838909,
+          "cell_type": "central",
+          "classification_system": "super_class"
+        }
+      ]
+    },
+    "cell_type": {
+      "count_shape": [
+        109258,
+        12
+      ],
+      "count_columns": [
+        "id",
+        "created",
+        "valid",
+        "target_id",
+        "classification_system",
+        "cell_type",
+        "id_ref",
+        "created_ref",
+        "valid_ref",
+        "pt_supervoxel_id",
+        "pt_root_id",
+        "pt_position"
+      ],
+      "count_sample": [
+        {
+          "id": 894146,
+          "created": 1696050591441,
+          "valid": true,
+          "target_id": 32414,
+          "classification_system": "cell_type",
+          "cell_type": "CB.FB2K1",
+          "id_ref": 32414,
+          "created_ref": 1687157097863,
+          "valid_ref": true,
+          "pt_supervoxel_id": 79871411195357919,
+          "pt_root_id": 720575940620919646,
+          "pt_position": [
+            538210,
+            198330,
+            105601
+          ]
+        },
+        {
+          "id": 880423,
+          "created": 1696050591441,
+          "valid": true,
+          "target_id": 1125,
+          "classification_system": "cell_type",
+          "cell_type": "CB1188",
+          "id_ref": 1125,
+          "created_ref": 1687157013633,
+          "valid_ref": true,
+          "pt_supervoxel_id": 77195887289571552,
+          "pt_root_id": 720575940611775973,
+          "pt_position": [
+            381459,
+            106763,
+            171723
+          ]
+        }
+      ],
+      "sample": [
+        {
+          "id": 879934,
+          "pt_root_id": 720575940626838909,
+          "cell_type": "CB0924",
+          "classification_system": "cell_type"
+        },
+        {
+          "id": 879935,
+          "pt_root_id": 720575940638709326,
+          "cell_type": "LTe07",
+          "classification_system": "cell_type"
+        }
+      ]
+    }
+  },
+  "status": "inspected"
+}

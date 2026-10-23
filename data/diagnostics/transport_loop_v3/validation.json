@@ -1,0 +1,17 @@
+{
+  "source_hashes_match": {
+    "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\evaluate\\validate_transport_loop.py": true,
+    "edge\\session_receiver.py": true,
+    "edge\\transport.py": true,
+    "simulation\\receiver_fallback.py": true,
+    "evaluate\\validate_sensor_handover.py": true,
+    "simulation\\benchmark_scenes.py": true,
+    "simulation\\drone_env.py": true
+  },
+  "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+  "unchanged_model": true,
+  "physical_passed": 14,
+  "physical_runs": 14,
+  "full_pytest_passed": 793,
+  "full_pytest_seconds": 72.24
+}

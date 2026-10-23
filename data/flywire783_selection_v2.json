@@ -1,0 +1,188 @@
+{
+  "datastack": "flywire_fafb_public",
+  "materialization_version": 783,
+  "annotation_source": {
+    "kind": "published_annotations",
+    "repository": "flyconnectome/flywire_annotations",
+    "release": "v2.1.0",
+    "commit": "ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0",
+    "sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+    "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0/supplemental_files/Supplemental_file1_neuron_annotations.tsv",
+    "materialization_version": 783,
+    "type_matching": "exact_cell_type_or_hemibrain_type",
+    "paper_doi": "10.1038/s41586-024-07686-5"
+  },
+  "selection": {
+    "strategy": "induced_exact_published_labels",
+    "target_classes": [
+      "DNa01",
+      "DNa02",
+      "DNa11",
+      "DNp01",
+      "DNp02",
+      "DNp04",
+      "DNp09",
+      "DNp11",
+      "HSE",
+      "HSN",
+      "HSS",
+      "LC4",
+      "LPLC2",
+      "VS1",
+      "VS10",
+      "VS2",
+      "VS3",
+      "VS4",
+      "VS5",
+      "VS6",
+      "VS7",
+      "VS8",
+      "VS9"
+    ],
+    "label_namespace_policy": "explicit_diagnostic_union",
+    "label_namespace_conflicts": [
+      "DNa01"
+    ],
+    "matched_counts": {
+      "DNa01": 4,
+      "DNa02": 2,
+      "DNa11": 2,
+      "DNp01": 2,
+      "DNp02": 2,
+      "DNp04": 2,
+      "DNp09": 4,
+      "DNp11": 2,
+      "HSE": 2,
+      "HSN": 2,
+      "HSS": 2,
+      "LC4": 104,
+      "LPLC2": 210,
+      "VS1": 2,
+      "VS10": 0,
+      "VS2": 2,
+      "VS3": 2,
+      "VS4": 2,
+      "VS5": 2,
+      "VS6": 2,
+      "VS7": 2,
+      "VS8": 2,
+      "VS9": 0
+    },
+    "missing_types": [
+      "VS10",
+      "VS9"
+    ],
+    "excluded_super_classes": [
+      "courtship",
+      "lamina_monopolar",
+      "mushroom_body",
+      "neuroendocrine"
+    ],
+    "excluded_cell_types": [
+      "APL",
+      "APL_MB",
+      "Am",
+      "DA1",
+      "DA2",
+      "DA3",
+      "DA4",
+      "DAL",
+      "DAN",
+      "DC1",
+      "DC2",
+      "DC3",
+      "DM1",
+      "DM2",
+      "DM3",
+      "DM4",
+      "DM5",
+      "DM6",
+      "DP1l",
+      "DP1m",
+      "KCab",
+      "KCab-p",
+      "KCabn",
+      "KCg-m",
+      "KCg-s",
+      "L1",
+      "L2",
+      "L3",
+      "L4",
+      "L5",
+      "MBON01",
+      "MBON02",
+      "MBON03",
+      "MBON04",
+      "MBON05",
+      "MBON06",
+      "MBON07",
+      "MBON08",
+      "MBON09",
+      "MBON10",
+      "OAN",
+      "P1a",
+      "V",
+      "VA1d",
+      "VA1v",
+      "VA2",
+      "VA3",
+      "VA4",
+      "VA5",
+      "VA6",
+      "VA7l",
+      "VA7m",
+      "VL1",
+      "VL2a",
+      "VL2p",
+      "dsx-F",
+      "dsx-M",
+      "fru-F",
+      "fru-M",
+      "pC1",
+      "pC2l",
+      "pC2m"
+    ],
+    "intermediate_neurons_outside_whitelist": "not_included",
+    "annotation_rows": 139255,
+    "selected_nodes": 356,
+    "scope": "interface",
+    "cell_mapping_sha256": "3f52a87a380c3bb1c8927fe23eda6135f6350882b766142ea54b614e6ce1dc99",
+    "interface_groups": {
+      "sensor_groups.optic_flow": {
+        "nodes": 22,
+        "sides": {
+          "right": 11,
+          "left": 11
+        }
+      },
+      "sensor_groups.tof_depth": {
+        "nodes": 314,
+        "sides": {
+          "left": 162,
+          "right": 152
+        }
+      },
+      "motor_groups.throttle": {
+        "nodes": 6,
+        "sides": {
+          "left": 3,
+          "right": 3
+        }
+      },
+      "motor_groups.yaw": {
+        "nodes": 6,
+        "sides": {
+          "right": 3,
+          "left": 3
+        }
+      },
+      "motor_groups.pitch_roll": {
+        "nodes": 8,
+        "sides": {
+          "left": 4,
+          "right": 4
+        }
+      }
+    }
+  }
+}

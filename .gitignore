@@ -15,22 +15,18 @@ env/
 
 
 # ── Large binary weight matrices (dense float32, can be hundreds of MB) ───────
-# Ignore all dense .npy matrices and cluster maps in reduced_models/
+# Ignore flat legacy matrices; versioned candidates have explicit inventories.
 data/reduced_models/*.npy
-
-# Keep small sparse CSR matrices (.npz) — they are kilobytes and tracked
-# data/reduced_models/w_magnitude_*.npz   ← tracked
+# Repeated builds are local reproducibility checks, not canonical candidates.
+/data/reduced_models/flywire783_filtered_repeat/
 
 # ── Raw connectome bulk data ───────────────────────────────────────────────────
 data/raw_connectome/*.parquet
 data/raw_connectome/*.csv
-
-# ── Explicitly keep lightweight JSON artefacts ────────────────────────────────
-!data/reduced_models/models_grid_manifest.json
-!data/reduced_models/matrix_benchmark_report.json
-!data/reduced_models/meta_*.json
-!data/raw_connectome/circuit_summary.json
-!data/filtered_models_manifest.json
+data/raw_connectome_*/*.parquet
+data/raw_connectome_*/*.csv
+data/annotations_*/*.tsv
+data/research_sources/*.pdf
 
 # ── Optuna & Local Databases ──────────────────────────────────────────────────
 *.db
@@ -52,10 +48,29 @@ wandb/
 htmlcov/
 *.log
 scratch/
+.test-tmp*/
+# Immutable measured bulk responses are local; inventories and small candidates are tracked.
+data/flywire783_filtered_source_*/*.parquet
+data/flywire783_filtered_source_*/raw/*.parquet
+# Reversible local archives contain historical bulk data, not active candidates.
+archive/
 *.swp
 *.swo
 *~
 .DS_Store
 Thumbs.db
+
+# Data for research and experiment on current architecture, reports from the use of agents
+research/
+reports/
+
+# Local experiment outputs. Reviewed evidence is explicitly tracked;
+# ignore rules do not remove already tracked historical evidence.
+/data/diagnostics/
+/data/selection/
+/data/releases/
+/.agents/teamwork/
+/codebase_dump.txt
+/dump_simulation.txt
 
 

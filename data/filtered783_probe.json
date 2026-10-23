@@ -1,0 +1,196 @@
+{
+  "datastack": "flywire_fafb_public",
+  "version": 783,
+  "views": {
+    "valid_synapses_nt_v2_view": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "An inner join of the valid_synapses_nt_v2 table and the synapses_nt_v1 table. Useful for directly querying synapses that have been marked as valid from the valid_synapses_nt_v2 table. Contains all columns of the synapses_nt_v1 table. id_valid is the row id of the valid_synapses_nt_v2 table, and id is the row id of the synapses_nt_v1 table.",
+      "notice_text": null,
+      "id": 1
+    },
+    "nt_summary_view": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "This is a view designed to let you query the likely neurotranmitter type of a root id.  It groups the valid_synapses_nt_v2_view view to group by pre_pt_root_id and returns the average and standard deviation of most of the columns. ",
+      "notice_text": null,
+      "id": 3
+    },
+    "valid_connection_v2": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "This is a summary table of synaptic connections (all synapses between two root_ids).  It joins the synapses_nt_v1 table with the valid_synapses_nt_v2 table to filter out synapses, then it groups it by the post_pt_root_id and the pre_pt_root_id, and returns the number of rows as n_syn, as well as the average value for the various neurotransmitter columns, connection_score, and cleft_score and the average value of valid_nt, interpreting false=0, true=1.  It also returns the standard deviations of those same columns with the '_std' removed.  All individual synapse information is removed, you can query the synapse table for those specific root_id combinations to get more detailed information. ",
+      "notice_text": null,
+      "id": 2
+    },
+    "valid_synapses_nt_np": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "A left join valid_synapses_nt_v2_view and fly_synapses_neuropil_v2 which adds neuropil information to valid_synapses_nt_v2_view. The id column carries the id from the synapse table.",
+      "notice_text": null,
+      "id": 4
+    },
+    "proofread_neurons_view": {
+      "live_compatible": true,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "Merge of proofread_neurons table with its segmentation table",
+      "notice_text": null,
+      "id": 5
+    },
+    "valid_synapses_nt_np_v5": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "A left join valid_synapses_nt_v5_view and fly_synapses_neuropil_v5 which adds neuropil information t\u2026\t",
+      "notice_text": null,
+      "id": 6
+    },
+    "valid_synapses_nt_np_v6": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "A left join valid_synapses_nt_v2_view and fly_synapses_neuropil_v6 which adds neuropil information to valid_synapses_nt_v2_view. The id column carries the id from the synapse table.",
+      "notice_text": null,
+      "id": 7
+    },
+    "synapses_v2_merge_view": {
+      "live_compatible": true,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "Merge of synapses_v2 with its segmentation table",
+      "notice_text": null,
+      "id": 8
+    },
+    "valid_synapses_v2_np_v6": {
+      "live_compatible": true,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "Merge of synapses_v2 withsynapses_v2_neuropil_v6. This view also adds two filters: All \"autpases\" (like false positives) were removed as well as synapses with the 0 segment (likely false positive)",
+      "notice_text": null,
+      "id": 9
+    },
+    "synapses_v3_neuropil_v6_merge_view": {
+      "live_compatible": false,
+      "datastack_name": "flywire_fafb_production",
+      "voxel_resolution_z": 1.0,
+      "voxel_resolution_y": 1.0,
+      "voxel_resolution_x": 1.0,
+      "description": "A join of the synapses_v3 table and the synapses_v3_neuropil_v6 table.",
+      "notice_text": null,
+      "id": 10
+    }
+  },
+  "metadata": {
+    "notice_text": null,
+    "voxel_resolution_y": 1.0,
+    "datastack_name": "flywire_fafb_production",
+    "table_name": "valid_synapses_nt_np_v6",
+    "live_compatible": false,
+    "voxel_resolution_z": 1.0,
+    "voxel_resolution_x": 1.0,
+    "description": "A left join valid_synapses_nt_v2_view and fly_synapses_neuropil_v6 which adds neuropil information to valid_synapses_nt_v2_view. The id column carries the id from the synapse table.",
+    "id": 7
+  },
+  "schema": {
+    "id": {
+      "type": "integer"
+    },
+    "pre_pt_root_id": {
+      "type": "integer"
+    },
+    "post_pt_root_id": {
+      "type": "integer"
+    },
+    "pre_pt_position": {
+      "type": "SpatialPoint"
+    },
+    "post_pt_position": {
+      "type": "SpatialPoint"
+    },
+    "connection_score": {
+      "type": "float"
+    },
+    "cleft_score": {
+      "type": "float"
+    },
+    "gaba": {
+      "type": "float"
+    },
+    "ach": {
+      "type": "float"
+    },
+    "glut": {
+      "type": "float"
+    },
+    "oct": {
+      "type": "float"
+    },
+    "ser": {
+      "type": "float"
+    },
+    "da": {
+      "type": "float"
+    },
+    "valid_nt": {
+      "type": "boolean"
+    },
+    "pre_pt_supervoxel_id": {
+      "type": "integer"
+    },
+    "post_pt_supervoxel_id": {
+      "type": "integer"
+    },
+    "neuropil": {
+      "type": "string"
+    }
+  },
+  "validity_table_metadata_error": "HTTPError",
+  "count_probe": [
+    {
+      "count": 147
+    }
+  ],
+  "columns": [
+    "id",
+    "pre_pt_root_id",
+    "post_pt_root_id",
+    "connection_score",
+    "cleft_score",
+    "gaba",
+    "ach",
+    "glut",
+    "oct",
+    "ser",
+    "da",
+    "valid_nt",
+    "pre_pt_supervoxel_id",
+    "post_pt_supervoxel_id",
+    "neuropil",
+    "pre_pt_position",
+    "post_pt_position"
+  ],
+  "status": "available"
+}

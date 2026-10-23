@@ -543,9 +543,11 @@ class IsaacGymDroneSim:
                 self.root_states[0, 8] = float(vel[1])
                 self.root_states[0, 9] = float(vel[2])
             if omega is not None:
-                self.root_states[0, 10] = float(omega[0])
-                self.root_states[0, 11] = float(omega[1])
-                self.root_states[0, 12] = float(omega[2])
+                # Internal gyro rates are body-frame; actor root velocity is world-frame.
+                world_omega = QuadcopterDynamics.quaternion_to_rotation_matrix(quat) @ omega
+                self.root_states[0, 10] = float(world_omega[0])
+                self.root_states[0, 11] = float(world_omega[1])
+                self.root_states[0, 12] = float(world_omega[2])
             self.gym.set_actor_root_state_tensor(self.sim, self.root_tensor)
 
     def step(
@@ -637,6 +639,8 @@ class ToFRaycaster:
     room boundaries and obstacles.
     """
 
+    geometry_version = 'point-rays-solid-v2'
+
     def __init__(
         self,
         rows: int = TOF_ROWS,
@@ -657,7 +661,8 @@ class ToFRaycaster:
         half_fov_v = math.radians(fov_v_deg / 2.0)
 
         # Azimuth angles (columns) and elevation angles (rows)
-        azimuths = np.linspace(-half_fov_h, half_fov_h, cols)
+        # Image columns run left (+body Y) to right (-body Y).
+        azimuths = np.linspace(half_fov_h, -half_fov_h, cols)
         elevations = np.linspace(half_fov_v, -half_fov_v, rows) # top to bottom
 
         self.body_ray_dirs = np.zeros((self.num_rays, 3), dtype=np.float32)
@@ -750,6 +755,13 @@ class ToFRaycaster:
         if cylinders:
             for cyl in cylinders:
                 cx, cy, r = cyl.center_x, cyl.center_y, cyl.radius
+                # A finite cylinder includes its top disk, not only its side.
+                # Safe denominator also handles exactly horizontal rays.
+                cap_direction = np.abs(dz) > eps
+                t_cap = (cyl.height - pz) / np.where(cap_direction, dz, 1.)
+                cap_x, cap_y = px + t_cap*dx - cx, py + t_cap*dy - cy
+                cap_hit = cap_direction & (t_cap > 0) & (cap_x*cap_x + cap_y*cap_y <= r*r)
+                distances = np.where(cap_hit, np.minimum(distances, t_cap), distances)
                 ox = px - cx
                 oy = py - cy
 
@@ -778,27 +790,19 @@ class ToFRaycaster:
         # ── 3. Intersect with Box Obstacles (Slab Method) ────────────────────
         if boxes:
             for box in boxes:
-                # Slab intersection for all 64 rays
-                inv_d = 1.0 / np.where(np.abs(world_dirs) > eps, world_dirs, np.sign(world_dirs) * eps)
-                t_b1 = (box.x_min - px) * inv_d[:, 0]
-                t_b2 = (box.x_max - px) * inv_d[:, 0]
-                t_near_x = np.minimum(t_b1, t_b2)
-                t_far_x = np.maximum(t_b1, t_b2)
-
-                t_b3 = (box.y_min - py) * inv_d[:, 1]
-                t_b4 = (box.y_max - py) * inv_d[:, 1]
-                t_near_y = np.minimum(t_b3, t_b4)
-                t_far_y = np.maximum(t_b3, t_b4)
-
-                t_b5 = (box.z_min - pz) * inv_d[:, 2]
-                t_b6 = (box.z_max - pz) * inv_d[:, 2]
-                t_near_z = np.minimum(t_b5, t_b6)
-                t_far_z = np.maximum(t_b5, t_b6)
-
-                t_enter = np.maximum(np.maximum(t_near_x, t_near_y), t_near_z)
-                t_exit = np.minimum(np.minimum(t_far_x, t_far_y), t_far_z)
-
-                box_hit = (t_enter <= t_exit) & (t_exit > 0) & (t_enter > 0)
+                # A parallel ray inside a slab imposes no t restriction;
+                # outside it cannot hit. Never calculate 1/0 or 0*infinity.
+                lower = np.array([box.x_min, box.y_min, box.z_min])
+                upper = np.array([box.x_max, box.y_max, box.z_max])
+                origin = np.array([px, py, pz])
+                parallel = np.abs(world_dirs) <= eps
+                inv_d = 1. / np.where(parallel, 1., world_dirs)
+                t_lo, t_hi = (lower-origin)*inv_d, (upper-origin)*inv_d
+                near = np.where(parallel, -np.inf, np.minimum(t_lo, t_hi))
+                far = np.where(parallel, np.inf, np.maximum(t_lo, t_hi))
+                outside = (parallel & ((origin < lower) | (origin > upper))).any(axis=1)
+                t_enter, t_exit = near.max(axis=1), far.min(axis=1)
+                box_hit = ~outside & (t_enter <= t_exit) & (t_exit > 0) & (t_enter > 0)
                 distances = np.where(box_hit, np.minimum(distances, t_enter), distances)
 
         # Clamp and normalize to [0.0, 1.0]
@@ -1056,8 +1060,16 @@ class DroneSimulationEnv:
         pid_constants: Optional[BetaflightCascadedPID] = None,
         engine: str = "auto",                   # "auto", "isaacgym", or "standalone"
         headless: bool = False,                 # Isaac Gym 3D visualizer viewer
+        collision_radius_m: float = 0.10,       # provisional conservative body envelope
     ):
+        if not np.isfinite(dt) or dt <= 0:
+            raise ValueError("dt must be positive and finite")
+        if not np.isfinite(collision_radius_m) or collision_radius_m < 0:
+            raise ValueError("collision_radius_m must be finite and nonnegative")
         self.dt = dt
+        self.collision_radius_m = float(collision_radius_m)
+        self._observation = None
+        self.rng = np.random.default_rng()
         self.target_altitude = target_altitude
         self.room = room or RoomBoundaries()
         self.params = dynamics_params or DroneDynamicsParams()
@@ -1162,22 +1174,12 @@ class DroneSimulationEnv:
         paused = self.is_paused if is_paused is None else is_paused
         crashed = self.is_crashed if is_crashed is None else is_crashed
 
-        tof_64 = self.tof.cast_rays(
-            drone_pos=self.physics.pos,
-            drone_rot=rot_mat,
-            room=self.room,
-            cylinders=self.cylinders,
-            boxes=self.boxes,
-        )
+        obs = self._get_observation()
+        tof_64 = obs[FLOW_DIM:FLOW_DIM + TOF_DIM]
         depth_8x8 = tof_64.reshape(self.tof.rows, self.tof.cols)
         laser_alt = float(self.last_laser_result.distance) if self.last_laser_result else float(self.physics.pos[2])
         laser_hit = self.last_laser_result.hit_point if self.last_laser_result else None
-        flow_xy = self.flow_sensor.compute_flow(
-            v_world=self.physics.vel,
-            rot_matrix=rot_mat,
-            altitude_above_surface=max(LASER_MIN_RANGE_M, laser_alt),
-            omega_body=self.physics.omega,
-        )
+        flow_xy = obs[:FLOW_DIM]
 
         self.isaac_sim.render_hud(
             drone_pos=self.physics.pos,
@@ -1214,6 +1216,9 @@ class DroneSimulationEnv:
         self.displacement_total = np.zeros(2, dtype=np.float32)
         self.last_laser_result = None
         self.zero_flow_time = 0.0
+        self.rng = np.random.default_rng(seed)
+        self._observation = None
+        self.is_crashed = False
         self.pid.reset()
 
         if initial_pos is None:
@@ -1230,7 +1235,7 @@ class DroneSimulationEnv:
             self.isaac_sim.sync_state(self.physics.pos, self.physics.quat, self.physics.vel, self.physics.omega)
             self.isaac_sim.render()
 
-        return self._get_observation()
+        return self._sample_observation(elapsed_dt=0.0)
 
     def step(
         self,
@@ -1265,6 +1270,11 @@ class DroneSimulationEnv:
         else:
             action = np.asarray(action, dtype=np.float32)
 
+        if action.shape != (4,) or not np.isfinite(action).all():
+            raise ValueError("action must contain four finite values")
+        if action_type not in {"auto", "setpoints", "pwm"}:
+            raise ValueError("unknown action_type")
+
         # ── 1. Parse Neural Network Action ───────────────────────────────────
         is_pwm = (action_type == "pwm") or (action_type == "auto" and np.any(action > 500.0))
         if is_pwm:
@@ -1277,7 +1287,8 @@ class DroneSimulationEnv:
             target_thrust = (throttle_pwm - PWM_MIN) / (PWM_MAX - PWM_MIN)
             target_roll = ((roll_pwm - PWM_MID) / PWM_HALF) * self.params.max_angle_rad
             target_pitch = ((pitch_pwm - PWM_MID) / PWM_HALF) * self.params.max_angle_rad
-            target_yaw_rate = ((yaw_pwm - PWM_MID) / PWM_HALF) * self.params.max_yaw_rate_rads
+            # RC yaw is right-positive; native FLU yaw about +Z is left-positive.
+            target_yaw_rate = -((yaw_pwm - PWM_MID) / PWM_HALF) * self.params.max_yaw_rate_rads
         else:
             # Direct setpoint format: [thrust, roll_cmd, pitch_cmd, yaw_rate_cmd]
             target_thrust = float(action[0])
@@ -1305,7 +1316,9 @@ class DroneSimulationEnv:
         )
 
         # ── 3. Step 6-DOF Physics Dynamics ──────────────────────────────────
+        previous_position = self.physics.pos.copy()
         self.physics.step(motors)
+        euler = self.physics.quaternion_to_euler(self.physics.quat)
         self.step_count += 1
         self.last_motors = motors.copy()
 
@@ -1315,7 +1328,7 @@ class DroneSimulationEnv:
         self.total_energy_j += power_w * self.dt
 
         # ── 4. Collect Sensor Observations ──────────────────────────────────
-        obs = self._get_observation()
+        obs = self._sample_observation(elapsed_dt=self.dt)
 
         # Synchronize and step Isaac Gym graphics / PhysX
         user_closed = False
@@ -1335,13 +1348,16 @@ class DroneSimulationEnv:
 
         # ── 5. Termination & Reward Evaluation ──────────────────────────────
         pos = self.physics.pos
-        crashed = (
-            pos[2] <= 0.03 or pos[2] >= (self.room.z_max - 0.05) or
-            abs(pos[0]) >= (self.room.x_max - 0.05) or
-            abs(pos[1]) >= (self.room.y_max - 0.05) or
-            abs(euler[0]) > math.radians(65.0) or
-            abs(euler[1]) > math.radians(65.0)
+        from simulation.collisions import contact_and_clearance
+        collision_kind, clearance_m = contact_and_clearance(
+            previous_position, pos, self.room, self.boxes, self.cylinders,
+            self.collision_radius_m,
         )
+        invalid_state = not all(np.isfinite(value).all() for value in
+                                (pos, self.physics.vel, euler, self.physics.omega))
+        excessive_tilt = bool(np.any(np.abs(euler[:2]) > math.radians(65.0)))
+        crashed = bool(collision_kind is not None or excessive_tilt or invalid_state)
+        self.is_crashed = crashed
         done = bool(crashed or user_closed)
 
         # Reward: penalize altitude error, attitude tilt, motor jitter, energy
@@ -1358,7 +1374,7 @@ class DroneSimulationEnv:
             "position": pos.copy(),
             "velocity": self.physics.vel.copy(),
             "euler_rad": euler.copy(),
-            "omega_rads": omega.copy(),
+            "omega_rads": self.physics.omega.copy(),
             "motor_commands": motors.copy(),
             "motor_rpms": self.physics.motor_rpms.copy(),
             "energy_j": self.total_energy_j,
@@ -1373,6 +1389,10 @@ class DroneSimulationEnv:
             "total_mass_kg": float(self.physics.total_mass),
             "hover_throttle": float(self.physics.hover_throttle),
             "crashed": crashed,
+            "collision_kind": collision_kind,
+            "clearance_m": clearance_m,
+            "invalid_state": invalid_state,
+            "excessive_tilt": excessive_tilt,
             "user_closed": user_closed,
         }
         return obs, reward, done, info
@@ -1384,6 +1404,12 @@ class DroneSimulationEnv:
             self.isaac_sim = None
 
     def _get_observation(self) -> np.ndarray:
+        """Read the last sensor snapshot without advancing noise or odometry."""
+        if self._observation is None:
+            raise RuntimeError("Call reset() before reading observations")
+        return self._observation.copy()
+
+    def _sample_observation(self, elapsed_dt: float) -> np.ndarray:
         """
         Synthesizes multi-sensor observation readings:
         1. Downward Laser Rangefinder: Measures true AGL along body -Z.
@@ -1406,6 +1432,7 @@ class DroneSimulationEnv:
             floor_z=self.room.z_min,
             boxes=self.boxes,
             cylinders=self.cylinders,
+            rng=self.rng,
         )
         laser_alt = self.last_laser_result.distance
 
@@ -1416,22 +1443,12 @@ class DroneSimulationEnv:
             rot_matrix=rot_mat,
             altitude_above_surface=altitude_surface,
             omega_body=omega,
+            rng=self.rng,
         )
-
-        # Generate Levy Noise (Cauchy distribution) if flow is 0 for > 2 seconds
-        if np.allclose(flow_xy, 0.0, atol=1e-5):
-            self.zero_flow_time += getattr(self, 'dt', DEFAULT_DT)
-        else:
-            self.zero_flow_time = 0.0
-
-        if self.zero_flow_time > 2.0:
-            levy_noise = np.random.standard_cauchy(size=2) * 0.1
-            flow_xy += levy_noise.astype(np.float32)
-
 
         # 3. Optical Displacement Sensor (body translational displacement)
         v_body = rot_mat.T @ vel
-        self.displacement_step = (v_body[:2] * self.dt).astype(np.float32)
+        self.displacement_step = (v_body[:2] * elapsed_dt).astype(np.float32)
         self.displacement_total += self.displacement_step
 
         # 4. ToF 8x8 Raycasting (VL53L5CX, 45° FOV)
@@ -1445,32 +1462,20 @@ class DroneSimulationEnv:
 
         # 5. Concatenate to (66,)
         obs = np.concatenate([flow_xy, tof_64], axis=0).astype(np.float32)
-        return obs
+        self._observation = obs
+        return obs.copy()
 
     def get_isaac_obs(self) -> IsaacObservation:
         """
         Returns full structured IsaacObservation object containing all sensors,
         IMU, displacement, attitude, and payload state.
         """
-        if self.last_laser_result is None:
-            self._get_observation()
-
+        obs = self._get_observation()
         rot_mat = self.physics.quaternion_to_rotation_matrix(self.physics.quat)
         euler = self.physics.quaternion_to_euler(self.physics.quat)
-        tof_64 = self.tof.cast_rays(
-            drone_pos=self.physics.pos,
-            drone_rot=rot_mat,
-            room=self.room,
-            cylinders=self.cylinders,
-            boxes=self.boxes,
-        )
+        tof_64 = obs[FLOW_DIM:FLOW_DIM + TOF_DIM]
         depth_8x8 = tof_64.reshape(self.tof.rows, self.tof.cols)
-        flow_xy = self.flow_sensor.compute_flow(
-            v_world=self.physics.vel,
-            rot_matrix=rot_mat,
-            altitude_above_surface=max(LASER_MIN_RANGE_M, self.last_laser_result.distance),
-            omega_body=self.physics.omega,
-        )
+        flow_xy = obs[:FLOW_DIM]
 
         # Body-frame acceleration estimate (including gravity reaction)
         R = rot_mat
@@ -1526,7 +1531,7 @@ def run_flight_simulation(
     payload_kg: float = 0.0,            # Payload mass in kg [0.0, 1.5]
     realtime: bool = True,
     hud_interval_s: float = 0.1,
-    solver_type: str = "CfC",
+    solver_type: str = "exponential_euler",
     pruning_sparsity: Optional[float] = None,
     ablate_cx: Optional[bool] = None,
     engine: str = "auto",
@@ -2006,8 +2011,8 @@ def main():
                         help="Run at 1x real-time playback speed (default: auto for viewer)")
     parser.add_argument("--fast", action="store_true",
                         help="Run at maximum speed without real-time delay")
-    parser.add_argument("--solver", type=str, choices=["CfC", "Euler_dt_0.02"], default="CfC",
-                        help="Neural ODE solver: CfC (closed-form, 250Hz) or Euler_dt_0.02 (default: CfC)")
+    parser.add_argument("--solver", type=str, choices=["exponential_euler", "euler", "CfC", "Euler_dt_0.02"], default="exponential_euler",
+                        help="Rate ODE integrator; CfC/Euler_dt_0.02 are legacy aliases, not clock settings")
     parser.add_argument("--sparsity", type=float, default=None,
                         help="Dynamic weight magnitude pruning sparsity [0.50, 0.95]")
     parser.add_argument("--ablate-cx", action="store_true", default=None,
@@ -2063,46 +2068,81 @@ if __name__ == "__main__":
 
 class OpticalFlowOUWrapper:
     """
-    Observation Wrapper that injects Ornstein-Uhlenbeck (OU) noise into 
-    the Optical Flow observations (FlowX, FlowY) when the drone is far 
-    from obstacles. This induces a smooth, deterministic Levy-like 
-    exploration flight pattern without breaking ONNX determinism.
+    Seeded synthetic flow perturbation for exploration experiments, not a
+    learned exploration policy or a Levy-flight model. Distances are in metres;
+    observations still carry normalized ToF. Only the added noise is filtered.
     """
     def __init__(
-        self, 
+        self,
         env: Any,
+        *,
         theta: float = 0.15,
         mu: float = 0.0,
-        sigma: float = 0.3,
+        sigma: float = 0.06,
         dt: float = DEFAULT_DT,
-        clearance_threshold: float = 1.0,
-        seed: int = 42
+        clearance_start_m: float = 0.85,
+        clearance_full_m: float = 1.25,
+        gate_tau_s: float = 0.12,
+        state_decay_tau_s: float = 0.10,
+        seed: int = 42,
     ):
         self.env = env
+        self.tof_range_m = float(env.tof.max_range)
+        values = (theta, mu, sigma, dt, clearance_start_m, clearance_full_m,
+                  gate_tau_s, state_decay_tau_s, self.tof_range_m)
+        if (not all(np.isfinite(v) for v in values) or theta < 0 or sigma < 0
+                or dt <= 0 or gate_tau_s <= 0 or state_decay_tau_s <= 0
+                or not 0 <= clearance_start_m < clearance_full_m <= self.tof_range_m):
+            raise ValueError('Invalid OU parameters or metre-based clearance window')
+        if not math.isclose(dt, env.dt, rel_tol=0, abs_tol=1e-9):
+            raise ValueError('OU dt must equal the wrapped environment physics timestep')
         self.theta = theta
         self.mu = mu
         self.sigma = sigma
         self.dt = dt
-        self.clearance_threshold = clearance_threshold
+        self.clearance_start_m = clearance_start_m
+        self.clearance_full_m = clearance_full_m
+        self.gate_tau_s = gate_tau_s
+        self.state_decay_tau_s = state_decay_tau_s
+        self.seed = seed
         self.rng = np.random.default_rng(seed)
         self.state = np.zeros(2, dtype=np.float32)
-        
-    def _ou_step(self) -> np.ndarray:
-        # OU process: dx = theta * (mu - x) * dt + sigma * sqrt(dt) * noise
+        self.gain = 0.
+
+    def configuration(self) -> Dict[str, Any]:
+        return dict(kind='synthetic_optical_flow_ou', version='smooth-ou-v2',
+                    theta=self.theta, mu=self.mu, sigma=self.sigma, dt=self.dt,
+                    clearance_start_m=self.clearance_start_m,
+                    clearance_full_m=self.clearance_full_m, tof_range_m=self.tof_range_m,
+                    gate_tau_s=self.gate_tau_s, state_decay_tau_s=self.state_decay_tau_s)
+
+    def _ou_step(self, target_gain: float) -> np.ndarray:
+        # Advance on every physics step, including avoidance. Exact OU update
+        # for the coefficients held over this step; near obstacles the state
+        # decays towards zero instead of freezing a stale offset.
+        rate = self.theta + (1. - target_gain) / self.state_decay_tau_s
+        decay = np.exp(-rate * self.dt)
+        variance_time = -np.expm1(-2. * rate * self.dt) / (2. * rate) if rate else self.dt
         noise = self.rng.normal(size=2).astype(np.float32)
-        dx = self.theta * (self.mu - self.state) * self.dt + self.sigma * np.sqrt(self.dt) * noise
-        self.state += dx
-        return self.state.copy()
+        mean = self.mu * target_gain
+        self.state[:] = mean + (self.state - mean) * decay + self.sigma * target_gain * np.sqrt(variance_time) * noise
+        # Distance can jump when an object leaves the FoV. A spatial ramp alone
+        # cannot smooth that transition; filter its gain in physical time too.
+        self.gain += (target_gain - self.gain) * -np.expm1(-self.dt / self.gate_tau_s)
+        return (self.state * self.gain).astype(np.float32)
 
     def reset(self, **kwargs) -> Any:
         self.state = np.zeros(2, dtype=np.float32)
+        self.gain = 0.
+        seed = kwargs.get('seed')
+        self.rng = np.random.default_rng(self.seed if seed is None else seed)
         result = self.env.reset(**kwargs)
         # Handle cases where reset returns just obs, or (obs, info)
         if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], dict):
             obs, info = result
-            return self._inject_noise(obs), info
+            return self._inject_noise(obs, advance=False), info
         else:
-            return self._inject_noise(result)
+            return self._inject_noise(result, advance=False)
 
     def step(self, action: Any, **kwargs) -> Tuple[Any, float, bool, Dict[str, Any]]:
         # Fast evaluator env step returns: (obs_flow, obs_tof), cost, done, info
@@ -2117,23 +2157,27 @@ class OpticalFlowOUWrapper:
             return self._inject_noise(obs), reward, term, trunc, info
         return result
 
-    def _inject_noise(self, obs: Any) -> Any:
-        if isinstance(obs, tuple) and len(obs) == 2:
-            obs_flow, obs_tof = obs
-            tof = np.asarray(obs_tof).ravel()
-            min_dist = np.min(tof) if tof.size > 0 else 1.0
-            if min_dist > self.clearance_threshold:
-                ou_noise = self._ou_step()
-                obs_flow = obs_flow + ou_noise
-            return (obs_flow, obs_tof)
+    def _inject_noise(self, obs: Any, *, advance: bool = True) -> Any:
+        pair = isinstance(obs, tuple) and len(obs) == 2
+        if pair:
+            flow, tof = (np.asarray(x, dtype=np.float32) for x in obs)
         else:
             obs_np = np.asarray(obs, dtype=np.float32).copy()
-            tof = obs_np[FLOW_DIM:(FLOW_DIM + TOF_DIM)] if obs_np.size >= SENSOR_DIM_BASE else np.ones(TOF_DIM, dtype=np.float32)
-            min_dist = np.min(tof) if tof.size > 0 else 1.0
-            if min_dist > self.clearance_threshold:
-                ou_noise = self._ou_step()
-                obs_np[0:FLOW_DIM] += ou_noise
-            return obs_np
+            if obs_np.ndim != 1 or obs_np.size < SENSOR_DIM_BASE:
+                raise ValueError('OU wrapper requires flow[2] and normalized ToF[64]')
+            flow, tof = obs_np[:FLOW_DIM], obs_np[FLOW_DIM:FLOW_DIM + TOF_DIM]
+        if (flow.shape != (FLOW_DIM,) or tof.size != TOF_DIM
+                or not np.isfinite(flow).all() or not np.isfinite(tof).all()
+                or np.any(tof < 0) or np.any(tof > 1)):
+            raise ValueError('OU wrapper requires finite flow and normalized ToF in [0, 1]')
+        distance_m = float(np.min(tof)) * self.tof_range_m
+        target = float(np.clip((distance_m - self.clearance_start_m) /
+                              (self.clearance_full_m - self.clearance_start_m), 0., 1.))
+        perturbation = self._ou_step(target) if advance else np.zeros(FLOW_DIM, dtype=np.float32)
+        if pair:
+            return flow + perturbation, obs[1]
+        obs_np[:FLOW_DIM] += perturbation
+        return obs_np
 
     def __getattr__(self, name):
         return getattr(self.env, name)

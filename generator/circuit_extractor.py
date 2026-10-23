@@ -2,8 +2,16 @@ import os
 import sys
 import json
 import argparse
+from pathlib import Path
 import numpy as np
 import pandas as pd
+
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+
+from generator.source_contract import write_bundle, manifest_sha256
+from generator.cave_source import fetch_cave_graph
 
 try:
     from caveclient import CAVEclient
@@ -96,9 +104,8 @@ def filter_nodes(nodes: pd.DataFrame,
 
     - Exact cell-type exclusions take precedence.
     - If the dataframe has a 'super_class' column (CAVE live data), use it.
-    - In synthetic fallback the column does not exist; the layer tag is used
-      as a proxy (no mushroom body / neuroendocrine entries are generated
-      anyway, so the filter is a no-op but is applied for safety).
+    - The explicit synthetic scaffold has no super_class column and generates
+      no mushroom body / neuroendocrine entries.
     """
     # 1. Keep only target types
     mask = nodes["cell_type"].isin(target_classes)
@@ -223,9 +230,9 @@ def _build_synthetic_nodes(cfg: dict, include_cx: bool) -> pd.DataFrame:
     return pd.DataFrame(nodes_list)
 
 
-def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool) -> pd.DataFrame:
-    """Wire the synthetic connectome according to biological projections."""
-    np.random.seed(42)
+def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool, seed=42) -> pd.DataFrame:
+    """Generate a reproducible engineering scaffold, not measured synapses."""
+    rng = np.random.RandomState(seed)
     wire = cfg["synthetic_wiring"]
     sg = cfg["sensor_groups"]
     mg = cfg["motor_groups"]
@@ -241,7 +248,7 @@ def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool) -> 
     all_dn       = list(dict.fromkeys(throttle_dn + yaw_dn + pitchroll_dn))
 
     def w_rand(lo, hi):
-        return int(np.random.randint(lo, hi + 1))
+        return int(rng.randint(lo, hi + 1))
 
     # ---- Optic-lobe per-side wiring ------------------------------------
     for side in ("left", "right"):
@@ -275,29 +282,29 @@ def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool) -> 
         # T4ab → HS (horizontal flow)
         if len(hs):
             for _, pre in t4[t4["cell_type"].isin(["T4a", "T4b"])].iterrows():
-                tgt = hs.sample(n=1)
+                tgt = hs.sample(n=1, random_state=rng)
                 edges_list.append({"pre_id": pre["root_id"], "post_id": tgt.iloc[0]["root_id"],
                                    "weight": w_rand(lo_lp, hi_lp)})
             for _, pre in t5[t5["cell_type"].isin(["T5a", "T5b"])].iterrows():
-                tgt = hs.sample(n=1)
+                tgt = hs.sample(n=1, random_state=rng)
                 edges_list.append({"pre_id": pre["root_id"], "post_id": tgt.iloc[0]["root_id"],
                                    "weight": w_rand(lo_lp, hi_lp)})
 
         # T4cd → VS (vertical flow)
         if len(vs):
             for _, pre in t4[t4["cell_type"].isin(["T4c", "T4d"])].iterrows():
-                tgt = vs.sample(n=1)
+                tgt = vs.sample(n=1, random_state=rng)
                 edges_list.append({"pre_id": pre["root_id"], "post_id": tgt.iloc[0]["root_id"],
                                    "weight": w_rand(lo_lp, hi_lp)})
             for _, pre in t5[t5["cell_type"].isin(["T5c", "T5d"])].iterrows():
-                tgt = vs.sample(n=1)
+                tgt = vs.sample(n=1, random_state=rng)
                 edges_list.append({"pre_id": pre["root_id"], "post_id": tgt.iloc[0]["root_id"],
                                    "weight": w_rand(lo_lp, hi_lp)})
 
         # LPi ↔ HS (cross-layer directional gating)
         if len(hs):
             for _, l in lpi.iterrows():
-                tgt = hs.sample(n=1)
+                tgt = hs.sample(n=1, random_state=rng)
                 edges_list.append({"pre_id": l["root_id"], "post_id": tgt.iloc[0]["root_id"],
                                    "weight": wire["lpi_to_hs"]})
                 edges_list.append({"pre_id": tgt.iloc[0]["root_id"], "post_id": l["root_id"],
@@ -364,7 +371,7 @@ def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool) -> 
 
         # Lateral inhibition: Delta7 → E-PG (sample 4 per glomerulus)
         for _, d in d7.iterrows():
-            for _, e in epg.sample(n=min(4, len(epg))).iterrows():
+            for _, e in epg.sample(n=min(4, len(epg)), random_state=rng).iterrows():
                 edges_list.append({"pre_id": d["root_id"], "post_id": e["root_id"],
                                    "weight": wire["cx_d7_to_epg"]})
 
@@ -394,7 +401,21 @@ def _build_synthetic_edges(nodes: pd.DataFrame, cfg: dict, include_cx: bool) -> 
 # Main extraction
 # ---------------------------------------------------------------------------
 
-def main(config_path: str | None = None, include_cx_override: bool | None = None):
+def main(config_path: str | None = None, include_cx_override: bool | None = None, *,
+         source=None, out_dir=None, version=None, datastack='flywire_fafb_production',
+         annotation_table=None, synapse_table=None, seed=42, max_rows=50000,
+         extra_cell_types=(), auth_token_file=None):
+    if source not in {'cave', 'synthetic'}:
+        raise ValueError('Choose source=cave or source=synthetic explicitly; no automatic fallback')
+    if source == 'cave':
+        if type(version) is not int or version <= 0:
+            raise ValueError('CAVE requires an explicit positive materialization version')
+        if not all(isinstance(value, str) and value.strip() for value in (datastack, annotation_table, synapse_table)):
+            raise ValueError('CAVE requires explicit datastack, annotation_table and synapse_table names')
+    out_dir = Path(out_dir) if out_dir is not None else Path(_project_root())/'data'/(
+        f'raw_connectome_cave_v{version}' if source == 'cave' else f'raw_connectome_synthetic_seed{seed}')
+    if out_dir.exists():
+        raise FileExistsError(f'Refusing to overwrite an existing graph: {out_dir}')
     cfg = load_cell_mapping(config_path)
 
     # ------------------------------------------------------------------
@@ -405,7 +426,7 @@ def main(config_path: str | None = None, include_cx_override: bool | None = None
     if include_cx_override is not None:
         include_cx = include_cx_override
 
-    target_classes           = build_target_classes(cfg, include_cx)
+    target_classes           = list(dict.fromkeys(build_target_classes(cfg, include_cx) + list(extra_cell_types)))
     exc_super, exc_exact     = build_exclusion_sets(cfg)
 
     # Human-readable header
@@ -416,62 +437,32 @@ def main(config_path: str | None = None, include_cx_override: bool | None = None
     print("=" * 80, flush=True)
     print(f"Target cell types ({len(target_classes)}): {target_classes}", flush=True)
 
-    project_root = _project_root()
-    out_dir  = os.path.join(project_root, "data", "raw_connectome")
-    os.makedirs(out_dir, exist_ok=True)
-    nodes_file = os.path.join(out_dir, "raw_nodes.csv")
-    edges_file = os.path.join(out_dir, "raw_edges.parquet")
-    meta_file  = os.path.join(out_dir, "circuit_summary.json")
-
-    # ------------------------------------------------------------------
-    # Attempt live CAVE query, fall back to synthetic generator
-    # ------------------------------------------------------------------
-    nodes = edges = None
-
-    if _CAVE_AVAILABLE:
-        try:
-            client = CAVEclient("flywire_fafb_production")
-            ann_table    = client.materialize.query_table("hierarchical_neuron_annotations")
-            matched_cells = ann_table[ann_table["cell_type"].isin(target_classes)].copy()
-            target_ids   = matched_cells["pt_root_id"].unique().tolist()
-            print(f"Online query: {len(target_ids):,} cells found. Fetching synapses...", flush=True)
-
-            syn_table = client.materialize.synapse_query(pre_ids=target_ids, post_ids=target_ids)
-            edges = (syn_table
-                     .groupby(["pre_pt_root_id", "post_pt_root_id"])
-                     .size()
-                     .reset_index(name="weight"))
-            edges.rename(columns={"pre_pt_root_id": "pre_id", "post_pt_root_id": "post_id"}, inplace=True)
-
-            nodes = (matched_cells[["pt_root_id", "cell_type", "side"]]
-                     .drop_duplicates(subset=["pt_root_id"])
-                     .rename(columns={"pt_root_id": "root_id"}))
-
-            # Apply exclusion filters to live data
-            nodes = filter_nodes(nodes, target_classes, exc_super, exc_exact)
-            keep_ids = set(nodes["root_id"])
-            edges = edges[edges["pre_id"].isin(keep_ids) & edges["post_id"].isin(keep_ids)]
-
-        except Exception as exc:
-            print(f"CAVE unavailable ({exc}). Falling back to synthetic generator.", flush=True)
-            nodes = edges = None
-
-    if nodes is None:
-        print("Synthesizing bilateral connectome...", flush=True)
+    if source == 'cave':
+        if not _CAVE_AVAILABLE:
+            raise ImportError('CAVE source requires caveclient; synthetic mode must be selected explicitly')
+        client = CAVEclient(datastack, version=version, auth_token_file=auth_token_file,
+                            write_server_cache=False)
+        nodes, edges, provenance = fetch_cave_graph(client, datastack=datastack, version=version,
+            annotation_table=annotation_table, synapse_table=synapse_table, target_classes=target_classes,
+            excluded_classes=exc_super, excluded_types=exc_exact, max_rows=max_rows)
+    else:
+        if extra_cell_types:
+            raise ValueError('Extra cell types require measured CAVE data; the synthetic scaffold cannot invent them')
+        print('Generating explicitly synthetic scaffold...', flush=True)
         nodes = _build_synthetic_nodes(cfg, include_cx)
         # Apply exclusion filter for safety (no-op for synthetic, but explicit)
         nodes = filter_nodes(nodes, target_classes, exc_super, exc_exact)
-        edges = _build_synthetic_edges(nodes, cfg, include_cx)
+        edges = _build_synthetic_edges(nodes, cfg, include_cx, seed=seed)
+        provenance = {'source_kind': 'synthetic', 'seed': seed, 'generator': 'bilateral-scaffold-v1'}
+    provenance['cell_mapping_sha256'] = manifest_sha256(cfg)
 
     # ------------------------------------------------------------------
     # Persist
     # ------------------------------------------------------------------
     print(f"\nWriting datasets to {out_dir}...", flush=True)
-    nodes.to_csv(nodes_file, index=False)
-    edges.to_parquet(edges_file, index=False)
 
-    optic_n = int((nodes["layer"] == "optic").sum()) if "layer" in nodes.columns else len(nodes)
-    cx_n    = int((nodes["layer"] == "cx").sum())    if "layer" in nodes.columns else 0
+    optic_n = int((nodes["layer"] == "optic").sum()) if "layer" in nodes.columns else None
+    cx_n    = int((nodes["layer"] == "cx").sum())    if "layer" in nodes.columns else None
 
     # Sensor / motor group node counts for the summary
     sg  = cfg["sensor_groups"]
@@ -483,7 +474,7 @@ def main(config_path: str | None = None, include_cx_override: bool | None = None
     pr_cnt       = int(nodes["cell_type"].isin(mg["pitch_roll"]["cell_types"]).sum())
 
     summary = {
-        "dataset":             "FlyWire_FAFB_Optomotor_Plus_CX",
+        "dataset":             source,
         "config":              config_path or "configs/cell_mapping.json",
         "include_central_complex": include_cx,
         "num_nodes":           int(len(nodes)),
@@ -503,8 +494,7 @@ def main(config_path: str | None = None, include_cx_override: bool | None = None
         "excluded_super_classes": sorted(exc_super),
         "target_classes":      target_classes,
     }
-    with open(meta_file, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2)
+    manifest = write_bundle(nodes, edges, out_dir, provenance, summary)
 
     print("-" * 80)
     print("EXTRACTION COMPLETE:")
@@ -520,6 +510,7 @@ def main(config_path: str | None = None, include_cx_override: bool | None = None
     print(f"      Pitch/Roll:            {pr_cnt} nodes  {mg['pitch_roll']['cell_types']}")
     print(f"  • CX navigation core:      {'ENABLED' if include_cx else 'DISABLED'}")
     print("-" * 80, flush=True)
+    return manifest
 
 
 # ---------------------------------------------------------------------------
@@ -534,6 +525,16 @@ if __name__ == "__main__":
         "--config", default=None,
         help="Path to cell_mapping.json (default: configs/cell_mapping.json)"
     )
+    parser.add_argument('--source', required=True, choices=['cave', 'synthetic'])
+    parser.add_argument('--out-dir', type=Path)
+    parser.add_argument('--version', type=int, help='Pinned CAVE materialization version; never latest implicitly')
+    parser.add_argument('--datastack', default='flywire_fafb_production')
+    parser.add_argument('--annotation-table', help='Table with pt_root_id, cell_type, side and super_class')
+    parser.add_argument('--synapse-table', help='Table with unique id, pre_pt_root_id and post_pt_root_id')
+    parser.add_argument('--auth-token-file', help='Optional credential file path; never a token value')
+    parser.add_argument('--seed', type=int, default=42, help='Synthetic mode seed')
+    parser.add_argument('--max-rows', type=int, default=50000, help='Maximum rows per count-checked CAVE query')
+    parser.add_argument('--extra-cell-type', action='append', default=[], help='Explicit intermediate type to retain')
     parser.add_argument(
         "--include-cx", dest="include_cx", action="store_true", default=None,
         help="Force-enable Central Complex extraction (overrides config)."
@@ -543,4 +544,8 @@ if __name__ == "__main__":
         help="Force-disable Central Complex extraction (overrides config)."
     )
     args = parser.parse_args()
-    main(config_path=args.config, include_cx_override=args.include_cx)
+    main(config_path=args.config, include_cx_override=args.include_cx, source=args.source,
+         out_dir=args.out_dir, version=args.version, datastack=args.datastack,
+         annotation_table=args.annotation_table, synapse_table=args.synapse_table,
+         seed=args.seed, max_rows=args.max_rows, extra_cell_types=args.extra_cell_type,
+         auth_token_file=args.auth_token_file)

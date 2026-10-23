@@ -1,0 +1,386 @@
+[
+  {
+    "root_id": "720575940635119723",
+    "sensory_input_synapses": 710,
+    "dn_output_synapses": 424,
+    "bottleneck": 424
+  },
+  {
+    "root_id": "720575940631842360",
+    "sensory_input_synapses": 537,
+    "dn_output_synapses": 399,
+    "bottleneck": 399
+  },
+  {
+    "root_id": "720575940615723314",
+    "sensory_input_synapses": 375,
+    "dn_output_synapses": 243,
+    "bottleneck": 243
+  },
+  {
+    "root_id": "720575940618886710",
+    "sensory_input_synapses": 360,
+    "dn_output_synapses": 166,
+    "bottleneck": 166
+  },
+  {
+    "root_id": "720575940612612094",
+    "sensory_input_synapses": 672,
+    "dn_output_synapses": 113,
+    "bottleneck": 113
+  },
+  {
+    "root_id": "720575940625656980",
+    "sensory_input_synapses": 507,
+    "dn_output_synapses": 108,
+    "bottleneck": 108
+  },
+  {
+    "root_id": "720575940614492397",
+    "sensory_input_synapses": 522,
+    "dn_output_synapses": 105,
+    "bottleneck": 105
+  },
+  {
+    "root_id": "720575940622581173",
+    "sensory_input_synapses": 106,
+    "dn_output_synapses": 85,
+    "bottleneck": 85
+  },
+  {
+    "root_id": "720575940638910040",
+    "sensory_input_synapses": 634,
+    "dn_output_synapses": 76,
+    "bottleneck": 76
+  },
+  {
+    "root_id": "720575940623618708",
+    "sensory_input_synapses": 129,
+    "dn_output_synapses": 53,
+    "bottleneck": 53
+  },
+  {
+    "root_id": "720575940604954289",
+    "sensory_input_synapses": 501,
+    "dn_output_synapses": 52,
+    "bottleneck": 52
+  },
+  {
+    "root_id": "720575940620320902",
+    "sensory_input_synapses": 125,
+    "dn_output_synapses": 52,
+    "bottleneck": 52
+  },
+  {
+    "root_id": "720575940629602871",
+    "sensory_input_synapses": 181,
+    "dn_output_synapses": 46,
+    "bottleneck": 46
+  },
+  {
+    "root_id": "720575940629757036",
+    "sensory_input_synapses": 506,
+    "dn_output_synapses": 46,
+    "bottleneck": 46
+  },
+  {
+    "root_id": "720575940628793621",
+    "sensory_input_synapses": 92,
+    "dn_output_synapses": 41,
+    "bottleneck": 41
+  },
+  {
+    "root_id": "720575940619601488",
+    "sensory_input_synapses": 37,
+    "dn_output_synapses": 73,
+    "bottleneck": 37
+  },
+  {
+    "root_id": "720575940627997050",
+    "sensory_input_synapses": 35,
+    "dn_output_synapses": 37,
+    "bottleneck": 35
+  },
+  {
+    "root_id": "720575940636704357",
+    "sensory_input_synapses": 27,
+    "dn_output_synapses": 64,
+    "bottleneck": 27
+  },
+  {
+    "root_id": "720575940623781127",
+    "sensory_input_synapses": 1346,
+    "dn_output_synapses": 26,
+    "bottleneck": 26
+  },
+  {
+    "root_id": "720575940620813989",
+    "sensory_input_synapses": 22,
+    "dn_output_synapses": 68,
+    "bottleneck": 22
+  },
+  {
+    "root_id": "720575940624358152",
+    "sensory_input_synapses": 22,
+    "dn_output_synapses": 47,
+    "bottleneck": 22
+  },
+  {
+    "root_id": "720575940632427603",
+    "sensory_input_synapses": 22,
+    "dn_output_synapses": 85,
+    "bottleneck": 22
+  },
+  {
+    "root_id": "720575940644465568",
+    "sensory_input_synapses": 21,
+    "dn_output_synapses": 84,
+    "bottleneck": 21
+  },
+  {
+    "root_id": "720575940620842111",
+    "sensory_input_synapses": 20,
+    "dn_output_synapses": 119,
+    "bottleneck": 20
+  },
+  {
+    "root_id": "720575940626046919",
+    "sensory_input_synapses": 19,
+    "dn_output_synapses": 112,
+    "bottleneck": 19
+  },
+  {
+    "root_id": "720575940626677097",
+    "sensory_input_synapses": 19,
+    "dn_output_synapses": 77,
+    "bottleneck": 19
+  },
+  {
+    "root_id": "720575940610505006",
+    "sensory_input_synapses": 1276,
+    "dn_output_synapses": 17,
+    "bottleneck": 17
+  },
+  {
+    "root_id": "720575940613657342",
+    "sensory_input_synapses": 19,
+    "dn_output_synapses": 17,
+    "bottleneck": 17
+  },
+  {
+    "root_id": "720575940640834211",
+    "sensory_input_synapses": 4687,
+    "dn_output_synapses": 15,
+    "bottleneck": 15
+  },
+  {
+    "root_id": "720575940619731334",
+    "sensory_input_synapses": 38,
+    "dn_output_synapses": 14,
+    "bottleneck": 14
+  },
+  {
+    "root_id": "720575940634895514",
+    "sensory_input_synapses": 25,
+    "dn_output_synapses": 14,
+    "bottleneck": 14
+  },
+  {
+    "root_id": "720575940607982428",
+    "sensory_input_synapses": 13,
+    "dn_output_synapses": 131,
+    "bottleneck": 13
+  },
+  {
+    "root_id": "720575940620381575",
+    "sensory_input_synapses": 13,
+    "dn_output_synapses": 15,
+    "bottleneck": 13
+  },
+  {
+    "root_id": "720575940615756774",
+    "sensory_input_synapses": 23,
+    "dn_output_synapses": 12,
+    "bottleneck": 12
+  },
+  {
+    "root_id": "720575940631999685",
+    "sensory_input_synapses": 12,
+    "dn_output_synapses": 74,
+    "bottleneck": 12
+  },
+  {
+    "root_id": "720575940610738898",
+    "sensory_input_synapses": 11,
+    "dn_output_synapses": 25,
+    "bottleneck": 11
+  },
+  {
+    "root_id": "720575940615626562",
+    "sensory_input_synapses": 11,
+    "dn_output_synapses": 15,
+    "bottleneck": 11
+  },
+  {
+    "root_id": "720575940618031394",
+    "sensory_input_synapses": 11,
+    "dn_output_synapses": 28,
+    "bottleneck": 11
+  },
+  {
+    "root_id": "720575940632080977",
+    "sensory_input_synapses": 11,
+    "dn_output_synapses": 12,
+    "bottleneck": 11
+  },
+  {
+    "root_id": "720575940636329579",
+    "sensory_input_synapses": 13,
+    "dn_output_synapses": 11,
+    "bottleneck": 11
+  },
+  {
+    "root_id": "720575940609234130",
+    "sensory_input_synapses": 18,
+    "dn_output_synapses": 10,
+    "bottleneck": 10
+  },
+  {
+    "root_id": "720575940630385000",
+    "sensory_input_synapses": 32,
+    "dn_output_synapses": 10,
+    "bottleneck": 10
+  },
+  {
+    "root_id": "720575940633575575",
+    "sensory_input_synapses": 10,
+    "dn_output_synapses": 57,
+    "bottleneck": 10
+  },
+  {
+    "root_id": "720575940633746515",
+    "sensory_input_synapses": 17,
+    "dn_output_synapses": 10,
+    "bottleneck": 10
+  },
+  {
+    "root_id": "720575940612921746",
+    "sensory_input_synapses": 9,
+    "dn_output_synapses": 47,
+    "bottleneck": 9
+  },
+  {
+    "root_id": "720575940616138123",
+    "sensory_input_synapses": 46,
+    "dn_output_synapses": 9,
+    "bottleneck": 9
+  },
+  {
+    "root_id": "720575940638900713",
+    "sensory_input_synapses": 4139,
+    "dn_output_synapses": 9,
+    "bottleneck": 9
+  },
+  {
+    "root_id": "720575940627435283",
+    "sensory_input_synapses": 8,
+    "dn_output_synapses": 25,
+    "bottleneck": 8
+  },
+  {
+    "root_id": "720575940604737708",
+    "sensory_input_synapses": 33,
+    "dn_output_synapses": 7,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940613191391",
+    "sensory_input_synapses": 7,
+    "dn_output_synapses": 47,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940613558225",
+    "sensory_input_synapses": 7,
+    "dn_output_synapses": 35,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940617797259",
+    "sensory_input_synapses": 7,
+    "dn_output_synapses": 31,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940622267201",
+    "sensory_input_synapses": 68,
+    "dn_output_synapses": 7,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940628641127",
+    "sensory_input_synapses": 7,
+    "dn_output_synapses": 34,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940630755858",
+    "sensory_input_synapses": 26,
+    "dn_output_synapses": 7,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940660051073",
+    "sensory_input_synapses": 7,
+    "dn_output_synapses": 36,
+    "bottleneck": 7
+  },
+  {
+    "root_id": "720575940612296154",
+    "sensory_input_synapses": 6,
+    "dn_output_synapses": 30,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940617499205",
+    "sensory_input_synapses": 6,
+    "dn_output_synapses": 38,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940622037926",
+    "sensory_input_synapses": 9,
+    "dn_output_synapses": 6,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940622409196",
+    "sensory_input_synapses": 16,
+    "dn_output_synapses": 6,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940626583056",
+    "sensory_input_synapses": 6,
+    "dn_output_synapses": 10,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940627139530",
+    "sensory_input_synapses": 6,
+    "dn_output_synapses": 15,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940629358321",
+    "sensory_input_synapses": 270,
+    "dn_output_synapses": 6,
+    "bottleneck": 6
+  },
+  {
+    "root_id": "720575940631296543",
+    "sensory_input_synapses": 14,
+    "dn_output_synapses": 6,
+    "bottleneck": 6
+  }
+]

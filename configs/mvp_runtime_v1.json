@@ -1,0 +1,12 @@
+{
+  "bundle_dir": "../data/edge/k306_tau025_system_v1",
+  "expected_metadata_sha256": "da88656f5925fbc4d017324951adf27280d150358f8fce58b5af33edef0bc3d4",
+  "coordinator_mode": "both",
+  "coordinator_preset": "original_v1",
+  "levy_explore": false,
+  "stop_hover": true,
+  "seed": 20261021,
+  "session_id": "mvp-system-v1-offline",
+  "transport_mode": "offline",
+  "bridge": {}
+}

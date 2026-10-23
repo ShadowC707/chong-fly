@@ -1,0 +1,16 @@
+{
+  "epochs": 30,
+  "batch_size": 8,
+  "seed": 42,
+  "device": "cpu",
+  "sensor_encoding": "proximity-v1",
+  "neutral_origin": true,
+  "preserve_signs": true,
+  "loss_mode": "channel-v3",
+  "yaw_balance": 0.7,
+  "learning_rate_min": 0.001,
+  "learning_rate_max": 0.005,
+  "tau_choices": [0.05, 0.1, 0.2],
+  "scene_steps": 500,
+  "scene_seeds": [20261009]
+}

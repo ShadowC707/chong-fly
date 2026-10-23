@@ -1,0 +1,2 @@
+# Install into the project venv, after the main project dependencies.
+matplotlib>=3.8,<4

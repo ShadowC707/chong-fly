@@ -1,0 +1,82 @@
+{
+  "before": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\edge\\k306_tau025_hold_v1",
+  "after": {
+    "bundle_dir": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\edge\\k306_tau025_integrated_v1",
+    "expected_metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+    "coordinator_mode": "both",
+    "coordinator_preset": "original_v1",
+    "levy_explore": false,
+    "stop_hover": true,
+    "seed": 20261021,
+    "bridge": {
+      "ready_dwell_s": 0.5,
+      "max_age_s": 0.04,
+      "min_step_s": 0.01,
+      "max_step_s": 0.03,
+      "max_flow": 0.015,
+      "flow_filter_tau_s": 0.12,
+      "height_tolerance_m": 0.1,
+      "max_vertical_speed_mps": 0.1,
+      "max_tilt_rad": 0.15,
+      "clear_m": 0.95,
+      "max_throttle_difference_pwm": 15.0,
+      "max_attitude_difference_pwm": 35.0,
+      "max_yaw_difference_pwm": 20.0,
+      "lease_s": 0.04
+    },
+    "session_id": "mvp-integrated-v1-offline",
+    "transport_mode": "offline",
+    "sensor_mode": "multi_rate_v1",
+    "sensor_budgets": {
+      "flow_max_age_s": 0.04,
+      "tof_max_age_s": 0.1,
+      "altitude_max_age_s": 0.06,
+      "attitude_max_age_s": 0.04
+    },
+    "handover_mode": "freeze_sync_v1"
+  },
+  "reference_physics": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\data\\diagnostics\\transport_loop_v3",
+  "input_sha256": {
+    "flow": "c18d2a4511b9668f0cb776160f9f35b69330008a5caa4e3956a7a1e424b53d16",
+    "tof": "a091069f81b643bdd0179cb74086fabe4657a56e3e899481a1795a608142f291",
+    "memory": "c6dcfc10b2182fdc0610db4d2a7d6c4593b169f5cddfde619c37336a9a4cc243",
+    "altitude": "d8542d5afd26e2a121b9f0f0d8b13923fc8953e61c18cab9c093138bbe3edcb7",
+    "times": "a14de81a4cba6c4642879aa1fbc7aa31c6316fa7390aff6fd4e8d0dc5a47bf00"
+  },
+  "replay_cases": [
+    {
+      "coordinator_mode": "baseline",
+      "coordinator_preset": "original_v1",
+      "levy_explore": false,
+      "stop_hover": false,
+      "seed": 20261021,
+      "sensor_mode": "multi_rate_v1"
+    },
+    {
+      "coordinator_mode": "both",
+      "coordinator_preset": "original_v1",
+      "levy_explore": false,
+      "stop_hover": false,
+      "seed": 20261021,
+      "sensor_mode": "multi_rate_v1"
+    },
+    {
+      "coordinator_mode": "both",
+      "coordinator_preset": "near_zero_v1",
+      "levy_explore": false,
+      "stop_hover": false,
+      "seed": 20261021,
+      "sensor_mode": "multi_rate_v1"
+    },
+    {
+      "coordinator_mode": "both",
+      "coordinator_preset": "original_v1",
+      "levy_explore": true,
+      "stop_hover": true,
+      "seed": 20261021,
+      "sensor_mode": "multi_rate_v1"
+    }
+  ],
+  "steps_per_case": 2000,
+  "comparison": "exact arrays and JSON numerical values"
+}

@@ -1,0 +1,284 @@
+{
+  "DNa01": [
+    {
+      "root_id": "720575940618167579",
+      "cell_type": "DNae001",
+      "hemibrain_type": "DNa01",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8752438414642788"
+    },
+    {
+      "root_id": "720575940644438551",
+      "cell_type": "DNa01",
+      "hemibrain_type": "VES006",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7359791570482389"
+    },
+    {
+      "root_id": "720575940627787609",
+      "cell_type": "DNa01",
+      "hemibrain_type": "VES006",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7130077449558326"
+    },
+    {
+      "root_id": "720575940626328707",
+      "cell_type": "DNae001",
+      "hemibrain_type": "DNa01",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8852544622488808"
+    }
+  ],
+  "DNa02": [
+    {
+      "root_id": "720575940604737708",
+      "cell_type": "",
+      "hemibrain_type": "DNa02",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7908463208967288"
+    },
+    {
+      "root_id": "720575940629327659",
+      "cell_type": "",
+      "hemibrain_type": "DNa02",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7941235871987472"
+    }
+  ],
+  "DNa03": [
+    {
+      "root_id": "720575940620918789",
+      "cell_type": "",
+      "hemibrain_type": "DNa03",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8371623614386544"
+    },
+    {
+      "root_id": "720575940630085583",
+      "cell_type": "",
+      "hemibrain_type": "DNa03",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8725299139153351"
+    }
+  ],
+  "DNa11": [
+    {
+      "root_id": "720575940611735514",
+      "cell_type": "DNa11",
+      "hemibrain_type": "VES008",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7509317507724427"
+    },
+    {
+      "root_id": "720575940623019544",
+      "cell_type": "DNa11",
+      "hemibrain_type": "VES008",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7457326212316912"
+    }
+  ],
+  "DNae014": [],
+  "DNb01": [
+    {
+      "root_id": "720575940648636292",
+      "cell_type": "DNb09",
+      "hemibrain_type": "DNb01",
+      "side": "right",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.5860617245992497"
+    },
+    {
+      "root_id": "720575940616826380",
+      "cell_type": "DNb09",
+      "hemibrain_type": "DNb01",
+      "side": "left",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.6829526356094753"
+    },
+    {
+      "root_id": "720575940625878160",
+      "cell_type": "",
+      "hemibrain_type": "DNb01",
+      "side": "left",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.8647404131665039"
+    },
+    {
+      "root_id": "720575940630758418",
+      "cell_type": "",
+      "hemibrain_type": "DNb01",
+      "side": "right",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.7553801952688316"
+    }
+  ],
+  "VES041": [
+    {
+      "root_id": "720575940627253604",
+      "cell_type": "",
+      "hemibrain_type": "VES041",
+      "side": "left",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.840700569840777"
+    },
+    {
+      "root_id": "720575940635202204",
+      "cell_type": "",
+      "hemibrain_type": "VES041",
+      "side": "right",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.8629833346172618"
+    }
+  ],
+  "DNg02": [],
+  "DNp15": [
+    {
+      "root_id": "720575940616293855",
+      "cell_type": "",
+      "hemibrain_type": "DNp15",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7098878465098594"
+    },
+    {
+      "root_id": "720575940623431351",
+      "cell_type": "",
+      "hemibrain_type": "DNp15",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.7525971575167125"
+    }
+  ],
+  "LAL013": [
+    {
+      "root_id": "720575940612424362",
+      "cell_type": "",
+      "hemibrain_type": "LAL013",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.787394931680321"
+    },
+    {
+      "root_id": "720575940630675151",
+      "cell_type": "",
+      "hemibrain_type": "LAL013",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8003340432282879"
+    }
+  ],
+  "DNp01": [
+    {
+      "root_id": "720575940632499757",
+      "cell_type": "DNp01",
+      "hemibrain_type": "Giant Fiber",
+      "side": "right",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.26569821946215116"
+    },
+    {
+      "root_id": "720575940622838154",
+      "cell_type": "DNp01",
+      "hemibrain_type": "Giant Fiber",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.3171494291445193"
+    }
+  ],
+  "DNp09": [
+    {
+      "root_id": "720575940633095137",
+      "cell_type": "DNp71",
+      "hemibrain_type": "DNp09",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8911228130204397"
+    },
+    {
+      "root_id": "720575940635872101",
+      "cell_type": "",
+      "hemibrain_type": "DNp09",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.8772181432536262"
+    },
+    {
+      "root_id": "720575940627652358",
+      "cell_type": "",
+      "hemibrain_type": "DNp09",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.896147125524404"
+    },
+    {
+      "root_id": "720575940625673196",
+      "cell_type": "DNp71",
+      "hemibrain_type": "DNp09",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.9214146729224714"
+    }
+  ],
+  "FB5A": [
+    {
+      "root_id": "720575940628793982",
+      "cell_type": "CB.FB5F1",
+      "hemibrain_type": "FB5A",
+      "side": "left",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.7926108168042143"
+    },
+    {
+      "root_id": "720575940619544779",
+      "cell_type": "CB.FB5F1",
+      "hemibrain_type": "FB5A",
+      "side": "right",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.7907123598397666"
+    },
+    {
+      "root_id": "720575940609375580",
+      "cell_type": "CB.FB5F1",
+      "hemibrain_type": "FB5A",
+      "side": "left",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.7827502840533559"
+    },
+    {
+      "root_id": "720575940625455247",
+      "cell_type": "CB.FB5F1",
+      "hemibrain_type": "FB5A",
+      "side": "right",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.7843588544066425"
+    }
+  ],
+  "DNp06": [
+    {
+      "root_id": "720575940611644529",
+      "cell_type": "",
+      "hemibrain_type": "DNp06",
+      "side": "right",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.6087544122266066"
+    },
+    {
+      "root_id": "720575940622673860",
+      "cell_type": "",
+      "hemibrain_type": "DNp06",
+      "side": "left",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.503945550357627"
+    }
+  ]
+}
