@@ -1,0 +1,37 @@
+{
+  "requested_datastack": null,
+  "requested_version": null,
+  "checked_at_utc": "2026-10-05T06:33:05.368878+00:00",
+  "operation": "list_datastacks",
+  "stage": "list_datastacks",
+  "versions": {
+    "caveclient": "8.2.1",
+    "pandas": "2.3.3",
+    "numpy": "2.5.2",
+    "pyarrow": "25.0.1"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    }
+  ],
+  "available_datastacks": [
+    "brain_and_nerve_cord_public",
+    "fanc_sandbox",
+    "flywire_fafb_public",
+    "flywire_fafb_sandbox",
+    "minnie35_public_v0",
+    "minnie65_public",
+    "minnie65_sandbox",
+    "pinky_sandbox",
+    "zheng_ca3"
+  ],
+  "status": "datastacks_available"
+}

@@ -1,0 +1,36 @@
+{
+  "candidate": "saccade_core_role_k6",
+  "family": "saccade_core",
+  "k": 6,
+  "source_nodes": 6,
+  "minimum_k": 6,
+  "edges": 10,
+  "source_edges": 10,
+  "meta_file": "saccade_core_role_k6/meta_role_degree_k6.json",
+  "source_bundle": "sources/saccade_core",
+  "route_audit": null,
+  "interface_pair_audit": {
+    "lost_pairs": [],
+    "introduced_pairs": [],
+    "passed": true,
+    "tested_pairs": 0
+  },
+  "smoke": {
+    "kind": "anatomical recurrent matrix only",
+    "steps": 20,
+    "finite": true
+  },
+  "structural_admission": "rejected",
+  "rejection_reasons": [
+    "anatomical_control_without_sensor_contract"
+  ],
+  "training_ready": false,
+  "source_quality_review_required": true,
+  "open_scientific_gates": [
+    "sensor encoding and RC decoder validation",
+    "NT/receptor sign assumptions",
+    "short pretrain and held-out navigation validation",
+    "review close detections retained by official filter"
+  ],
+  "low_confidence_prediction_roots": []
+}

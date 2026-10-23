@@ -1,0 +1,26 @@
+{
+  "requested_datastack": "flywire_fafb_production",
+  "versions": {
+    "caveclient": "8.2.1",
+    "pandas": "2.3.3",
+    "numpy": "2.5.3",
+    "pyarrow": "25.0.1"
+  },
+  "token_available_in_default_locations": false,
+  "operation": "metadata_discovery_only",
+  "stage": "client_initialization",
+  "status": "blocked",
+  "error_type": "AuthException",
+  "requests": [
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+root_id,cell_type,side,super_class,source_cell_type,source_hemibrain_type,top_nt,top_nt_conf,known_nt,supervoxel_id,pos_x,pos_y,pos_z,soma_x,soma_y,soma_z,nucleus_id,flow,cell_class,cell_sub_class,hemibrain_type,ito_lee_hemilineage,hartenstein_hemilineage,morphology_group,known_nt_source,nerve,vfb_id,fbbt_id,status
+720575940609488942,DNae014,right,descending,DNa15,PS017,acetylcholine,0.6148993264386063,,,,,,,,,,,,,,,,,,,,,
+720575940625878160,DNb01,left,descending,,DNb01,glutamate,0.8647404131665039,,,,,,,,,,,,,,,,,,,,,
+720575940627253604,VES041,left,central,,VES041,gaba,0.840700569840777,,,,,,,,,,,,,,,,,,,,,
+720575940630758418,DNb01,right,descending,,DNb01,glutamate,0.7553801952688316,,,,,,,,,,,,,,,,,,,,,
+720575940631759663,DNae014,left,descending,DNa15,PS017,acetylcholine,0.717788763377149,,,,,,,,,,,,,,,,,,,,,
+720575940635202204,VES041,right,central,,VES041,gaba,0.8629833346172618,,,,,,,,,,,,,,,,,,,,,

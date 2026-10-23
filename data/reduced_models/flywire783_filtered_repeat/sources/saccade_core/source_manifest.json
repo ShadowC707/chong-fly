@@ -1,0 +1,53 @@
+{
+  "format_version": "raw-source-v1",
+  "created_at_utc": "2026-10-06T18:56:55.571627+00:00",
+  "source": {
+    "source_kind": "cave",
+    "datastack": "flywire_fafb_public",
+    "materialization_version": 783,
+    "synapse_table": "valid_synapses_nt_np_v6",
+    "annotation_table": null,
+    "annotation_source": {
+      "kind": "published_annotations",
+      "repository": "flyconnectome/flywire_annotations",
+      "release": "v2.1.0",
+      "commit": "ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0",
+      "sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+      "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0/supplemental_files/Supplemental_file1_neuron_annotations.tsv",
+      "materialization_version": 783,
+      "type_matching": "exact_cell_type_or_hemibrain_type",
+      "paper_doi": "10.1038/s41586-024-07686-5"
+    },
+    "completeness": "query-count-checked",
+    "parent_manifest_sha256": "4af47ee424bca7187cf9b7aece9a81696d2fa2d3ac6c6ac5b3ed0c28c0b3c949",
+    "selection": {
+      "family": "saccade_core",
+      "root_ids": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ]
+    },
+    "quality": {
+      "official_view_rows": 61754,
+      "same_root_rows": 0,
+      "background_rows": 0,
+      "inter_neuron_rows": 61754,
+      "pairs_before_threshold": 13489,
+      "pair_min": 5,
+      "pairs_retained": 2150,
+      "synapses_in_retained_pairs": 43887
+    },
+    "pair_min": 5
+  },
+  "weight_semantics": "unsigned_synapse_count",
+  "num_nodes": 6,
+  "num_edge_rows": 10,
+  "files": {
+    "raw_nodes.csv": "c37a4cfd1dd42c5a2c7bc9e65a615e8492c753f8fe74426a74d44b7d9e981ad3",
+    "raw_edges.parquet": "98850c3d87b97d976ecdb117c3b2bbcde8cb612803b90af47eb785b550821a70"
+  }
+}

@@ -1,0 +1,858 @@
+{
+  "metadata": {
+    "dataset_version": "reflex-v3",
+    "teacher_version": "geometry-reflex-v2",
+    "coordinate_version": "flu-rc-right-v1",
+    "observation_source": "geometric_raycast",
+    "dt": 0.02,
+    "physics_dt": 0.004,
+    "tof_max_range_m": 3.5,
+    "sensor_dim": 74,
+    "action_dim": 4,
+    "seed": 42,
+    "control_contract": {
+      "version": "navigation-altitude-v1",
+      "action_order": [
+        "throttle",
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_indices": [
+        1,
+        2,
+        3
+      ],
+      "altitude": {
+        "version": "range-altitude-v1",
+        "throttle_owner": "altitude_controller",
+        "navigation_channels": [
+          "roll",
+          "pitch",
+          "yaw"
+        ],
+        "config": {
+          "target_height_m": 1.0,
+          "hover_pwm": 1213.0,
+          "kp": 4.0,
+          "kd": 3.0,
+          "ki": 0.8,
+          "integral_limit": 0.5,
+          "velocity_filter_tau_s": 0.12,
+          "max_acceleration_mps2": 3.0,
+          "gravity_mps2": 9.81,
+          "min_pwm": 1100.0,
+          "max_pwm": 1400.0,
+          "slew_pwm_per_s": 150.0,
+          "min_range_m": 0.08,
+          "max_range_m": 3.5,
+          "min_tilt_cosine": 0.7,
+          "emitter_below_center_m": 0.018,
+          "max_age_s": 0.06,
+          "max_sample_gap_s": 0.1,
+          "max_vertical_speed_mps": 3.0,
+          "range_jump_slack_m": 0.03
+        }
+      }
+    },
+    "num_episodes": 64,
+    "seq_len": 100,
+    "distance_threshold_m": 0.8,
+    "execution_noise_std_pwm": 0.0,
+    "teacher_parameters": {
+      "distance_threshold_m": 0.8,
+      "max_sensor_range_m": 3.5,
+      "noise_std_pwm": 0.0,
+      "k_repulsive": 20.0,
+      "max_pitch_brake_pwm": 280.0,
+      "repulsion_scale": 600.0,
+      "yaw_gain": 0.2,
+      "min_dist_clamp": 0.1,
+      "pwm_hover": 1213.0,
+      "pwm_level_roll": 1500.0,
+      "pwm_cruise_pitch": 1600.0,
+      "pwm_neutral_yaw": 1500.0,
+      "pwm_min": 1000.0,
+      "pwm_max": 2000.0,
+      "flow_gain_pwm": 400.0,
+      "release_margin_m": 0.15,
+      "clear_hold_s": 0.12
+    },
+    "label_noise_std_pwm": 0.0,
+    "episode_scenarios": [
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward",
+      "clear",
+      "obstacle_left",
+      "obstacle_right",
+      "obstacle_center",
+      "drift_left",
+      "drift_right",
+      "drift_forward",
+      "drift_backward"
+    ],
+    "scenario_counts": {
+      "clear": 8,
+      "obstacle_left": 8,
+      "obstacle_right": 8,
+      "obstacle_center": 8,
+      "drift_left": 8,
+      "drift_right": 8,
+      "drift_forward": 8,
+      "drift_backward": 8
+    },
+    "behavior_names": [
+      "cruise",
+      "turn_right",
+      "turn_left",
+      "brake_left_drift",
+      "brake_right_drift",
+      "brake_forward"
+    ],
+    "behavior_counts": {
+      "cruise": 4724,
+      "turn_right": 682,
+      "turn_left": 177,
+      "brake_right_drift": 366,
+      "brake_left_drift": 328,
+      "brake_forward": 123
+    },
+    "episodes": [
+      {
+        "seed": 191664963,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1662057957,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 158979272,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1704419439,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1119788314,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 378254116,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 661563059,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 885318594,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1714818991,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1341663245,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 207337414,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1866360579,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 752385075,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 819072228,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1561076725,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 26232506,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1409399145,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1041444206,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1595916670,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2259093,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2006882442,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 607807639,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 118522567,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1176692083,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1027874975,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 74002579,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 44297405,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1508344538,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1794762451,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 382335643,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2103933470,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1773326990,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 998267722,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1277470621,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1963001081,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 850522070,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 893559483,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 702573042,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2069137846,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 427381695,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2132491479,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1886642888,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2072711565,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1195264477,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 206131149,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 233419931,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 909882723,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1587828652,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 538449972,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1645746953,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 2129320126,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 574964945,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 426919622,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 488454421,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1035393714,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1425106692,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 142021023,
+        "scenario": "clear",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 21341692,
+        "scenario": "obstacle_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 119317849,
+        "scenario": "obstacle_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1470913618,
+        "scenario": "obstacle_center",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1038339197,
+        "scenario": "drift_left",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1464931808,
+        "scenario": "drift_right",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1528388461,
+        "scenario": "drift_forward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      },
+      {
+        "seed": 1177560385,
+        "scenario": "drift_backward",
+        "valid_steps": 100,
+        "physics_ticks": 500,
+        "duration_s": 2.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null
+      }
+    ],
+    "required_sensor_motor_paths": {
+      "lptc_flow": [
+        "roll",
+        "pitch"
+      ],
+      "lc_looming": [
+        "pitch",
+        "yaw"
+      ]
+    }
+  },
+  "valid_frames": 6400,
+  "crashed_episodes": 0,
+  "action_min": [
+    1213.0,
+    1429.3477783203125,
+    1350.791259765625,
+    1150.0
+  ],
+  "action_max": [
+    1213.0,
+    1566.9232177734375,
+    1776.3868408203125,
+    1850.0
+  ],
+  "applied_action_min": [
+    1205.8509521484375,
+    1429.3477783203125,
+    1350.791259765625,
+    1150.0
+  ],
+  "applied_action_max": [
+    1217.9617919921875,
+    1566.9232177734375,
+    1776.3868408203125,
+    1850.0
+  ]
+}

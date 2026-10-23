@@ -1,0 +1,232 @@
+{
+  "seed": 42,
+  "control_contract": {
+    "version": "navigation-altitude-v1",
+    "action_order": [
+      "throttle",
+      "roll",
+      "pitch",
+      "yaw"
+    ],
+    "learned_channels": [
+      "roll",
+      "pitch",
+      "yaw"
+    ],
+    "learned_indices": [
+      1,
+      2,
+      3
+    ],
+    "altitude": {
+      "version": "range-altitude-v1",
+      "throttle_owner": "altitude_controller",
+      "navigation_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "config": {
+        "target_height_m": 1.0,
+        "hover_pwm": 1213.0,
+        "kp": 4.0,
+        "kd": 3.0,
+        "ki": 0.8,
+        "integral_limit": 0.5,
+        "velocity_filter_tau_s": 0.12,
+        "max_acceleration_mps2": 3.0,
+        "gravity_mps2": 9.81,
+        "min_pwm": 1100.0,
+        "max_pwm": 1400.0,
+        "slew_pwm_per_s": 150.0,
+        "min_range_m": 0.08,
+        "max_range_m": 3.5,
+        "min_tilt_cosine": 0.7,
+        "emitter_below_center_m": 0.018,
+        "max_age_s": 0.06,
+        "max_sample_gap_s": 0.1,
+        "max_vertical_speed_mps": 3.0,
+        "range_jump_slack_m": 0.03
+      }
+    }
+  },
+  "dataset_path": "data/reflex_dataset_v3.pt",
+  "valid_frames": 6400,
+  "structured_route_checks": [
+    {
+      "k": 128,
+      "rejected": true,
+      "reason": "Teacher requires missing directed route lc_looming -> yaw; resolve graph/mapping before pretraining"
+    },
+    {
+      "k": 256,
+      "rejected": true,
+      "reason": "Teacher requires missing directed route lc_looming -> yaw; resolve graph/mapping before pretraining"
+    }
+  ],
+  "unconstrained_baseline": {
+    "dt": 0.02,
+    "epochs": 3,
+    "subset_size": 34,
+    "subset_indices": [
+      48,
+      31,
+      38,
+      28,
+      45,
+      51,
+      57,
+      42,
+      33,
+      47,
+      37,
+      16,
+      22,
+      10,
+      11,
+      49,
+      21,
+      36,
+      15,
+      12,
+      63,
+      8,
+      44,
+      17,
+      54,
+      59,
+      27,
+      55,
+      3,
+      34,
+      40,
+      52,
+      53,
+      5
+    ],
+    "validation_indices": [
+      24,
+      32,
+      7,
+      23,
+      46,
+      62,
+      60,
+      4,
+      61,
+      13,
+      19,
+      43,
+      41,
+      25,
+      2,
+      50
+    ],
+    "subset_scenario_counts": {
+      "clear": 4,
+      "drift_backward": 5,
+      "drift_forward": 3,
+      "drift_left": 5,
+      "drift_right": 5,
+      "obstacle_center": 5,
+      "obstacle_left": 4,
+      "obstacle_right": 3
+    },
+    "training_behavior_counts": {
+      "cruise": 2447,
+      "turn_right": 407,
+      "turn_left": 60,
+      "brake_left_drift": 203,
+      "brake_right_drift": 235,
+      "brake_forward": 48
+    },
+    "validation_loss_history": [
+      0.024870711962381997,
+      0.013961947758992514,
+      0.008889706134796142
+    ],
+    "validation_channel_mae_pwm": [
+      23.441133499145508,
+      47.76930236816406,
+      39.64149856567383
+    ],
+    "validation_behavior_mae_pwm": {
+      "cruise": 32.51333359951732,
+      "turn_right": 62.343660201149426,
+      "turn_left": 51.09752338435374,
+      "brake_left_drift": 45.81562353698502,
+      "brake_right_drift": 31.60400582107843,
+      "brake_forward": 28.788551769037355
+    },
+    "learned_channels": [
+      "roll",
+      "pitch",
+      "yaw"
+    ],
+    "control_contract": {
+      "version": "navigation-altitude-v1",
+      "action_order": [
+        "throttle",
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_indices": [
+        1,
+        2,
+        3
+      ],
+      "altitude": {
+        "version": "range-altitude-v1",
+        "throttle_owner": "altitude_controller",
+        "navigation_channels": [
+          "roll",
+          "pitch",
+          "yaw"
+        ],
+        "config": {
+          "target_height_m": 1.0,
+          "hover_pwm": 1213.0,
+          "kp": 4.0,
+          "kd": 3.0,
+          "ki": 0.8,
+          "integral_limit": 0.5,
+          "velocity_filter_tau_s": 0.12,
+          "max_acceleration_mps2": 3.0,
+          "gravity_mps2": 9.81,
+          "min_pwm": 1100.0,
+          "max_pwm": 1400.0,
+          "slew_pwm_per_s": 150.0,
+          "min_range_m": 0.08,
+          "max_range_m": 3.5,
+          "min_tilt_cosine": 0.7,
+          "emitter_below_center_m": 0.018,
+          "max_age_s": 0.06,
+          "max_sample_gap_s": 0.1,
+          "max_vertical_speed_mps": 3.0,
+          "range_jump_slack_m": 0.03
+        }
+      }
+    },
+    "dataset_version": "reflex-v3",
+    "teacher_version": "geometry-reflex-v2",
+    "coordinate_version": "flu-rc-right-v1",
+    "dataset_sha256": "9191d0d6d9080e48f76160f7816decffa4923667779e18d308e0d4bf17e82994",
+    "loss_history": [
+      0.05237263667298258,
+      0.024641128311953427,
+      0.017555116066060427
+    ],
+    "final_loss": 0.017555116066060427
+  },
+  "limitations": [
+    "Synthetic source graph; not authenticated FAFB",
+    "Dense baseline tests the learning pipeline, not connectome flight readiness",
+    "No checkpoint promotion or hardware flight validation"
+  ]
+}

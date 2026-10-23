@@ -1,0 +1,539 @@
+{
+  "format_version": "filtered783-validation-v1",
+  "quality": {
+    "source_manifest_sha256": "4af47ee424bca7187cf9b7aece9a81696d2fa2d3ac6c6ac5b3ed0c28c0b3c949",
+    "cleft_min": 51.0,
+    "query_rows": 61754,
+    "discovery_crosscheck": {
+      "outgoing": {
+        "pairs": 11917,
+        "mismatches": 0
+      },
+      "incoming": {
+        "pairs": 321,
+        "mismatches": 0
+      }
+    },
+    "close_detection_pairs": [
+      {
+        "pre": "720575940613470947",
+        "post": "720575940634895514",
+        "distance_nm": 72.99315036357864,
+        "synapse_ids": [
+          "2873267",
+          "2873289"
+        ],
+        "pre_supervoxels": [
+          "76423136840981886",
+          "76423136840981886"
+        ],
+        "post_supervoxels": [
+          "76423136840984238",
+          "76423136840994479"
+        ]
+      },
+      {
+        "pre": "720575940613558225",
+        "post": "720575940631759663",
+        "distance_nm": 68.81860213634101,
+        "synapse_ids": [
+          "114632271",
+          "114632296"
+        ],
+        "pre_supervoxels": [
+          "78535504769175423",
+          "78535504769175423"
+        ],
+        "post_supervoxels": [
+          "78535504769173875",
+          "78535504769174248"
+        ]
+      },
+      {
+        "pre": "720575940622312072",
+        "post": "720575940640834211",
+        "distance_nm": 52.459508194416,
+        "synapse_ids": [
+          "103887627",
+          "103887669"
+        ],
+        "pre_supervoxels": [
+          "77549723808235610",
+          "77549723808235610"
+        ],
+        "post_supervoxels": [
+          "77549723808237011",
+          "77549723808240911"
+        ]
+      },
+      {
+        "pre": "720575940632129848",
+        "post": "720575940640834211",
+        "distance_nm": 80.49844718999243,
+        "synapse_ids": [
+          "44031829",
+          "44031836"
+        ],
+        "pre_supervoxels": [
+          "77620092552470131",
+          "77620092552458821"
+        ],
+        "post_supervoxels": [
+          "77620092552460277",
+          "77620092552471409"
+        ]
+      },
+      {
+        "pre": "720575940636950505",
+        "post": "720575940638900713",
+        "distance_nm": 52.61178575186362,
+        "synapse_ids": [
+          "39216470",
+          "39216471"
+        ],
+        "pre_supervoxels": [
+          "81701685806007517",
+          "81701685806019738"
+        ],
+        "post_supervoxels": [
+          "81701685806028416",
+          "81701685806020891"
+        ]
+      }
+    ],
+    "policy": "trust official validity membership; flag close detections, do not silently re-deduplicate",
+    "quality_review_required": true,
+    "uncertainty": "Server validity membership is verified; precise deduplication grouping/tie-breaking and FAFB14 to FAFB14.1 coordinate effects are not independently established. Nearby rows are candidates for review, not proven duplicate detections."
+  },
+  "candidates": [
+    {
+      "candidate": "saccade_core_role_k6",
+      "reproducible": true,
+      "smoke": {
+        "kind": "anatomical recurrent matrix only",
+        "steps": 20,
+        "finite": true
+      },
+      "functional_smoke": null,
+      "tof_yaw_witness": null,
+      "threshold_sensitivity": {},
+      "remove_all_close_rows_sensitivity": null,
+      "source_quality_review_required": true,
+      "structural_admission": "rejected",
+      "training_ready": false
+    },
+    {
+      "candidate": "interface_role_k242",
+      "reproducible": true,
+      "smoke": {
+        "kind": "structured 74-input policy",
+        "steps": 20,
+        "finite": true,
+        "output_shape": [
+          1,
+          4
+        ],
+        "control_contract": {
+          "version": "navigation-altitude-v1",
+          "action_order": [
+            "throttle",
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_channels": [
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_indices": [
+            1,
+            2,
+            3
+          ],
+          "altitude": {
+            "version": "range-altitude-v1",
+            "throttle_owner": "altitude_controller",
+            "navigation_channels": [
+              "roll",
+              "pitch",
+              "yaw"
+            ],
+            "config": {
+              "target_height_m": 1.0,
+              "hover_pwm": 1213.0,
+              "kp": 4.0,
+              "kd": 3.0,
+              "ki": 0.8,
+              "integral_limit": 0.5,
+              "velocity_filter_tau_s": 0.12,
+              "max_acceleration_mps2": 3.0,
+              "gravity_mps2": 9.81,
+              "min_pwm": 1100.0,
+              "max_pwm": 1400.0,
+              "slew_pwm_per_s": 150.0,
+              "min_range_m": 0.08,
+              "max_range_m": 3.5,
+              "min_tilt_cosine": 0.7,
+              "emitter_below_center_m": 0.018,
+              "max_age_s": 0.06,
+              "max_sample_gap_s": 0.1,
+              "max_vertical_speed_mps": 3.0,
+              "range_jump_slack_m": 0.03
+            }
+          }
+        },
+        "behavior_validated": false
+      },
+      "functional_smoke": {
+        "seed": 42,
+        "steps": 20,
+        "dtype": "float64 diagnostic",
+        "max_absolute_input_gradient": {
+          "roll": {
+            "flow": 0.01671812496128519,
+            "tof": 0.011655364071647484,
+            "memory": 0.0
+          },
+          "pitch": {
+            "flow": 0.009539994493966501,
+            "tof": 0.05685117274162064,
+            "memory": 0.0
+          },
+          "yaw": {
+            "flow": 0.0,
+            "tof": 0.0,
+            "memory": 0.0
+          }
+        },
+        "finite": true,
+        "behavior_validated": false
+      },
+      "tof_yaw_witness": null,
+      "threshold_sensitivity": {
+        "1": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "5": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "missing_in_source_or_mapping"
+        },
+        "10": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "missing_in_source_or_mapping"
+        },
+        "20": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "missing_in_source_or_mapping",
+          "lc_looming->yaw": "missing_in_source_or_mapping"
+        }
+      },
+      "remove_all_close_rows_sensitivity": {
+        "lptc_flow->roll": "present_in_both",
+        "lptc_flow->pitch": "present_in_both",
+        "lc_looming->pitch": "present_in_both",
+        "lc_looming->yaw": "missing_in_source_or_mapping"
+      },
+      "source_quality_review_required": true,
+      "structural_admission": "rejected",
+      "training_ready": false
+    },
+    {
+      "candidate": "bridge_role_k301",
+      "reproducible": true,
+      "smoke": {
+        "kind": "structured 74-input policy",
+        "steps": 20,
+        "finite": true,
+        "output_shape": [
+          1,
+          4
+        ],
+        "control_contract": {
+          "version": "navigation-altitude-v1",
+          "action_order": [
+            "throttle",
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_channels": [
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_indices": [
+            1,
+            2,
+            3
+          ],
+          "altitude": {
+            "version": "range-altitude-v1",
+            "throttle_owner": "altitude_controller",
+            "navigation_channels": [
+              "roll",
+              "pitch",
+              "yaw"
+            ],
+            "config": {
+              "target_height_m": 1.0,
+              "hover_pwm": 1213.0,
+              "kp": 4.0,
+              "kd": 3.0,
+              "ki": 0.8,
+              "integral_limit": 0.5,
+              "velocity_filter_tau_s": 0.12,
+              "max_acceleration_mps2": 3.0,
+              "gravity_mps2": 9.81,
+              "min_pwm": 1100.0,
+              "max_pwm": 1400.0,
+              "slew_pwm_per_s": 150.0,
+              "min_range_m": 0.08,
+              "max_range_m": 3.5,
+              "min_tilt_cosine": 0.7,
+              "emitter_below_center_m": 0.018,
+              "max_age_s": 0.06,
+              "max_sample_gap_s": 0.1,
+              "max_vertical_speed_mps": 3.0,
+              "range_jump_slack_m": 0.03
+            }
+          }
+        },
+        "behavior_validated": false
+      },
+      "functional_smoke": {
+        "seed": 42,
+        "steps": 20,
+        "dtype": "float64 diagnostic",
+        "max_absolute_input_gradient": {
+          "roll": {
+            "flow": 0.00015754004873856295,
+            "tof": 0.0018711018351538176,
+            "memory": 0.0
+          },
+          "pitch": {
+            "flow": 0.00016175184566325128,
+            "tof": 0.001148238560687497,
+            "memory": 0.0
+          },
+          "yaw": {
+            "flow": 1.6301318025363188e-06,
+            "tof": 8.515458871805679e-07,
+            "memory": 0.0
+          }
+        },
+        "finite": true,
+        "behavior_validated": false
+      },
+      "tof_yaw_witness": [
+        {
+          "root_id": "720575940612874536",
+          "cell_type": "LPLC2"
+        },
+        {
+          "root_id": "720575940619731334",
+          "cell_type": "hemibrain_type:LT51"
+        },
+        {
+          "root_id": "720575940631759663",
+          "cell_type": "DNae014"
+        }
+      ],
+      "threshold_sensitivity": {
+        "1": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "5": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "10": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "20": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        }
+      },
+      "remove_all_close_rows_sensitivity": {
+        "lptc_flow->roll": "present_in_both",
+        "lptc_flow->pitch": "present_in_both",
+        "lc_looming->pitch": "present_in_both",
+        "lc_looming->yaw": "present_in_both"
+      },
+      "source_quality_review_required": true,
+      "structural_admission": "passed",
+      "training_ready": false
+    },
+    {
+      "candidate": "bridge_role_k306",
+      "reproducible": true,
+      "smoke": {
+        "kind": "structured 74-input policy",
+        "steps": 20,
+        "finite": true,
+        "output_shape": [
+          1,
+          4
+        ],
+        "control_contract": {
+          "version": "navigation-altitude-v1",
+          "action_order": [
+            "throttle",
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_channels": [
+            "roll",
+            "pitch",
+            "yaw"
+          ],
+          "learned_indices": [
+            1,
+            2,
+            3
+          ],
+          "altitude": {
+            "version": "range-altitude-v1",
+            "throttle_owner": "altitude_controller",
+            "navigation_channels": [
+              "roll",
+              "pitch",
+              "yaw"
+            ],
+            "config": {
+              "target_height_m": 1.0,
+              "hover_pwm": 1213.0,
+              "kp": 4.0,
+              "kd": 3.0,
+              "ki": 0.8,
+              "integral_limit": 0.5,
+              "velocity_filter_tau_s": 0.12,
+              "max_acceleration_mps2": 3.0,
+              "gravity_mps2": 9.81,
+              "min_pwm": 1100.0,
+              "max_pwm": 1400.0,
+              "slew_pwm_per_s": 150.0,
+              "min_range_m": 0.08,
+              "max_range_m": 3.5,
+              "min_tilt_cosine": 0.7,
+              "emitter_below_center_m": 0.018,
+              "max_age_s": 0.06,
+              "max_sample_gap_s": 0.1,
+              "max_vertical_speed_mps": 3.0,
+              "range_jump_slack_m": 0.03
+            }
+          }
+        },
+        "behavior_validated": false
+      },
+      "functional_smoke": {
+        "seed": 42,
+        "steps": 20,
+        "dtype": "float64 diagnostic",
+        "max_absolute_input_gradient": {
+          "roll": {
+            "flow": 0.0002498035448610131,
+            "tof": 0.0008478942326563534,
+            "memory": 0.0
+          },
+          "pitch": {
+            "flow": 0.00017675636756503104,
+            "tof": 0.000583188768389556,
+            "memory": 0.0
+          },
+          "yaw": {
+            "flow": 1.813819145626288e-06,
+            "tof": 6.330527479843732e-07,
+            "memory": 0.0
+          }
+        },
+        "finite": true,
+        "behavior_validated": false
+      },
+      "tof_yaw_witness": [
+        {
+          "root_id": "720575940612874536",
+          "cell_type": "LPLC2"
+        },
+        {
+          "root_id": "720575940619731334",
+          "cell_type": "hemibrain_type:LT51"
+        },
+        {
+          "root_id": "720575940631759663",
+          "cell_type": "DNae014"
+        }
+      ],
+      "threshold_sensitivity": {
+        "1": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "5": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "10": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        },
+        "20": {
+          "lptc_flow->roll": "present_in_both",
+          "lptc_flow->pitch": "present_in_both",
+          "lc_looming->pitch": "present_in_both",
+          "lc_looming->yaw": "present_in_both"
+        }
+      },
+      "remove_all_close_rows_sensitivity": {
+        "lptc_flow->roll": "present_in_both",
+        "lptc_flow->pitch": "present_in_both",
+        "lc_looming->pitch": "present_in_both",
+        "lc_looming->yaw": "present_in_both"
+      },
+      "source_quality_review_required": true,
+      "structural_admission": "passed",
+      "training_ready": false
+    }
+  ],
+  "registry_sha256": "fd115e639d2e7e47b0c1b01ac8b7386923793ad8f3cf4d0dcadc4d806e6cbad6",
+  "training_ready": false,
+  "versions": {
+    "numpy": "2.5.2",
+    "pandas": "2.3.3",
+    "scipy": "1.18.1",
+    "torch": "2.6.0+cu124",
+    "caveclient": "8.2.1",
+    "pyarrow": "25.0.1"
+  },
+  "code_sha256": {
+    "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\generator\\validate_flywire_candidates.py": "b87a7bb7e3bbdaa1f774910dabab547fbe7962bd01122ea6921e56ea142428dc",
+    "generator\\prepare_flywire_candidates.py": "81196563b9d07ef3a418d76932bd67017e311244742b5ee5ae0e40779e411394",
+    "generator\\filtered_candidates.py": "b1be5475c4e0185d629a0b19863d845edc3e444160d84028a1a5581deececbcd"
+  }
+}

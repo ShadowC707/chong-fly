@@ -1,0 +1,11 @@
+{
+  "legacy_source_sha256": "8db6abbbbcf8a1fd6c15f8e7477f33f81ffe3f8aca3e376128d6c5a9aaec7e40",
+  "historical_graph_content_unchanged": true,
+  "live_cave_tested": false,
+  "roundtrip_nodes": 12942,
+  "roundtrip_edge_rows": 32400,
+  "parquet_roundtrip": true,
+  "reduced_k": 128,
+  "provenance_inherited": true,
+  "synthetic_semantics_unchanged": true
+}

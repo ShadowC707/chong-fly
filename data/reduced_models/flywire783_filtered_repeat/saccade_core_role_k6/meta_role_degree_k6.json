@@ -1,0 +1,247 @@
+{
+  "format_version": 2,
+  "matrix_orientation": "source_target",
+  "reduction_normalization": "target_mean",
+  "provenance": {
+    "reduction_version": "role-degree-v1",
+    "source_sha256": "3b3701fd3721202cbd6fdc5deae92bf7fd418fcb647e9b122b2f9aabb4fd9309",
+    "source_kind": "cave",
+    "source_manifest_sha256": "75bef7da0731a18a92da2fa8093e26b78355fb625e1b8066f89f01ba03d22ea8",
+    "acquisition": {
+      "source_kind": "cave",
+      "datastack": "flywire_fafb_public",
+      "materialization_version": 783,
+      "synapse_table": "valid_synapses_nt_np_v6",
+      "annotation_table": null,
+      "annotation_source": {
+        "kind": "published_annotations",
+        "repository": "flyconnectome/flywire_annotations",
+        "release": "v2.1.0",
+        "commit": "ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0",
+        "sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+        "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0/supplemental_files/Supplemental_file1_neuron_annotations.tsv",
+        "materialization_version": 783,
+        "type_matching": "exact_cell_type_or_hemibrain_type",
+        "paper_doi": "10.1038/s41586-024-07686-5"
+      },
+      "completeness": "query-count-checked",
+      "parent_manifest_sha256": "4af47ee424bca7187cf9b7aece9a81696d2fa2d3ac6c6ac5b3ed0c28c0b3c949",
+      "selection": {
+        "family": "saccade_core",
+        "root_ids": [
+          "720575940609488942",
+          "720575940625878160",
+          "720575940627253604",
+          "720575940630758418",
+          "720575940631759663",
+          "720575940635202204"
+        ]
+      },
+      "quality": {
+        "official_view_rows": 61754,
+        "same_root_rows": 0,
+        "background_rows": 0,
+        "inter_neuron_rows": 61754,
+        "pairs_before_threshold": 13489,
+        "pair_min": 5,
+        "pairs_retained": 2150,
+        "synapses_in_retained_pairs": 43887
+      },
+      "pair_min": 5
+    },
+    "polarity_contract": {
+      "version": "nt-assumptions-v1",
+      "biologically_verified": false,
+      "per_root": [
+        {
+          "root_id": "720575940609488942",
+          "transmitter": "acetylcholine",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.6148993264386063,
+          "sign": 1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        },
+        {
+          "root_id": "720575940625878160",
+          "transmitter": "glutamate",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.8647404131665039,
+          "sign": -1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        },
+        {
+          "root_id": "720575940627253604",
+          "transmitter": "gaba",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.840700569840777,
+          "sign": -1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        },
+        {
+          "root_id": "720575940630758418",
+          "transmitter": "glutamate",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.7553801952688316,
+          "sign": -1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        },
+        {
+          "root_id": "720575940631759663",
+          "transmitter": "acetylcholine",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.717788763377149,
+          "sign": 1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        },
+        {
+          "root_id": "720575940635202204",
+          "transmitter": "gaba",
+          "basis": "EM_prediction_top_nt",
+          "prediction_confidence": 0.8629833346172618,
+          "sign": -1,
+          "known_nt_source": "",
+          "synaptic_sign_verified": false,
+          "assumption": "presynaptic Dale-like sign; glutamate inhibitory; receptors unmeasured"
+        }
+      ]
+    },
+    "source_root_ids": [
+      "720575940609488942",
+      "720575940625878160",
+      "720575940627253604",
+      "720575940630758418",
+      "720575940631759663",
+      "720575940635202204"
+    ],
+    "minimum_k": 6,
+    "cluster_sizes": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "cluster_signatures": [
+      {
+        "cell_type": "DNae014",
+        "side": "right",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 0,
+        "sensor_roles": [],
+        "motor_roles": [
+          "yaw"
+        ],
+        "protected_root_id": "720575940609488942"
+      },
+      {
+        "cell_type": "DNb01",
+        "side": "left",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 2,
+        "sensor_roles": [],
+        "motor_roles": [
+          "yaw"
+        ],
+        "protected_root_id": "720575940625878160"
+      },
+      {
+        "cell_type": "VES041",
+        "side": "left",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 2,
+        "sensor_roles": [],
+        "motor_roles": [],
+        "protected_root_id": null
+      },
+      {
+        "cell_type": "DNb01",
+        "side": "right",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 2,
+        "sensor_roles": [],
+        "motor_roles": [
+          "yaw"
+        ],
+        "protected_root_id": "720575940630758418"
+      },
+      {
+        "cell_type": "DNae014",
+        "side": "left",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 1,
+        "sensor_roles": [],
+        "motor_roles": [
+          "yaw"
+        ],
+        "protected_root_id": "720575940631759663"
+      },
+      {
+        "cell_type": "VES041",
+        "side": "right",
+        "layer": "unspecified",
+        "outgoing_sign_profile": 2,
+        "sensor_roles": [],
+        "motor_roles": [],
+        "protected_root_id": null
+      }
+    ],
+    "weight_scaling": {
+      "method": "max_abs_column_sum",
+      "divisor": 51.0
+    },
+    "sensor_contract": {
+      "dimension": 74,
+      "flow": [
+        0,
+        2
+      ],
+      "tof": [
+        2,
+        66
+      ],
+      "memory": [
+        66,
+        74
+      ],
+      "memory_mapping": "disconnected",
+      "light_sensors": "not_integrated",
+      "encoding_status": "engineering_hypothesis_not_retinotopically_validated"
+    },
+    "decoder_status": "engineering hypothesis; learned masked roll/pitch/yaw readouts; no validated biological RC axes or laterality sign; throttle head unused by navigation-only learning",
+    "training_ready": false,
+    "preparation_version": "filtered-flight-candidates-v1"
+  },
+  "reducer": "role_degree",
+  "k": 6,
+  "sparse": true,
+  "w_file": "w_role_degree_k6.npz",
+  "cmap_file": "cmap_role_degree_k6.npy",
+  "sensor_index_map": {
+    "lptc_flow": [],
+    "lc_looming": []
+  },
+  "motor_index_map": {
+    "throttle": [],
+    "roll": [],
+    "pitch": [],
+    "yaw": [
+      0,
+      1,
+      3,
+      4
+    ]
+  },
+  "metrics": {},
+  "platform_hint": ""
+}

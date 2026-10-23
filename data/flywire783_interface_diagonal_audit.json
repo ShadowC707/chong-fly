@@ -1,0 +1,11 @@
+{
+  "source_manifest_sha256": "45a2219d943bddd891e3fb4fab1cd1134930f5d8db1dc0077070ba7e1f2fd295",
+  "num_nodes": 356,
+  "raw_edge_pairs": 17104,
+  "raw_synapses": 205368,
+  "same_root_edge_pairs": 356,
+  "same_root_synapses": 148660,
+  "inter_neuron_edge_pairs": 16748,
+  "inter_neuron_synapses": 56708,
+  "conclusion": "Same-root rows require an explicit quality/diagonal policy before real-graph training; raw data preserved."
+}

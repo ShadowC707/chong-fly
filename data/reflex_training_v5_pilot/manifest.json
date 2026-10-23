@@ -1,0 +1,87 @@
+{
+  "version": "reflex-training-bundle-v1",
+  "teacher_version": "geometry-reflex-v5",
+  "research_only": true,
+  "training_ready": false,
+  "datasets": {
+    "train": {
+      "teacher_replay_max_error_pwm": 0.0,
+      "mismatch_frames": 0,
+      "valid_frames": 31293,
+      "scenario_counts": {
+        "clear": 16,
+        "obstacle_left": 16,
+        "obstacle_right": 16,
+        "obstacle_center": 16,
+        "drift_left": 16,
+        "drift_right": 16,
+        "drift_forward": 16,
+        "drift_backward": 16
+      },
+      "behavior_counts": {
+        "brake_forward": 874,
+        "cruise": 24993,
+        "brake_right_drift": 944,
+        "turn_right": 2295,
+        "turn_left": 1396,
+        "brake_left_drift": 791
+      },
+      "crashed_episodes": 0,
+      "terminated_episodes": 3,
+      "file_sha256": "ab26f5334a0e1537a34d988ca5b128cce1e38a08fb0e8d114e14760f115a77ce",
+      "seed": 20261015,
+      "episodes": 128,
+      "steps": 250
+    },
+    "evaluation": {
+      "teacher_replay_max_error_pwm": 0.0,
+      "mismatch_frames": 0,
+      "valid_frames": 7530,
+      "scenario_counts": {
+        "clear": 4,
+        "obstacle_left": 4,
+        "obstacle_right": 4,
+        "obstacle_center": 4,
+        "drift_left": 4,
+        "drift_right": 4,
+        "drift_forward": 4,
+        "drift_backward": 4
+      },
+      "behavior_counts": {
+        "cruise": 6108,
+        "brake_forward": 259,
+        "turn_right": 404,
+        "brake_right_drift": 248,
+        "brake_left_drift": 204,
+        "turn_left": 307
+      },
+      "crashed_episodes": 0,
+      "terminated_episodes": 2,
+      "file_sha256": "f07f2e990b2f7a31b185e763011348bfdc9ae12daca1f8e78e1d1c3903d257ea",
+      "seed": 20261016,
+      "episodes": 32,
+      "steps": 250
+    }
+  },
+  "code_sha256": {
+    "generator/prepare_reflex_training.py": "b47ebda9831c5e26960cdd7e246beee1ca6d1ec1f5a5cbc8b48288cc872a92ba",
+    "generator/generate_reflex_dataset.py": "47459912e1689c9bb69a5c5fe35017f890db4143f1bc5b65441d2df8decdaa45",
+    "generator/reflex_contract.py": "14048fee03182978b39a133ed8eacc385748ab40be0b0004e4db3c36c63826c3",
+    "generator/continuous_reflex_teacher.py": "dee91c7b1e146355ac9703041404002f37e22ea42501262cf60dc9e1bd90001f",
+    "simulation/drone_env.py": "68aac8a1b0b3897c0a4eb11649ba936cdb999f5a18b8660a350d5624061af765",
+    "simulation/drone_interface.py": "a1947788a4117e853a2772215e83443e04d327b18e659508d9d22cab11aeee60",
+    "simulation/altitude_control.py": "ca2e15dd55b38b9cd6736e3310573cd1ae8db9fc100971b3999b625323de24d8",
+    "simulation/control_contract.py": "49366e009539545317ba0c22a6d58cd513d5a69260e53e0e28c29c831abfc038",
+    "simulation/memory.py": "e697b98084a912685600518ced22d3707c3c59d56d67b1c77e507f746d6a57a7",
+    "simulation/collisions.py": "669c76c3fae0d2f2d8bbaa48d3d36cf9aaa04c7e65eed5ac05196b906be1d84a",
+    "simulation/avionics_filter.py": "65cd68bc85827c2feb4fa9250887ca4930a294564c9b5698f6a859b8313dd7d6",
+    "simulation/pmw3901_emulator.py": "7994943b05ff2765c6e7c543e26dac0fe69956fa217f919a69cb67decb4cbc42",
+    "configs/flight_config.py": "7628bd2d2e0b3d96abf55da0dc69d22627e77c863eb9c6f557d63284fd9d1fd3"
+  },
+  "evaluation_policy": "Separate geometry draws in existing scenario families; not unseen scenario families. Do not use for tuning.",
+  "limitations": [
+    "Balanced scenarios do not imply balanced labels or complete coverage.",
+    "Failed episode prefixes are retained and reported, not silently removed.",
+    "No scan/light behaviors or new zonal sensor; fixed point-rays-solid-v2."
+  ]
+}

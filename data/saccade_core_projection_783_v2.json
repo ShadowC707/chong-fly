@@ -1,0 +1,616 @@
+{
+  "format_version": "candidate-projection-audit-v2",
+  "checked_at_utc": "2026-10-05T16:05:49.974257+00:00",
+  "source": {
+    "source_kind": "cave",
+    "datastack": "flywire_fafb_public",
+    "materialization_version": 783,
+    "synapse_table": "synapses_nt_v1",
+    "annotation_table": null,
+    "annotation_source": {
+      "kind": "published_annotations",
+      "repository": "flyconnectome/flywire_annotations",
+      "release": "v2.1.0",
+      "commit": "ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0",
+      "sha256": "30be6c73975a70c56d930e27911f36455d3886e15abf383b78edd2a5d679e0b6",
+      "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/ebd66db2596fcc39c6950fb54ea3efa00f7fe8a0/supplemental_files/Supplemental_file1_neuron_annotations.tsv",
+      "materialization_version": 783,
+      "type_matching": "explicit_per_target_selectors",
+      "paper_doi": "10.1038/s41586-024-07686-5"
+    },
+    "completeness": "query-count-checked",
+    "selection": {
+      "strategy": "directed_candidate_projection",
+      "target_classes": [
+        "DNae014",
+        "DNb01",
+        "VES041"
+      ],
+      "label_namespace_policy": "explicit_selectors_with_strict_fallback",
+      "resolved_selectors": {
+        "DNae014": {
+          "namespace": "root_id",
+          "root_ids": [
+            "720575940609488942",
+            "720575940631759663"
+          ],
+          "expected_annotations": {
+            "720575940609488942": {
+              "cell_type": "DNa15",
+              "hemibrain_type": "PS017",
+              "side": "right"
+            },
+            "720575940631759663": {
+              "cell_type": "DNa15",
+              "hemibrain_type": "PS017",
+              "side": "left"
+            }
+          },
+          "identity_locked": true
+        },
+        "DNb01": {
+          "namespace": "root_id",
+          "root_ids": [
+            "720575940625878160",
+            "720575940630758418"
+          ],
+          "expected_annotations": {
+            "720575940625878160": {
+              "cell_type": "",
+              "hemibrain_type": "DNb01",
+              "side": "left"
+            },
+            "720575940630758418": {
+              "cell_type": "",
+              "hemibrain_type": "DNb01",
+              "side": "right"
+            }
+          },
+          "identity_locked": true
+        },
+        "VES041": {
+          "namespace": "root_id",
+          "root_ids": [
+            "720575940627253604",
+            "720575940635202204"
+          ],
+          "expected_annotations": {
+            "720575940627253604": {
+              "cell_type": "",
+              "hemibrain_type": "VES041",
+              "side": "left"
+            },
+            "720575940635202204": {
+              "cell_type": "",
+              "hemibrain_type": "VES041",
+              "side": "right"
+            }
+          },
+          "identity_locked": true
+        }
+      },
+      "label_namespace_conflicts": [],
+      "matched_counts": {
+        "DNae014": 2,
+        "DNb01": 2,
+        "VES041": 2
+      },
+      "missing_types": [],
+      "excluded_super_classes": [],
+      "excluded_cell_types": [],
+      "intermediate_neurons_outside_whitelist": "not_included",
+      "annotation_rows": 139255,
+      "selected_nodes": 6,
+      "registry_sha256": "ef4a67a2738ad83be04a7303ff48640b23532254364c2b7a422b47738e9adc4a",
+      "pathway": "saccade_core"
+    },
+    "query_filters": {
+      "pre_pt_root_id": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "post_pt_root_id": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ]
+    },
+    "query_scope": "directed pre-to-post projection only; no intermediate-neuron search",
+    "synapse_quality_filter": "none; all returned rows matching the root filters",
+    "synapse_rows": 6713,
+    "synapse_id_set_sha256": "c672d28c9146423e0840ef6057f592b86b5d0b9306e9e65655a226ece312dd83"
+  },
+  "nodes": [
+    {
+      "root_id": "720575940609488942",
+      "cell_type": "DNae014",
+      "side": "right",
+      "super_class": "descending",
+      "source_cell_type": "DNa15",
+      "source_hemibrain_type": "PS017",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.6148993264386063",
+      "known_nt": ""
+    },
+    {
+      "root_id": "720575940625878160",
+      "cell_type": "DNb01",
+      "side": "left",
+      "super_class": "descending",
+      "source_cell_type": "",
+      "source_hemibrain_type": "DNb01",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.8647404131665039",
+      "known_nt": ""
+    },
+    {
+      "root_id": "720575940627253604",
+      "cell_type": "VES041",
+      "side": "left",
+      "super_class": "central",
+      "source_cell_type": "",
+      "source_hemibrain_type": "VES041",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.840700569840777",
+      "known_nt": ""
+    },
+    {
+      "root_id": "720575940630758418",
+      "cell_type": "DNb01",
+      "side": "right",
+      "super_class": "descending",
+      "source_cell_type": "",
+      "source_hemibrain_type": "DNb01",
+      "top_nt": "glutamate",
+      "top_nt_conf": "0.7553801952688316",
+      "known_nt": ""
+    },
+    {
+      "root_id": "720575940631759663",
+      "cell_type": "DNae014",
+      "side": "left",
+      "super_class": "descending",
+      "source_cell_type": "DNa15",
+      "source_hemibrain_type": "PS017",
+      "top_nt": "acetylcholine",
+      "top_nt_conf": "0.717788763377149",
+      "known_nt": ""
+    },
+    {
+      "root_id": "720575940635202204",
+      "cell_type": "VES041",
+      "side": "right",
+      "super_class": "central",
+      "source_cell_type": "",
+      "source_hemibrain_type": "VES041",
+      "top_nt": "gaba",
+      "top_nt_conf": "0.8629833346172618",
+      "known_nt": ""
+    }
+  ],
+  "edges": [
+    {
+      "pre_id": "720575940609488942",
+      "post_id": "720575940609488942",
+      "weight": 611
+    },
+    {
+      "pre_id": "720575940609488942",
+      "post_id": "720575940630758418",
+      "weight": 5
+    },
+    {
+      "pre_id": "720575940609488942",
+      "post_id": "720575940635202204",
+      "weight": 1
+    },
+    {
+      "pre_id": "720575940625878160",
+      "post_id": "720575940609488942",
+      "weight": 20
+    },
+    {
+      "pre_id": "720575940625878160",
+      "post_id": "720575940625878160",
+      "weight": 783
+    },
+    {
+      "pre_id": "720575940625878160",
+      "post_id": "720575940631759663",
+      "weight": 2
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940609488942",
+      "weight": 29
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940625878160",
+      "weight": 23
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940627253604",
+      "weight": 1922
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940630758418",
+      "weight": 27
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940631759663",
+      "weight": 31
+    },
+    {
+      "pre_id": "720575940627253604",
+      "post_id": "720575940635202204",
+      "weight": 10
+    },
+    {
+      "pre_id": "720575940630758418",
+      "post_id": "720575940609488942",
+      "weight": 2
+    },
+    {
+      "pre_id": "720575940630758418",
+      "post_id": "720575940625878160",
+      "weight": 1
+    },
+    {
+      "pre_id": "720575940630758418",
+      "post_id": "720575940630758418",
+      "weight": 816
+    },
+    {
+      "pre_id": "720575940630758418",
+      "post_id": "720575940631759663",
+      "weight": 22
+    },
+    {
+      "pre_id": "720575940630758418",
+      "post_id": "720575940635202204",
+      "weight": 2
+    },
+    {
+      "pre_id": "720575940631759663",
+      "post_id": "720575940625878160",
+      "weight": 8
+    },
+    {
+      "pre_id": "720575940631759663",
+      "post_id": "720575940627253604",
+      "weight": 2
+    },
+    {
+      "pre_id": "720575940631759663",
+      "post_id": "720575940631759663",
+      "weight": 676
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940609488942",
+      "weight": 6
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940625878160",
+      "weight": 7
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940627253604",
+      "weight": 12
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940630758418",
+      "weight": 16
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940631759663",
+      "weight": 19
+    },
+    {
+      "pre_id": "720575940635202204",
+      "post_id": "720575940635202204",
+      "weight": 1660
+    }
+  ],
+  "selected_pre_count": 6,
+  "selected_post_count": 6,
+  "edge_pairs": 26,
+  "total_synapses": 6713,
+  "thresholds": {
+    "1": {
+      "edge_pairs": 20,
+      "total_synapses": 245,
+      "connected_pre_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "connected_post_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "ipsilateral_synapses": 98,
+      "contralateral_synapses": 147,
+      "center_involving_synapses": 0,
+      "per_post_root": {
+        "720575940609488942": {
+          "side": "right",
+          "synapses": 57,
+          "connected_pre_count": 4
+        },
+        "720575940625878160": {
+          "side": "left",
+          "synapses": 39,
+          "connected_pre_count": 4
+        },
+        "720575940627253604": {
+          "side": "left",
+          "synapses": 14,
+          "connected_pre_count": 2
+        },
+        "720575940630758418": {
+          "side": "right",
+          "synapses": 48,
+          "connected_pre_count": 3
+        },
+        "720575940631759663": {
+          "side": "left",
+          "synapses": 74,
+          "connected_pre_count": 4
+        },
+        "720575940635202204": {
+          "side": "right",
+          "synapses": 13,
+          "connected_pre_count": 3
+        }
+      }
+    },
+    "5": {
+      "edge_pairs": 14,
+      "total_synapses": 235,
+      "connected_pre_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "connected_post_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "ipsilateral_synapses": 89,
+      "contralateral_synapses": 146,
+      "center_involving_synapses": 0,
+      "per_post_root": {
+        "720575940609488942": {
+          "side": "right",
+          "synapses": 55,
+          "connected_pre_count": 3
+        },
+        "720575940625878160": {
+          "side": "left",
+          "synapses": 38,
+          "connected_pre_count": 3
+        },
+        "720575940627253604": {
+          "side": "left",
+          "synapses": 12,
+          "connected_pre_count": 1
+        },
+        "720575940630758418": {
+          "side": "right",
+          "synapses": 48,
+          "connected_pre_count": 3
+        },
+        "720575940631759663": {
+          "side": "left",
+          "synapses": 72,
+          "connected_pre_count": 3
+        },
+        "720575940635202204": {
+          "side": "right",
+          "synapses": 10,
+          "connected_pre_count": 1
+        }
+      }
+    },
+    "10": {
+      "edge_pairs": 10,
+      "total_synapses": 209,
+      "connected_pre_roots": [
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940635202204"
+      ],
+      "connected_post_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418",
+        "720575940631759663",
+        "720575940635202204"
+      ],
+      "ipsilateral_synapses": 70,
+      "contralateral_synapses": 139,
+      "center_involving_synapses": 0,
+      "per_post_root": {
+        "720575940609488942": {
+          "side": "right",
+          "synapses": 49,
+          "connected_pre_count": 2
+        },
+        "720575940625878160": {
+          "side": "left",
+          "synapses": 23,
+          "connected_pre_count": 1
+        },
+        "720575940627253604": {
+          "side": "left",
+          "synapses": 12,
+          "connected_pre_count": 1
+        },
+        "720575940630758418": {
+          "side": "right",
+          "synapses": 43,
+          "connected_pre_count": 2
+        },
+        "720575940631759663": {
+          "side": "left",
+          "synapses": 72,
+          "connected_pre_count": 3
+        },
+        "720575940635202204": {
+          "side": "right",
+          "synapses": 10,
+          "connected_pre_count": 1
+        }
+      }
+    },
+    "20": {
+      "edge_pairs": 6,
+      "total_synapses": 152,
+      "connected_pre_roots": [
+        "720575940625878160",
+        "720575940627253604",
+        "720575940630758418"
+      ],
+      "connected_post_roots": [
+        "720575940609488942",
+        "720575940625878160",
+        "720575940630758418",
+        "720575940631759663"
+      ],
+      "ipsilateral_synapses": 54,
+      "contralateral_synapses": 98,
+      "center_involving_synapses": 0,
+      "per_post_root": {
+        "720575940609488942": {
+          "side": "right",
+          "synapses": 49,
+          "connected_pre_count": 2
+        },
+        "720575940625878160": {
+          "side": "left",
+          "synapses": 23,
+          "connected_pre_count": 1
+        },
+        "720575940627253604": {
+          "side": "left",
+          "synapses": 0,
+          "connected_pre_count": 0
+        },
+        "720575940630758418": {
+          "side": "right",
+          "synapses": 27,
+          "connected_pre_count": 1
+        },
+        "720575940631759663": {
+          "side": "left",
+          "synapses": 53,
+          "connected_pre_count": 2
+        },
+        "720575940635202204": {
+          "side": "right",
+          "synapses": 0,
+          "connected_pre_count": 0
+        }
+      }
+    }
+  },
+  "threshold_semantics": "minimum unsigned synapse count per directed neuron pair, inclusive",
+  "laterality_semantics": "annotation side; not visual receptive field or drone turn direction",
+  "rc_mapping_validated": false,
+  "synaptic_signs_assigned": false,
+  "functional_identity_evidence": {
+    "DNae014": {
+      "context": "flight saccades",
+      "source": "https://doi.org/10.1016/j.cub.2023.12.047",
+      "identity_basis": "Exact author root IDs in Table S3; membership and annotation fields verified in pinned FlyWire 783",
+      "author_root_source": {
+        "doi": "10.1016/j.cub.2023.12.047",
+        "table": "S3",
+        "pdf_page": 9,
+        "url": "https://authors.library.caltech.edu/records/58xe4-e8z69/files/1-s2.0-S0960982223017475-mmc1.pdf",
+        "sha256": "6b58e8aabaf36cd1baf56d339a98703aa9c00c9bc39e90439d318823e3485fbf",
+        "bytes": 8098850,
+        "local_path": "data/research_sources/ros2024_supplement.pdf"
+      },
+      "rc_mapping_validated": false
+    },
+    "DNb01": {
+      "context": "flight saccades",
+      "source": "https://doi.org/10.1016/j.cub.2023.12.047",
+      "identity_basis": "Exact author root IDs in Table S3; membership and annotation fields verified in pinned FlyWire 783",
+      "author_root_source": {
+        "doi": "10.1016/j.cub.2023.12.047",
+        "table": "S3",
+        "pdf_page": 9,
+        "url": "https://authors.library.caltech.edu/records/58xe4-e8z69/files/1-s2.0-S0960982223017475-mmc1.pdf",
+        "sha256": "6b58e8aabaf36cd1baf56d339a98703aa9c00c9bc39e90439d318823e3485fbf",
+        "bytes": 8098850,
+        "local_path": "data/research_sources/ros2024_supplement.pdf"
+      },
+      "rc_mapping_validated": false
+    },
+    "VES041": {
+      "context": "flight saccade suppression",
+      "source": "https://doi.org/10.1016/j.cub.2023.12.047",
+      "identity_basis": "Exact author root IDs in Table S3; membership and annotation fields verified in pinned FlyWire 783",
+      "author_root_source": {
+        "doi": "10.1016/j.cub.2023.12.047",
+        "table": "S3",
+        "pdf_page": 9,
+        "url": "https://authors.library.caltech.edu/records/58xe4-e8z69/files/1-s2.0-S0960982223017475-mmc1.pdf",
+        "sha256": "6b58e8aabaf36cd1baf56d339a98703aa9c00c9bc39e90439d318823e3485fbf",
+        "bytes": 8098850,
+        "local_path": "data/research_sources/ros2024_supplement.pdf"
+      },
+      "rc_mapping_validated": false
+    }
+  },
+  "same_root_connections": {
+    "edge_pairs": 6,
+    "synapses": 6468
+  },
+  "inter_neuron_connections": {
+    "edge_pairs": 20,
+    "synapses": 245
+  },
+  "same_root_policy": "preserved in raw edges; excluded from inter-neuron thresholds; authenticity not inferred",
+  "threshold_scope": "inter_neuron_edges_only",
+  "derived_from": {
+    "path": "data\\saccade_core_projection_783_v1.json",
+    "sha256": "88cbb8342ea2963b63aa3a0952ea7c6cf23f2ed7ba65e457bc28a6a684fd13ad",
+    "operation": "local reanalysis; no new network query"
+  },
+  "reanalyzed_at_utc": "2026-10-05T16:09:04.511270+00:00"
+}

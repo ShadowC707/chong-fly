@@ -1,0 +1,27 @@
+{
+  "requested_datastack": "flywire_fafb_production",
+  "requested_version": null,
+  "checked_at_utc": "2026-10-05T06:26:23.915475+00:00",
+  "operation": "metadata_and_optional_single_row_schema_probe",
+  "stage": "client_initialization",
+  "versions": {
+    "caveclient": "8.2.1",
+    "pandas": "2.3.3",
+    "numpy": "2.5.2",
+    "pyarrow": "25.0.1"
+  },
+  "requests": [
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "host": "global.daf-apis.com",
+      "status": 200
+    }
+  ],
+  "error_type": "AuthException",
+  "status": "auth_required"
+}
