@@ -8,7 +8,7 @@ import shutil
 import torch
 
 from configs.flight_config import CONTROL_DT, PWM_MID, PWM_HALF
-from generator.prepare_flywire_candidates import publication, write_json
+from artifacts.io import publication, write_json
 from generator.source_contract import file_sha256
 from generator.validate_flywire_candidates import validate
 from optimizer.pretrain import pretrain_policy

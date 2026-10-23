@@ -7,13 +7,13 @@ import numpy as np
 import torch
 
 from configs.flight_config import CONTROL_DT
-from generator.prepare_flywire_candidates import publication, write_json
+from artifacts.io import publication, write_json
 from generator.source_contract import file_sha256
 from optimizer.rollout import simulate_policy_rollout
 from simulation.altitude_control import AltitudeHold
 from simulation.control_contract import control_contract
 from simulation.benchmark_scenes import NavigationScene, SCENES, SCENE_VERSION
-from simulation.policy import ChongFlyMSPPolicy
+from artifacts.research import load_research_run
 from simulation.policy_diagnostics import temporal_response_probe
 
 
@@ -34,39 +34,6 @@ class ToFAblation(torch.nn.Module):
         ablated = obs.clone()
         ablated[..., 2:66] = 1
         return self.policy(ablated, **kwargs)
-
-
-def load_research_run(run):
-    run = Path(run)
-    report = json.loads((run/'report.json').read_text(encoding='utf-8'))
-    if file_sha256(run/'checkpoint.pt') != report['checkpoint_sha256']:
-        raise ValueError('Checkpoint hash differs from its recorded diagnostic')
-    checkpoint = torch.load(run/'checkpoint.pt', map_location='cpu', weights_only=True)
-    if (checkpoint.get('format_version') != 'candidate-research-checkpoint-v1'
-        or checkpoint.get('training_ready') is not False or checkpoint.get('dt') != CONTROL_DT):
-        raise ValueError('Expected a current research checkpoint at control dt')
-    if checkpoint.get('control_contract') != control_contract():
-        raise ValueError('Checkpoint control contract differs from the current controller')
-    metas = list((run/'graph').glob('meta_*.json'))
-    if len(metas) != 1 or file_sha256(metas[0]) != checkpoint['meta_sha256']:
-        raise ValueError('Graph metadata hash differs from checkpoint')
-    metadata = json.loads(metas[0].read_text(encoding='utf-8'))
-    if 'graph_file_sha256' in checkpoint:
-        for filename, digest in checkpoint['graph_file_sha256'].items():
-            path = (run/'graph'/filename).resolve()
-            if not path.is_relative_to((run/'graph').resolve()) or file_sha256(path) != digest:
-                raise ValueError('Graph file hash differs from checkpoint')
-    for key in ('w_file', 'cmap_file'):
-        if not (metas[0].parent/metadata[key]).resolve().is_relative_to((run/'graph').resolve()):
-            raise ValueError('Graph reference leaves the checkpoint bundle')
-    policy = ChongFlyMSPPolicy.from_meta(str(metas[0]), dt=checkpoint['dt'], mode=checkpoint['mode'],
-        preserve_signs=checkpoint['preserve_signs'],
-        tau_init=checkpoint.get('tau_init', .1),
-        sensor_encoding=checkpoint.get('sensor_encoding', 'distance-v1'),
-        neutral_origin=checkpoint.get('neutral_origin', False))
-    policy.load_state_dict(checkpoint['state_dict'], strict=True)
-    policy.eval()
-    return policy, checkpoint
 
 
 def benchmark_run(run, output, *, steps=1000, seeds=(20261007,), ablate_tof=False):
@@ -94,10 +61,12 @@ def benchmark_run(run, output, *, steps=1000, seeds=(20261007,), ablate_tof=Fals
                     env.close()
         root = Path(__file__).resolve().parents[1]
         report = {'format_version':SCENE_VERSION, 'research_only':True, 'training_ready':False,
+                  'execution_path':'research_policy_altitude_direct_physics', 'receiver_included':False,
                   'checkpoint_sha256':file_sha256(Path(run)/'checkpoint.pt'),
                   'candidate':checkpoint['candidate'], 'control_dt':CONTROL_DT, 'steps':steps,
                   'ablate_tof':ablate_tof,
-                  'seeds':list(seeds), 'scenes':rows, 'temporal_response':temporal_response_probe(policy),
+                  'seeds':list(seeds), 'scenes':rows, 'temporal_response':temporal_response_probe(policy,
+                      teacher_version=checkpoint['pretrain_info']['teacher_version']),
                   'code_sha256':{name:file_sha256(root/name) for name in
                     ['optimizer/benchmark_candidate.py', 'optimizer/rollout.py',
                      'simulation/benchmark_scenes.py', 'simulation/drone_env.py',
@@ -105,7 +74,7 @@ def benchmark_run(run, output, *, steps=1000, seeds=(20261007,), ablate_tof=Fals
                      'simulation/altitude_control.py', 'simulation/memory.py',
                      'simulation/metrics.py', 'simulation/avionics_filter.py',
                      'simulation/pmw3901_emulator.py', 'simulation/policy_diagnostics.py',
-                     'configs/flight_config.py']},
+                     'configs/flight_config.py', 'artifacts/research.py', 'artifacts/io.py', 'core/invariants.py']},
                   'limitations':['Provisional standalone physics, not validated against assembled hardware.',
                                  'Completion in a few fixed scenes is not a flight admission.']}
         write_json(stage/'report.json', report)
