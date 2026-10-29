@@ -29,4 +29,5 @@
 /tests/conftest.py -text
 /scripts/check_hardware_host.py -text
 /docs/hardware/*.json -text whitespace=cr-at-eol
-/docs/hardware/BTFL_cli_*.txt -text whitespace=cr-at-eol
+# Raw FC exports and serial captures retain original whitespace/line endings.
+/docs/hardware/*.txt -text -whitespace

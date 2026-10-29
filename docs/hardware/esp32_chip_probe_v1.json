@@ -1,0 +1,50 @@
+{
+  "version": "esp32-rom-probe-v1",
+  "date": "2026-10-26",
+  "serial_bridge": {
+    "name": "USB-Enhanced-SERIAL CH343",
+    "port_at_observation": "COM14",
+    "status": "OK",
+    "usb_vid": "1a86",
+    "usb_pid": "55d3"
+  },
+  "tool": {
+    "name": "esptool",
+    "version": "5.6.0",
+    "environment": ".venv-esp32",
+    "command": "--chip esp32s3 --port COM14 --baud 115200 --before default-reset --after hard-reset --no-stub flash-id",
+    "exit_code": 0,
+    "stub_uploaded": false,
+    "bootloader": "ROM",
+    "reset_before": "DTR/RTS default-reset",
+    "reset_after": "hard-reset via RTS"
+  },
+  "observed": {
+    "chip": "ESP32-S3",
+    "package": "QFN56",
+    "revision": "v0.2",
+    "cpu_mhz_reported": 240,
+    "crystal_mhz": 40,
+    "features": ["Wi-Fi", "BT 5 LE", "Dual Core + LP Core"],
+    "embedded_psram_mb_reported": 8,
+    "psram_reported_type": "AP_3v3",
+    "flash_manufacturer_hex": "68",
+    "flash_device_hex": "4018",
+    "flash_mb_detected": 16,
+    "flash_type_in_efuse": "quad, 4 data lines",
+    "flash_voltage_in_efuse_v": 3.3
+  },
+  "persistent_changes": {
+    "flash_written": false,
+    "flash_erased": false,
+    "efuse_written": false,
+    "firmware_replaced": false
+  },
+  "limitations": [
+    "PSRAM capacity is reported chip information, not a memory integrity or throughput test.",
+    "Physical devboard manufacturer/revision and USB VBUS routing are not determined by chip identification.",
+    "USB Host, GPW70 enumeration/input, Wi-Fi transport timing and FC output remain untested.",
+    "Existing firmware contents were not read or backed up in this probe.",
+    "MAC address and USB serial number are omitted from this record."
+  ]
+}

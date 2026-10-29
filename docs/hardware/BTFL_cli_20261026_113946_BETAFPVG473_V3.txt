@@ -1,0 +1,102 @@
+# 
+# version
+# Betaflight / STM32G47X (G473) 2025.12.2 Mar 12 2026 / 01:13:04 (79065c96b) MSP API: 1.47
+# config rev: e378347
+# board: manufacturer_id: BEFH, board_name: BETAFPVG473_V3
+
+# status
+MCU: STM32G474 CLK=168MHz (PLLR-HSE), Vref=3.28V, Core temp=29degC
+STACK: 2048b (0x2001fff0)
+CONFIG: CONFIGURED (4139b / 8192b)
+
+DEVICES DETECTED: SPI=1, I2C=1 (0 errors)
+GYRO: (1) ICM42605 enabled locked dma
+ACC: ICM42605
+BARO: DPS310
+GPS: NOT ENABLED
+OSD: MSP (53 x 20)
+FLASH: JEDEC ID=0x00852018 16M
+
+BUILD KEY: d4425b827eb18e20b0e19b8ebcf0a848 (2025.12.2)
+
+System Uptime: 21 seconds, Current Time: 2026-10-26T09:39:42.025+00:00
+CPU:55%, cycle time: 124, GYRO rate: 8064, RX rate: 0, System rate: 9
+Voltage: 0.00V (0S battery - NOT PRESENT)
+Arming disable flags: RXLOSS CLI MSP
+
+# diff all
+
+# version
+# Betaflight / STM32G47X (G473) 2025.12.2 Mar 12 2026 / 01:13:04 (79065c96b) MSP API: 1.47
+# config rev: e378347
+
+# start the command batch
+batch start
+
+# reset configuration to default settings
+defaults nosave
+
+board_name BETAFPVG473_V3
+manufacturer_id BEFH
+mcu_id 0017000b3235511930303938
+signature 
+
+# feature
+feature -RX_SERIAL
+feature TELEMETRY
+feature LED_STRIP
+feature OSD
+
+# serial
+serial UART1 1 115200 57600 0 115200
+
+# led
+led 0 0,0::CB:10
+led 1 1,0::CB:10
+
+# aux
+aux 0 0 0 1700 2100 0 0
+aux 1 1 1 900 2100 0 0
+aux 2 2 1 1300 1700 0 0
+aux 3 13 2 1700 2100 0 0
+aux 4 15 4 1700 2100 0 0
+aux 5 35 3 1650 2100 0 0
+
+# master
+set dyn_notch_count = 1
+set dyn_notch_q = 500
+set acc_calibration = -10,25,-8,1
+set mag_hardware = NONE
+set dshot_bidir = ON
+set motor_pwm_protocol = DSHOT300
+set motor_poles = 12
+set ibata_scale = 280
+set ibata_offset = 70
+set yaw_motors_reversed = ON
+set pid_process_denom = 2
+
+profile 0
+
+profile 1
+
+profile 2
+
+profile 3
+
+# restore original profile selection
+profile 0
+
+rateprofile 0
+
+rateprofile 1
+
+rateprofile 2
+
+rateprofile 3
+
+# restore original rateprofile selection
+rateprofile 0
+
+# save configuration
+save
+# 
