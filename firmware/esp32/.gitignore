@@ -1,0 +1,9 @@
+usb_probe/.pio/
+usb_probe/sdkconfig*
+!usb_probe/sdkconfig.defaults
+usb_probe/managed_components/
+app/.pio/
+app/sdkconfig*
+!app/sdkconfig.defaults
+app/managed_components/
+app/local_config.hpp

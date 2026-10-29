@@ -1,0 +1,2 @@
+# Isolated .venv-esp32-build; no dependency on the model environment.
+platformio==6.2.0
