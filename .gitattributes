@@ -10,3 +10,23 @@
 /edge/benchmark.py -text
 /simulation/altitude_control.py -text
 /simulation/xy_coordinator.py -text
+
+# Hardware evidence hashes refer to exact saved bytes, including FC dumps.
+/firmware/esp32/** -text
+/edge/hardware_*.py -text
+/edge/pi_hardware_adapter.py -text
+/edge/manual_wire.py -text
+/edge/foundation_mock.py -text
+/edge/gamepad_*.py -text
+/tests/fixtures/esp32_wire_v1.json -text whitespace=cr-at-eol
+/tests/test_hardware*.py -text
+/tests/test_esp32*.py -text
+/tests/test_esp_flash_backup.py -text
+/tests/test_foundation_loop.py -text
+/tests/test_gamepad*.py -text
+/tests/test_ground_peer_transport.py -text
+/tests/test_usb_gamepad_probe.py -text
+/tests/conftest.py -text
+/scripts/check_hardware_host.py -text
+/docs/hardware/*.json -text whitespace=cr-at-eol
+/docs/hardware/BTFL_cli_*.txt -text whitespace=cr-at-eol
