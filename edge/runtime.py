@@ -33,11 +33,12 @@ def load_bundle(directory):
         raise ValueError('Metadata checksum mismatch')
     meta = json.loads(path.read_text(encoding='utf-8'))
     if (meta.get('format') != FORMAT or meta.get('solver') != 'exponential_euler'
-            or meta.get('sensor_encoding') != 'proximity-v1'
+            or meta.get('sensor_encoding') not in ('proximity-v1','proximity-release-v1')
             or meta.get('matrix_orientation') != 'source_target_h_at_W'
             or meta.get('dtype') != 'float32' or meta.get('action_order') != ACTION_ORDER
             or meta.get('dt') != .02 or meta.get('sensor_dim') not in (66,74)
-            or meta.get('tof_range_m') != 3.5 or meta.get('proximity_threshold_m') != .8
+            or meta.get('tof_range_m') != 3.5 or meta.get('proximity_threshold_m') != {
+                'proximity-v1':.8,'proximity-release-v1':1.0}.get(meta.get('sensor_encoding'))
             or meta.get('pwm') != dict(min=1000., mid=1500., half=500., max=2000.)):
         raise ValueError('Unsupported runtime contract')
     files = meta.get('files', {})

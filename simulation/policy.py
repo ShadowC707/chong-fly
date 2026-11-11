@@ -119,7 +119,7 @@ class SensorInputLayer(nn.Module):
     def __init__(self, sensor_dim: int = SENSOR_DIM, learnable_scale: bool = True,
                  encoding: str = 'distance-v1'):
         super().__init__()
-        if encoding not in {'distance-v1', 'threat-v1', 'proximity-v1', 'proximity-mean-v1'}:
+        if encoding not in {'distance-v1', 'threat-v1', 'proximity-v1', 'proximity-mean-v1', 'proximity-release-v1'}:
             raise ValueError('Unknown sensor encoding')
         self.sensor_dim = sensor_dim
         self.encoding = encoding
@@ -152,12 +152,15 @@ class SensorInputLayer(nn.Module):
             # An engineering encoding of distance, not a claim about LC responses.
             # Flow keeps its sign; ToF/memory have zero drive in a clear scene.
             x = torch.cat([x[..., :FLOW_DIM], 1-x[..., FLOW_DIM:]], dim=-1)
-        elif self.encoding in {'proximity-v1', 'proximity-mean-v1'}:
+        elif self.encoding in {'proximity-v1', 'proximity-mean-v1', 'proximity-release-v1'}:
             from configs.flight_config import APF_DISTANCE_THRESHOLD_M, TOF_RAYCASTER_MAX_RANGE_M
             # A per-pixel distance encoding only. No action, laterality, or
             # sensor->motor shortcut: all commands still traverse the graph.
+            # Release encoding preserves the teacher's 0.95m clearance band.
+            # Its support is versioned separately from the APF threat threshold.
+            threshold = 1.0 if self.encoding == 'proximity-release-v1' else APF_DISTANCE_THRESHOLD_M
             depth = torch.clamp(1-x[..., FLOW_DIM:SENSOR_DIM_BASE] /
-                                (APF_DISTANCE_THRESHOLD_M/TOF_RAYCASTER_MAX_RANGE_M), min=0)
+                                (threshold/TOF_RAYCASTER_MAX_RANGE_M), min=0)
             if self.encoding == 'proximity-mean-v1':
                 # Explicit experimental divisive normalization: preserve the
                 # spatial pattern, but decouple total drive from occupied area.
@@ -303,7 +306,7 @@ class ChongFlyMSPPolicy(nn.Module):
         cell = cfc_network.cell
         if type(neutral_origin) is not bool:
             raise ValueError('neutral_origin must be an explicit boolean')
-        if neutral_origin and (sensor_encoding not in {'threat-v1', 'proximity-v1', 'proximity-mean-v1'} or cell.connectivity != 'structured'):
+        if neutral_origin and (sensor_encoding not in {'threat-v1', 'proximity-v1', 'proximity-mean-v1', 'proximity-release-v1'} or cell.connectivity != 'structured'):
             raise ValueError('Neutral origin requires threat/proximity encoding and structured connectivity')
         self.neutral_origin = neutral_origin
         self.training_admission = getattr(cfc_network, 'graph_provenance', {}).get('training_ready')
@@ -315,10 +318,11 @@ class ChongFlyMSPPolicy(nn.Module):
             # Preserve the historical distance contract, but reject loading its
             # weights into a differently encoded model (even with strict=False).
             cell._architecture_contract['sensor_encoding'] = sensor_encoding
-            if sensor_encoding in {'proximity-v1', 'proximity-mean-v1'}:
+            if sensor_encoding in {'proximity-v1', 'proximity-mean-v1', 'proximity-release-v1'}:
                 from configs.flight_config import APF_DISTANCE_THRESHOLD_M, TOF_RAYCASTER_MAX_RANGE_M
                 cell._architecture_contract['sensor_encoding_parameters'] = {
-                    'threshold_m':APF_DISTANCE_THRESHOLD_M, 'max_range_m':TOF_RAYCASTER_MAX_RANGE_M}
+                    'threshold_m':1.0 if sensor_encoding == 'proximity-release-v1' else APF_DISTANCE_THRESHOLD_M,
+                    'max_range_m':TOF_RAYCASTER_MAX_RANGE_M}
                 if sensor_encoding == 'proximity-mean-v1':
                     cell._architecture_contract['sensor_encoding_parameters']['reference_active_pixels'] = 32
         self.cfc_network   = cfc_network
