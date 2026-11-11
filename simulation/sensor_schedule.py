@@ -23,7 +23,12 @@ class SampleSchedule:
         values=dict(flow=tuple(flow),tof=tuple(np.asarray(tof).ravel()),
                     altitude=(altitude.range_m,altitude.roll_rad,altitude.pitch_rad),
                     attitude=(altitude.roll_rad,altitude.pitch_rad))
-        for name,hz in dict(flow=50,tof=15,altitude=30,attitude=50).items():
+        # Single-channel holds are explicit experimental controls. Existing
+        # 'multi'/'multi_rate' and synchronous callers keep their old schedule.
+        rates=dict(flow=50,tof=15,altitude=30,attitude=50)
+        if self.profile=='tof_only': rates['altitude']=50
+        if self.profile=='altitude_only': rates['tof']=50
+        for name,hz in rates.items():
             epoch=int(np.floor(t*hz+1e-8))
             if self.epochs.get(name)!=epoch:
                 self.epochs[name]=epoch

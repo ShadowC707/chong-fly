@@ -1,0 +1,17 @@
+{
+  "version": "reiteration-sitl-control-v1",
+  "parent_protocol_sha256": "f818f68c4f49bf3cdc0d8b73da56740ffd106e6974600ce225f94ae68118ffaf",
+  "firmware_sha256": "b9b857a30179de4464acb63ccae8e497dc1349bea9699c947d8e2677b9acedbc",
+  "twr": 5.0,
+  "files": {
+    "report.json": "0d5074f26dd1de47982eafb90bfd708780286f47953e418926364dd45f7b40fc",
+    "template/eeprom.bin": "a607d2d280f4e3759aa33390c4c608c896d86355a51a26c760275c8cee79ba3b",
+    "calibration.json": "2b77b9195f28607702dfad35e2a60105b771bd2e99c9b08c76fb624183af61ca"
+  },
+  "repo_inputs": {
+    "configs/candidate_a_adaptive_tau_v1.json": "933e1089b7908fbaed18fcc13491391f2867952714cba8c2952f9826ef06182d",
+    "configs/ready_sim_reference_v1.json": "04e857c63ba5c1dc6270fd1bfb05ac4563d5b8977bbff5f8a9aa35362d0e8061",
+    "configs/sitl_virtual_v1.cli": "4bc24c30b88e66bdcf7aee119114ae0b66510b0437d86c5ca9ccebf047cdaa67",
+    "simulation/sitl_twr.py": "c913dde247f40a2426626ca46ce4e97676f6804fb8f6baa7b3382c9404cda27c"
+  }
+}
