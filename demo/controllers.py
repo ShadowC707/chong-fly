@@ -18,7 +18,21 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
     navigation = None
     options = dict(anti_rollback=old.anti_rollback, turn_latch=old.turn_latch, config=old.config,
                    stop_hover=old.stop_hover, behavior_config=old.behavior_config, seed=old.seed)
-    if profile == 'candidate_a_brake':
+    if profile == 'pipeline_v1':
+        from simulation.navigation_pipeline import NavigationPipeline, PipelineConfig
+        from .pipeline_system import PipelineSystem
+        from .profiles import PIPELINE_V1_CONFIG
+        pipeline_config = PipelineConfig.from_json(PIPELINE_V1_CONFIG)
+        options.update(anti_rollback=pipeline_config.anti_rollback, turn_latch=pipeline_config.turn_latch)
+        new = NavigationPipeline(reference_id=system.config.session_id+'-mem', pipeline_config=pipeline_config,
+                                 **options)
+        navigation = new
+        system_class = PipelineSystem
+        overlay = 'navigation-pipeline-v1'
+        sources.extend(('simulation/navigation_pipeline.py', 'demo/pipeline_system.py', 'demo/pipeline_adapter.py',
+            'configs/pipeline_v1.json', 'edge/empirical_corridor.py', 'edge/survey_heading.py',
+            'edge/survey_memory.py', 'simulation/survey_heading_sensor.py'))
+    elif profile == 'candidate_a_brake':
         from simulation.threat_gated_xy import ThreatGatedXYCoordinator
         new = ThreatGatedXYCoordinator(**options)
         overlay = 'threat-gated-brake-v1'
@@ -66,7 +80,7 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
                     'phased_smooth': 'flight-system-yaw-shaping-experiment-v1'}.get(
                         profile, 'flight-system-standalone-navigation-v1')
     m['experiment']=dict(research_only=True,profile=profile,overlay=overlay,active_bundle_unchanged=True)
-    if system_class is not FlightSystem:
+    if system_class is not FlightSystem and profile != 'pipeline_v1':
         m['experiment']['handover_sync'] = 'After bridge engagement: issued reference yaw'
     if envelope_contract is not None:
         m['version']='flight-system-turn-envelope-experiment-v1'

@@ -19,7 +19,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = ROOT/'data/scenarios/reiteration_v1'
-PROFILES = ('candidate_a', 'phased_side_guard', 'phased_swath')
+BASELINE_PROFILES = ('candidate_a', 'phased_side_guard', 'phased_swath')
+PROFILES = BASELINE_PROFILES+('pipeline_v1',)
 MVP_CASES = ('9d5431c1', 'b0a9f212')
 # Section 2 thresholds, copied from the plan and acceptance.json; never edited after results.
 LIMITS = dict(network_share=.80, generated_share=.10, contacts=0, min_clearance_m=.10,
@@ -123,8 +124,12 @@ def run_case(out, profile, scenario):
             control_time=[r['time_s'] for r in controls], auto=flags[0], stop_requested=flags[1],
             network=network, coordinated=coordinated,
             accepted=[r['trace']['accepted_pwm'] or [np.nan]*4 for r in controls])
-        try:  # no stage log before the pipeline (plan step 3): generated_share stays null
-            metrics.update(share_metrics(network, coordinated, *flags))
+        # Stage log exists only for pipeline profiles; for the rest generated_share stays null.
+        by_time = {round(d['time_s'], 3): d['decision'].get('stages') for d in decisions}
+        stage_log = ([by_time.get(round(float(r['time_s']), 3)) or [] for r in controls]
+                     if any(v is not None for v in by_time.values()) else None)
+        try:
+            metrics.update(share_metrics(network, coordinated, *flags, stage_log=stage_log))
         except ValueError as error:
             metrics.update(network_share=None, generated_share=None, share_error=str(error))
         write(out/'decisions.json', decisions)
@@ -143,7 +148,7 @@ def verdict(m, horizon):
               m['max_height_error_m'] <= LIMITS['max_height_error_m'],
               m['reverse_distance_body_m'] <= LIMITS['reverse_distance_body_m']]
     progress = None
-    if horizon >= 180.:
+    if horizon >= 180. and m['completed']:  # an interrupted flight has no valid 180 s progress
         progress = (m['longest_no_new_cell']['duration_s'] <= LIMITS['max_no_new_cell_s']
                     and m['new_cells_last_60s'] >= LIMITS['min_new_cells_last_60s'])
     delivery = not m['faults'] and m['continuous_auto'] and m['completed']
@@ -179,7 +184,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--workers', type=int, default=3)
-    parser.add_argument('--profiles', nargs='+', default=list(PROFILES), choices=PROFILES)
+    parser.add_argument('--profiles', nargs='+', default=list(BASELINE_PROFILES), choices=PROFILES)
     parser.add_argument('--scenarios', nargs='*', default=[])
     a = parser.parse_args()
     main(a.out, a.workers, a.profiles, a.scenarios)

@@ -294,7 +294,8 @@ class DemoRunner:
         if (hasattr(self.system, 'navigation')
                 and getattr(getattr(self, 'swath_adapter', None), 'system', None) is not self.system):
             from .swath_adapter import SwathSimulationAdapter
-            self.swath_adapter = SwathSimulationAdapter(self)
+            factory = getattr(self.system, 'adapter_class', SwathSimulationAdapter)
+            self.swath_adapter = factory(self)
 
     def _build_manifest(self):
         self.prepare_controller()
@@ -305,7 +306,7 @@ class DemoRunner:
             profile['controller_role'] = PROFILE_ROLES.get(self.controller_mode, 'historical-experiment')
             paths+=['demo/controllers.py','demo/profiles.py','simulation/phased_coordinator.py']
         if hasattr(self.system, 'navigation'):
-            profile['swath_inputs'] = self.swath_adapter.contract()
+            profile[getattr(self.system, 'manifest_key', 'swath_inputs')] = self.swath_adapter.contract()
         return dict(**profile,kind='live_recording', scene=self.scene, seed=self.seed,
             contact_model=self.contact_model,
             scene_options=self.scene_options,geometry_spec=getattr(self.env,'demo_geometry_spec',None),

@@ -7,9 +7,10 @@ _CONFIGS = Path(__file__).resolve().parents[1]/'configs'
 ORIGINAL_CONFIG = _CONFIGS/'mvp_runtime_v3.json'
 CANDIDATE_A_CONFIG = _CONFIGS/'candidate_a_adaptive_tau_v1.json'
 HISTORICAL_CANDIDATE_A_CONFIG = _CONFIGS/'demo_candidate_a.json'
+PIPELINE_V1_CONFIG = _CONFIGS/'pipeline_v1.json'
 
 OVERLAY_PROFILES = ('candidate_a_brake', 'phased_v2', 'phased_smooth', 'phased_recovery',
-                    'phased_escape', 'phased_side_guard', 'phased_swath')
+                    'phased_escape', 'phased_side_guard', 'phased_swath', 'pipeline_v1')
 PHASED_PROFILES = tuple(p for p in OVERLAY_PROFILES if p.startswith('phased_'))
 LIVE_PROFILE_LABELS = {
     'original': 'Попередній MVP',
@@ -18,6 +19,7 @@ LIVE_PROFILE_LABELS = {
     'candidate_a_brake': 'Кандидат A · гальмування біля перешкоди',
     'phased_side_guard': 'Кандидат A · фазовий із бічним захистом',
     'phased_swath': 'Кандидат A · спостережена смуга · дослідний',
+    'pipeline_v1': 'Кандидат A · конвеєр v1 · дослідний',
 }
 
 PROFILE_ROLES = {
@@ -26,6 +28,7 @@ PROFILE_ROLES = {
     'phased_side_guard': 'behavioral-baseline',
     'candidate_a_brake': 'recorded-failure-control',
     'phased_swath': 'standalone-swath-experiment',
+    'pipeline_v1': 'standalone-pipeline-experiment',
 }
 
 
