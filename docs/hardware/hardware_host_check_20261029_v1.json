@@ -1,0 +1,297 @@
+{
+  "version": "hardware-host-delivery-v1",
+  "date": "2026-10-29",
+  "base_commit": "487421fa076790a60f4dc51ee1ba25abb2570ddb",
+  "tested_code_commit": "c77e9765a84f14515f983349f43775e7761f4007",
+  "placement": {
+    "onboard": [
+      "sensors",
+      "ESP32",
+      "G4"
+    ],
+    "ground_pi": "model on Raspberry Pi 4B 8GB",
+    "ground_notebook": "GPW70 input only"
+  },
+  "full_suite": {
+    "tests": 969,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "elapsed_seconds": 91.52
+  },
+  "hardware_subset": {
+    "tests": 162,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "elapsed_seconds": 13.35
+  },
+  "tdd": {
+    "replay_cases": 23,
+    "check_runner_cases": 4,
+    "red_then_green": true
+  },
+  "checks": {
+    "build_and_initial_full": {
+      "path": "data/diagnostics/hardware_host_check_20261029_v1/report.json",
+      "sha256": "a5a188d2bd22ab644582323b2c3b81e8c06c61c1eef057449015857abcd471fe",
+      "success": true,
+      "steps": [
+        {
+          "name": "pytest",
+          "returncode": 0,
+          "elapsed_seconds": 108.156
+        },
+        {
+          "name": "native_build",
+          "returncode": 0,
+          "elapsed_seconds": 1.5
+        },
+        {
+          "name": "normal",
+          "returncode": 0,
+          "elapsed_seconds": 0.672
+        },
+        {
+          "name": "takeover",
+          "returncode": 0,
+          "elapsed_seconds": 0.562
+        },
+        {
+          "name": "gamepad_mock",
+          "returncode": 0,
+          "elapsed_seconds": 0.328
+        },
+        {
+          "name": "gamepad_replay",
+          "returncode": 0,
+          "elapsed_seconds": 0.312
+        },
+        {
+          "name": "firmware_build",
+          "returncode": 0,
+          "elapsed_seconds": 40.313
+        }
+      ]
+    },
+    "final_hardware_subset": {
+      "path": "data/diagnostics/hardware_host_check_20261029_v2/report.json",
+      "sha256": "1f6a6993c1f5f856dff853e8b36b416bd12fd368c935df99ab808ff95225bb68",
+      "success": true,
+      "steps": [
+        {
+          "name": "pytest",
+          "returncode": 0,
+          "elapsed_seconds": 14.282
+        },
+        {
+          "name": "native_build",
+          "returncode": 0,
+          "elapsed_seconds": 1.563
+        },
+        {
+          "name": "normal",
+          "returncode": 0,
+          "elapsed_seconds": 0.656
+        },
+        {
+          "name": "takeover",
+          "returncode": 0,
+          "elapsed_seconds": 0.578
+        },
+        {
+          "name": "gamepad_mock",
+          "returncode": 0,
+          "elapsed_seconds": 0.328
+        },
+        {
+          "name": "gamepad_replay",
+          "returncode": 0,
+          "elapsed_seconds": 0.266
+        }
+      ]
+    },
+    "final_full_suite": {
+      "path": "data/diagnostics/hardware_host_check_20261029_v3/report.json",
+      "sha256": "ccf608fe6a5f143f46490806f043070d369ac701a789d4fee8b58f52e497558d",
+      "success": true,
+      "steps": [
+        {
+          "name": "pytest",
+          "returncode": 0,
+          "elapsed_seconds": 95.047
+        },
+        {
+          "name": "native_build",
+          "returncode": 0,
+          "elapsed_seconds": 1.641
+        },
+        {
+          "name": "normal",
+          "returncode": 0,
+          "elapsed_seconds": 0.703
+        },
+        {
+          "name": "takeover",
+          "returncode": 0,
+          "elapsed_seconds": 0.61
+        },
+        {
+          "name": "gamepad_mock",
+          "returncode": 0,
+          "elapsed_seconds": 0.344
+        },
+        {
+          "name": "gamepad_replay",
+          "returncode": 0,
+          "elapsed_seconds": 0.25
+        }
+      ]
+    }
+  },
+  "mock": {
+    "normal": {
+      "accepted_count": 10,
+      "fc_attempts": 0,
+      "timing_source": "synthetic_20ms_control_clock_exact_clock_mapping",
+      "transport": "two_real_host_udp_pairs_plus_native_cpp_app_core",
+      "final_selected_source": "none",
+      "host_wall_roundtrip_us": {
+        "p50": 1062.65,
+        "p95": 1381.354999999999,
+        "p99": 2185.4859999999994,
+        "max": 2498.5
+      }
+    },
+    "takeover": {
+      "accepted_count": 10,
+      "fc_attempts": 0,
+      "timing_source": "synthetic_20ms_control_clock_exact_clock_mapping",
+      "transport": "two_real_host_udp_pairs_plus_native_cpp_app_core",
+      "final_selected_source": "none",
+      "host_wall_roundtrip_us": {
+        "p50": 1099.95,
+        "p95": 1548.58,
+        "p99": 2048.9079999999994,
+        "max": 2358.1
+      }
+    }
+  },
+  "firmware_artifacts": {
+    "bootloader.bin": {
+      "size_bytes": 21088,
+      "sha256": "27f43f1823a3f96d13fa600fd02327d27239f0e2e5a90b53088b09a8ac85f522"
+    },
+    "partitions.bin": {
+      "size_bytes": 3072,
+      "sha256": "a11982a2601a607baadac94c0f21fdb7fdbf910249ed5ba58af40be62c2ee98a"
+    },
+    "firmware.bin": {
+      "size_bytes": 791568,
+      "sha256": "bb36c97d6d5876501f8ac47bac62f6668e3c85a5c9c2c9e5af5ebcb0601ab3a0"
+    }
+  },
+  "source_sha256": {
+    "edge/foundation_mock.py": "f98fc3c4d1476d529bc05a6e3c4a99fc1533e03685d117c4db1fabbcf747979d",
+    "edge/gamepad_input.py": "6aeca0130e3481d53156c8e79b6b25779875f78874e67e56b02dde992a82e280",
+    "edge/gamepad_probe.py": "5e970304ffcf6f201d510d6eb9a6fbbb5d5b29302410198931ade08c3ed95415",
+    "edge/gamepad_replay.py": "7612e730bc04d9406b5aafde506d6caadcb83ff83cf3e3db0a47f1329b6136b8",
+    "edge/hardware_mock.py": "ea4148f5255ea1014947c7c638a558345948e29e1f791b24ec1c6c20c67e71ed",
+    "edge/hardware_udp.py": "7f779247813c2e150566aa8c22368425eed7895b0438cf31024e07ba7fd6b366",
+    "edge/hardware_udp_probe.py": "82f92880b590947e2fcf49207b0f85c98050326c1baf4e0dd964cfaf226a6ff8",
+    "edge/hardware_wire.py": "d9b22f76e46787441e56b5a6c3d7af5ab1a31f9da079fc9dfae84e68a7541540",
+    "edge/manual_wire.py": "6656220f3247560b04cbed9e2095e249ca1d783d37682af21558f218d832edc4",
+    "edge/pi_hardware_adapter.py": "917b166187840091328e4ad62f33505e4ef4fe779446b1dcda5b2336368729c4",
+    "firmware/esp32/.gitignore": "e451c3def742b9d40b1305f2d7f81b3e3fdea2d8de7847d0f5916f8434b105a2",
+    "firmware/esp32/app/CMakeLists.txt": "fd11ae0bfbd8e9b888107976c0fc3452987f5aec0a95926a0bb09347c0697c11",
+    "firmware/esp32/app/local_config.example.hpp": "9b19ad2227b590fad960cda8124a66afe3bd22a61240092226f6d73b5c661d2f",
+    "firmware/esp32/app/partitions.csv": "968a2b71c6a4161bed267c2a3b67e58529322269619b0a3a5191667ea127e4f2",
+    "firmware/esp32/app/platformio.ini": "63063acbb978c78b7e757ccd3c2fdf863d1c874dea69e940b0b0b3bcc09dcd12",
+    "firmware/esp32/app/sdkconfig.defaults": "5030cc4ee190f5b430f2593c4bb3860e052ddead763caa6feea4166a4431fed9",
+    "firmware/esp32/app/src/CMakeLists.txt": "0369f8ebe5b32e6acd0e5eb08d69dc3bbf87a270bde3b6104aee0c9574729188",
+    "firmware/esp32/app/src/main.cpp": "89086d795c55e43005f72ec6ddd6958b3002e215085d72f0864e49722628c6e0",
+    "firmware/esp32/backup_flash.py": "798fc444420fb4086dab1b48d72fdf7c2bf48431a90cbb5a54e9bf9f92b98e81",
+    "firmware/esp32/build_host.ps1": "3faac54c134a022f2d34a376a77c138f669f195cab9ce210c2954cd4e6d57c3f",
+    "firmware/esp32/foundation/adapters.hpp": "7397af1830e08ca0e20a97c9a93389212a112845288c396ec32b292e5bf73bc0",
+    "firmware/esp32/foundation/config.hpp": "d1ca229e41cb901975f39994b29092932a182aff3539b3c635548294d467b285",
+    "firmware/esp32/foundation/manual.hpp": "c7b56a557535eb10e0ab7566bedc524a43e42cfd0429ff64b4e7ef1f0e1f80e8",
+    "firmware/esp32/foundation/runtime.hpp": "6a917bcc5efdadba7fce0c3414bd10d39a99fc159b33369d0812856d79491bce",
+    "firmware/esp32/foundation/wire.hpp": "b84bbe500a72fa5cc247867caa34a1834d6c6ed02abc17dbf0dcf70285c3faec",
+    "firmware/esp32/host/foundation_host.cpp": "e9ef605af019c4c9ea5f3bea56fd4d456dfd6b8e2019fa10fc4afa75d2486d24",
+    "firmware/esp32/host/receiver_host.cpp": "d19f18b88038609c7e9566e1c42ecf5039a1c887e328e48ea61cc894b3718d65",
+    "firmware/esp32/host/usb_probe_host.cpp": "e730df63522e8c2c321338dc24e89a43c2da18961cc811290b86724d50554cb0",
+    "firmware/esp32/pio_local.py": "ee2336283f537406cf92773f595519fed388905d9adcd5d1aca87121ffbd3a64",
+    "firmware/esp32/receiver_core.hpp": "a10d05357a29218ea127573c3c7944506cb4f26ae9e71637a3c7ceb06ff5873d",
+    "firmware/esp32/requirements-build.txt": "853ea80a70e67413975d9c203590fd0237dc6f91b78ff473882e73de7a9b983f",
+    "firmware/esp32/requirements-host-tools.txt": "6f374ce94d226b04d0e7da0d84b42df1b003dfdf9cc14e218946d78ba1b6ff4f",
+    "firmware/esp32/requirements-validation.txt": "ad615e08f5e921a4ed2bd138f65068f4af734f4009779761ac0e8980f3beedeb",
+    "firmware/esp32/usb_probe/CMakeLists.txt": "552d871c2e72e76805799b27970324d1cf1834448553ee0dbd69ab6163d85889",
+    "firmware/esp32/usb_probe/partitions.csv": "f25e55efe60adb32d8932a5a8d22171e018357b4b252d2a7900b875279277ad5",
+    "firmware/esp32/usb_probe/platformio.ini": "29cf0d32ba9d8d40acb2e7cd483582e5d84e349c1ad6637ed6fc1818736a403a",
+    "firmware/esp32/usb_probe/sdkconfig.defaults": "ba5c3d2d0d91de136129f39bb888ddcea7976875bbb5d43e0f3febf3a8859457",
+    "firmware/esp32/usb_probe/src/CMakeLists.txt": "8743c994c7f71795ff36cffdb2199c64790fb5731d5510a9219e432fafcb84b6",
+    "firmware/esp32/usb_probe/src/main.cpp": "c1d9d6a270b9d5374001ccc144af9e839179f571fa5131ec12b694f238227f53",
+    "firmware/esp32/usb_probe_core.hpp": "2a2ea0674b4055b0a95344eb4111deaa760e533e6227a0f4e28a153f24646500",
+    "scripts/check_hardware_host.py": "c81d2573ab32d97d940719a77dbc4a0365696f9d2cd3115bb79d429c2a84814c",
+    "tests/conftest.py": "ddc3e7bbd00e65a1631ac6bef212eaf93856f877f39104bc3716d7faab420a59",
+    "tests/fixtures/esp32_wire_v1.json": "ee0f6a3129f022aad97398a400c22fed393a442bdb87d250b29bde5c8cfb9e36",
+    "tests/test_esp32_foundation.py": "b8dd23334ee6fa20650208a0658e1cca117641cb45b38ad37a4483a07e7c13e1",
+    "tests/test_esp32_host.py": "4904652409dae401774c901fa6ed7613ee1a3ddf990b988bad857154a0271514",
+    "tests/test_esp_flash_backup.py": "35b642e638e1b1767fc8ae29fe227d817be2c973af6d52134042db141e261613",
+    "tests/test_foundation_loop.py": "c1cbe5eed5146a8735457f1b57f77049fe56cdc841ef97faec8ef0bf265155f0",
+    "tests/test_gamepad_input.py": "263203d9c3c5f655a5b5cb6157adba4acd5e88189d937efa597452af4b5bf075",
+    "tests/test_gamepad_replay.py": "b4cae6088c95f397d9819938863756f2683ba3ddf4797af2ec3d8a18292d2d79",
+    "tests/test_ground_peer_transport.py": "529b3a8bd394234568123d6cd651bb25823257ada7b53b7953f1e3bccdf0e94a",
+    "tests/test_hardware_check.py": "b7be0b84afd70fae74ec96db9961a671d8f8299849803212efbacbdd14d72b48",
+    "tests/test_hardware_mock.py": "f855010f64863d109077ca6b22814bbdcb33e7f0cd93df9d4b615a1e7a3fc8b1",
+    "tests/test_hardware_udp.py": "6733055470558fe8c3a08e03fd5cf9e0416dff500f293a9286c7da2840d87acf",
+    "tests/test_hardware_wire.py": "ecf00796f6d2790baa93ba5eac1fbd984e3ceab8f40db822ea89491fc63c4e0e",
+    "tests/test_usb_gamepad_probe.py": "694a085a3f520b0a2aa96aa4c1b93419734a2afe65c28296771d6a529f1b10a0"
+  },
+  "protected_files_unchanged_from_base": true,
+  "protected_sha256": {
+    "configs/mvp_runtime_v3.json": "9a8fefffd66772566bc47875e037eef19c2dde82ced67fa7008ccf418637db61",
+    "data/edge/k306_tau025_integrated_v1/altitude_control.py": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e",
+    "data/edge/k306_tau025_integrated_v1/benchmark.py": "a9eb44b07199cd82dbb8baba916b615587ea7ef1ab407ba8be7daf313841c963",
+    "data/edge/k306_tau025_integrated_v1/flight_bridge.py": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256",
+    "data/edge/k306_tau025_integrated_v1/metadata.json": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+    "data/edge/k306_tau025_integrated_v1/metadata.sha256": "cb895ee0525ac07ed0b4f88b56086bcdfcf787b7c490fe9d4d354dd3ec6fd958",
+    "data/edge/k306_tau025_integrated_v1/model.npz": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+    "data/edge/k306_tau025_integrated_v1/requirements.txt": "bf7b26c4da979ceddfab749091066030cb412bbb91c8d45e458d7c0000dbf872",
+    "data/edge/k306_tau025_integrated_v1/runtime.py": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2",
+    "data/edge/k306_tau025_integrated_v1/sensors.py": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9",
+    "data/edge/k306_tau025_integrated_v1/system.py": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220",
+    "data/edge/k306_tau025_integrated_v1/xy_coordinator.py": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b",
+    "edge/flight_bridge.py": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256",
+    "edge/runtime.py": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2",
+    "edge/sensors.py": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9",
+    "edge/session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+    "edge/system.py": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220",
+    "edge/transport.py": "027a09b8073e045e27ce7f191d513a4f873cdcaf8b9b4598e5f47dac1e731133",
+    "simulation/altitude_control.py": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e",
+    "simulation/xy_coordinator.py": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b"
+  },
+  "hardware_qualification": {
+    "esp_boot": false,
+    "pi_execution": false,
+    "wifi": false,
+    "sensor_acquisition": false,
+    "clock_mapping": false,
+    "gamepad_rf_loss": false,
+    "fc_control": false,
+    "flight": false
+  },
+  "timing_budget": {
+    "latest_frame_response_strictly_below_us": 20000,
+    "max_lease_from_esp_frame_us": 40000,
+    "qualification": "open",
+    "reference": "docs/PI_COMPUTE_AUDIT_UK.md"
+  },
+  "limitations": [
+    "Only host tests/mock and ESP target build were performed in this delivery.",
+    "Foundation was not flashed or booted; no Pi, Wi-Fi, sensors, FC or flight qualification.",
+    "Recorded input replay retains old times and does not establish RF freshness or calibration.",
+    "Clock estimator, calibrated live notebook sender, sensor and FC drivers remain pending.",
+    "Build artifacts and private configurations/backups are not committed."
+  ]
+}

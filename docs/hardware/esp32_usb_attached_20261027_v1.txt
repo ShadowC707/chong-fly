@@ -1,0 +1,74 @@
+USB receiver attachment reported by owner, 2026-10-27. Physical port/adapter/power not yet independently verified.
+
+LIVE CAPTURE (12 seconds, no reset):
+I (110259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (112259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (114259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (116259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (118259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (120259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+
+RESET CAPTURE (12 seconds):
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:2
+load:0x3fce2820,len:0x159c
+load:0x403c8700,len:0xd24
+load:0x403cb700,len:0x2f48
+entry 0x403c891c
+I (24) boot: ESP-IDF 5.5.0 2nd stage bootloader
+I (25) boot: compile time Oct 26 2026 17:35:27
+I (25) boot: Multicore bootloader
+I (25) boot: chip revision: v0.2
+I (28) boot: efuse block revision: v1.4
+I (31) boot.esp32s3: Boot SPI Speed : 40MHz
+I (35) boot.esp32s3: SPI Mode       : DIO
+I (39) boot.esp32s3: SPI Flash Size : 16MB
+I (43) boot: Enabling RNG early entropy source...
+I (47) boot: Partition Table:
+I (50) boot: ## Label            Usage          Type ST Offset   Length
+I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (69) boot:  2 factory          factory app      00 00 00010000 00100000
+I (76) boot: End of partition table
+I (79) esp_image: segment 0: paddr=00010020 vaddr=3c020020 size=0b454h ( 46164) map
+I (98) esp_image: segment 1: paddr=0001b47c vaddr=3fc92700 size=028f4h ( 10484) load
+I (101) esp_image: segment 2: paddr=0001dd78 vaddr=40374000 size=022a0h (  8864) load
+I (104) esp_image: segment 3: paddr=00020020 vaddr=42000020 size=1fcb0h (130224) map
+I (141) esp_image: segment 4: paddr=0003fcd8 vaddr=403762a0 size=0c3e4h ( 50148) load
+I (156) esp_image: segment 5: paddr=0004c0c4 vaddr=600fe000 size=00020h (    32) load
+I (162) boot: Loaded app from partition at offset 0x10000
+I (162) boot: Disabling RNG early entropy source...
+I (174) cpu_start: Multicore app
+I (183) cpu_start: Pro cpu start user code
+I (188) cpu_start: cpu freq: 160000000 Hz
+I (188) app_init: Application information:
+I (189) app_init: Project name:     chong_usb_probe
+I (193) app_init: App version:      487421f-dirty
+I (197) app_init: Compile time:     Oct 26 2026 17:33:36
+I (203) app_init: ELF file SHA256:  27e8112da...
+I (207) app_init: ESP-IDF:          5.5.0
+I (211) efuse_init: Min chip rev:     v0.0
+I (214) efuse_init: Max chip rev:     v0.99 
+I (218) efuse_init: Chip rev:         v0.2
+I (222) heap_init: Initializing. RAM available for dynamic allocation:
+I (229) heap_init: At 3FC958D0 len 00053E40 (335 KiB): RAM
+I (234) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+I (239) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+I (244) heap_init: At 600FE020 len 00001FC8 (7 KiB): RTCRAM
+I (250) spi_flash: detected chip: boya
+I (253) spi_flash: flash io: dio
+I (256) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+I (262) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+I (269) main_task: Started on CPU0
+I (279) main_task: Calling app_main()
+I (279) chong_usb: CHONG_USB_PROBE_V1 -- diagnostic only, FC output absent, RF health unknown
+I (279) chong_usb: UART0/COM console; native USB GPIO19/20. VBUS power is not switched by this firmware.
+I (319) chong_usb: USB_HOST_READY; waiting for receiver. No USB OUT gamepad commands are sent.
+I (2259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (4259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (6259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (8259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled
+I (10259) chong_usb: HEARTBEAT device=0 reports=0 log_overwrites=0 rf_health=unknown fc_output=disabled

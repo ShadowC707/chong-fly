@@ -1,0 +1,56 @@
+{
+  "version": "gpw70-windows-observation-v1",
+  "date": "2026-10-26",
+  "model_reported_by_owner": "A4Tech Bloody GPW70 Sports Black",
+  "receiver_owned": true,
+  "user_observation": {
+    "joy_cpl_name": "Controller (XBOX 360 For Windows)",
+    "joy_cpl_status": "OK",
+    "owner_reports_controls_work": true
+  },
+  "read_only_windows_probe": {
+    "tools": ["Get-PnpDevice", "Get-PnpDeviceProperty", "XInputGetState"],
+    "usb_vid": "045e",
+    "usb_pid": "028e",
+    "usb_revision": "0101",
+    "pnp_class": "XnaComposite",
+    "driver_service": "xusb22",
+    "driver_inf": "xusb22.inf",
+    "compatible_ids": [
+      "USB\\MS_COMP_XUSB10",
+      "USB\\Class_FF&SubClass_5D&Prot_01"
+    ],
+    "hid_child_present": true,
+    "hid_child_inf": "input.inf",
+    "xinput_slots_connected": [0],
+    "xinput_result_code": 0,
+    "xinput_snapshot": {
+      "packet_number": 1498,
+      "buttons": 0,
+      "left_trigger": 0,
+      "right_trigger": 136,
+      "lx": 0,
+      "ly": 0,
+      "rx": 0,
+      "ry": 0
+    }
+  },
+  "hardware_evidence": {
+    "windows_usb_enumeration_tested": true,
+    "windows_translated_xinput_read_tested": true,
+    "raw_usb_configuration_captured": false,
+    "raw_interrupt_input_captured": false,
+    "esp_usb_host_tested": false,
+    "radio_loss_tested": false,
+    "fc_output_tested": false
+  },
+  "interpretation": "Current Windows mode advertises XUSB10 FF/5D/01 and uses xusb22. Candidate ESP driver must support the Xbox 360 USB/XUSB interface; the Windows HID child is not evidence of a USB HID class 03 interface on the receiver.",
+  "limitations": [
+    "PnP compatible IDs are Windows observations, not a raw USB configuration descriptor dump.",
+    "VID/PID alone do not prove complete report, initialization or disconnect behavior.",
+    "XInput state is translated by Windows, not a raw USB packet fixture.",
+    "Snapshot is not a neutral calibration: right trigger value was 136 at read time.",
+    "Packet number is not a sensor capture time or proof of RF freshness.",
+    "No rumble, controller reconfiguration, driver replacement or FC commands were performed."
+  ]
+}

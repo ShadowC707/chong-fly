@@ -1,0 +1,60 @@
+{
+  "version": "gamepad-input-adapter-v1",
+  "date": "2026-10-27",
+  "recorded_utc": "2026-10-27T11:05:20.790141+00:00",
+  "tests": {
+    "input_cases_passed": 19,
+    "with_foundation_passed": 53,
+    "elapsed_s": 2.68,
+    "red_green_observed": true
+  },
+  "mock_capture": {
+    "path": "data/diagnostics/gamepad_input_v1/mock.json",
+    "success": true,
+    "synthetic": true
+  },
+  "windows_observation": {
+    "api": "xinput1_4.dll",
+    "slots": [
+      {
+        "slot": 0,
+        "api_status": 1167,
+        "connected": false
+      },
+      {
+        "slot": 1,
+        "api_status": 1167,
+        "connected": false
+      },
+      {
+        "slot": 2,
+        "api_status": 1167,
+        "connected": false
+      },
+      {
+        "slot": 3,
+        "api_status": 1167,
+        "connected": false
+      }
+    ],
+    "wired_transport_confirmed": false,
+    "calibration_completed": false
+  },
+  "hardware_changes": {
+    "esp_flash_written": false,
+    "fc_config_changed": false,
+    "udp_sends": 0,
+    "fc_attempts": 0
+  },
+  "source_sha256": {
+    "edge/gamepad_input.py": "6aeca0130e3481d53156c8e79b6b25779875f78874e67e56b02dde992a82e280",
+    "edge/gamepad_probe.py": "d9cc93cf6a4679fafa43494fed57601e1cdcf94c8562c96e14699f552d207008",
+    "tests/test_gamepad_input.py": "263203d9c3c5f655a5b5cb6157adba4acd5e88189d937efa597452af4b5bf075"
+  },
+  "limitations": [
+    "No detected controller in current Windows query; USB wired connection still needs owner action.",
+    "Raw min/max/median captures are not a calibrated RC profile.",
+    "No axis-to-throttle/ARM mapping or network command sender implemented.",
+    "Neither XInput packet number nor read completion timestamp proves RF freshness."
+  ]
+}

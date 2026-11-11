@@ -1,0 +1,93 @@
+{
+  "version": "esp32-host-validation-v1",
+  "date": "2026-10-26",
+  "base_commit": "487421fa076790a60f4dc51ee1ba25abb2570ddb",
+  "hardware_tested": false,
+  "execution_host": "Windows x64 / Python 3.12.10 / MSVC 14.50",
+  "timing_source": "synthetic_integer_microseconds",
+  "tests": {
+    "full_passed": 857,
+    "new_host_cases": 50,
+    "elapsed_s": 85.77,
+    "process_local_tempfile_dir": ".test-tmp-esp32-runtime-v1",
+    "basetemp": ".test-tmp-esp32-suite-v1"
+  },
+  "source_sha256": {
+    "edge/hardware_wire.py": "d9b22f76e46787441e56b5a6c3d7af5ab1a31f9da079fc9dfae84e68a7541540",
+    "edge/pi_hardware_adapter.py": "2c661f949fbbcea78802f8b0a2f70bdec5037b044cd1f5bd48f0484322cabf46",
+    "edge/hardware_mock.py": "b646a5f74cb945eded7c08928e1817c8e393d0b4ff502f6eb5fb5ad1d8e31305",
+    "firmware/esp32/receiver_core.hpp": "a10d05357a29218ea127573c3c7944506cb4f26ae9e71637a3c7ceb06ff5873d",
+    "firmware/esp32/host/receiver_host.cpp": "d19f18b88038609c7e9566e1c42ecf5039a1c887e328e48ea61cc894b3718d65",
+    "firmware/esp32/build_host.ps1": "2cf879b28c8a241a2264a4b8be29f4d3b0ae3e3b7c187546d912ff8f940d5812",
+    "tests/test_hardware_wire.py": "ecf00796f6d2790baa93ba5eac1fbd984e3ceab8f40db822ea89491fc63c4e0e",
+    "tests/test_hardware_mock.py": "f855010f64863d109077ca6b22814bbdcb33e7f0cd93df9d4b615a1e7a3fc8b1",
+    "tests/test_esp32_host.py": "4904652409dae401774c901fa6ed7613ee1a3ddf990b988bad857154a0271514",
+    "tests/fixtures/esp32_wire_v1.json": "ee0f6a3129f022aad97398a400c22fed393a442bdb87d250b29bde5c8cfb9e36"
+  },
+  "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+  "scenarios": {
+    "normal": {
+      "accepted_count": 50,
+      "watchdog_tripped": true,
+      "final_reason": "watchdog_expired",
+      "roundtrip_us": {
+        "p50": 10000.0,
+        "p95": 10000.0,
+        "p99": 10000.0,
+        "max": 10000.0
+      },
+      "roundtrip_deadline_misses": 0,
+      "pi_queue_wait_us": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "pi_service_us": {
+        "p50": 2000.0,
+        "p95": 2000.0,
+        "p99": 2000.0,
+        "max": 2000.0
+      },
+      "inbox_overflows": 0,
+      "link_overflows": 0,
+      "fc_attempts": 0,
+      "local_report_sha256": "f421b1a0092a8a3f491ca11275b0c34dc9123ba20523ad38a782944764b2cda0"
+    },
+    "boundary_20ms": {
+      "accepted_count": 0,
+      "watchdog_tripped": true,
+      "final_reason": "sequence_rejected",
+      "roundtrip_us": {
+        "p50": 20000.0,
+        "p95": 20000.0,
+        "p99": 20000.0,
+        "max": 20000.0
+      },
+      "roundtrip_deadline_misses": 80,
+      "pi_queue_wait_us": {
+        "p50": 0.0,
+        "p95": 0.0,
+        "p99": 0.0,
+        "max": 0.0
+      },
+      "pi_service_us": {
+        "p50": 4000.0,
+        "p95": 4000.0,
+        "p99": 4000.0,
+        "max": 4000.0
+      },
+      "inbox_overflows": 0,
+      "link_overflows": 0,
+      "fc_attempts": 0,
+      "local_report_sha256": "f67518ed2302bca615bf79bd89d6acdea5f25bac202b943156b8b0d1b563cf1a"
+    }
+  },
+  "limitations": [
+    "No ESP-target build or physical scheduler/watchdog test",
+    "No physical sensor calibration or live clock synchronization",
+    "No Pi-board or network latency measurement",
+    "No FC output or flight test",
+    "Pi compute audit remains unresolved: historical 11/14 at added 2 ms"
+  ]
+}

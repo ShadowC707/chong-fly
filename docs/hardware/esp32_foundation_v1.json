@@ -1,0 +1,480 @@
+{
+  "version": "esp32-foundation-v1",
+  "date": "2026-10-27",
+  "recorded_utc": "2026-10-27T10:53:39.013451+00:00",
+  "base_commit": "487421fa076790a60f4dc51ee1ba25abb2570ddb",
+  "placement": {
+    "onboard": [
+      "ESP32",
+      "sensors",
+      "G4"
+    ],
+    "ground_pi": "existing pinned model",
+    "ground_notebook": "GPW70 receiver/manual input only"
+  },
+  "tooling": {
+    "platformio": "6.2.0",
+    "platform": "espressif32@6.12.0",
+    "esp_idf": "5.5.0",
+    "xtensa": "14.2.0+20241119"
+  },
+  "build": {
+    "success": true,
+    "final_incremental_seconds": 30.17,
+    "previous_full_seconds": 178.2,
+    "static_ram_bytes": 36804,
+    "linked_program_bytes": 791165,
+    "flash_mb": 16,
+    "flash_mode": "DIO",
+    "flash_mhz": 40,
+    "artifacts": {
+      "bootloader.bin": {
+        "offset": "0x0",
+        "size_bytes": 21088,
+        "sha256": "27f43f1823a3f96d13fa600fd02327d27239f0e2e5a90b53088b09a8ac85f522"
+      },
+      "partitions.bin": {
+        "offset": "0x8000",
+        "size_bytes": 3072,
+        "sha256": "a11982a2601a607baadac94c0f21fdb7fdbf910249ed5ba58af40be62c2ee98a"
+      },
+      "firmware.bin": {
+        "offset": "0x10000",
+        "size_bytes": 791568,
+        "sha256": "bb36c97d6d5876501f8ac47bac62f6668e3c85a5c9c2c9e5af5ebcb0601ab3a0"
+      }
+    },
+    "generated_sdkconfig_sha256": "c37b4b6cc4b28005cb005a5e43c23ad27a76ea9f766d99ca51407d7a4608f1b8"
+  },
+  "validation": {
+    "full_suite_passed": 923,
+    "full_suite_seconds": 85.47,
+    "suite_log_sha256": "37a90d5bb16f50e1b67880b1356ba7ae19c1c8e6d9dcd57ad24aea2c13f2c415",
+    "foundation_specific_cases": 36,
+    "targeted_passed": 36,
+    "red_green_observed": [
+      "missing manual codec/application harness",
+      "missing configuration checks and repeated frame sequence",
+      "missing end-to-end mock module",
+      "20ms response admitted when frame publication stalled; app guard now rejects"
+    ]
+  },
+  "mock": {
+    "normal": {
+      "version": "esp32-foundation-mock-v1",
+      "hardware_tested": false,
+      "fc_attempts": 0,
+      "timing_source": "synthetic_20ms_control_clock_exact_clock_mapping",
+      "sensor_source": "synthetic_normalized",
+      "transport": "two_real_host_udp_pairs_plus_native_cpp_app_core",
+      "model_bundle": "data/edge/k306_tau025_integrated_v1",
+      "wire_sizes": {
+        "sensor": 733,
+        "command": 69,
+        "receipt": 130,
+        "challenge": 40,
+        "manual": 67
+      },
+      "accepted_count": 10,
+      "accepted": [
+        {
+          "sequence": 31,
+          "accepted_pwm": [
+            1213.0,
+            1500.0,
+            1500.0,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1500.0,
+            1500.0,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 32,
+          "accepted_pwm": [
+            1213.0,
+            1499.994201980952,
+            1500.125553220561,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.994201980952,
+            1500.125553220561,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 33,
+          "accepted_pwm": [
+            1213.0,
+            1499.9950920828353,
+            1500.106278506706,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9950920828353,
+            1500.106278506706,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 34,
+          "accepted_pwm": [
+            1213.0,
+            1499.9958455378128,
+            1500.0899628136754,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9958455378128,
+            1500.0899628136754,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 35,
+          "accepted_pwm": [
+            1213.0,
+            1499.9964833236818,
+            1500.076151877696,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9964833236818,
+            1500.076151877696,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 36,
+          "accepted_pwm": [
+            1213.0,
+            1499.9970231977643,
+            1500.0644611727857,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9970231977643,
+            1500.0644611727857,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 37,
+          "accepted_pwm": [
+            1213.0,
+            1499.9974801913088,
+            1500.054565204728,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9974801913088,
+            1500.054565204728,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 38,
+          "accepted_pwm": [
+            1213.0,
+            1499.9978670279927,
+            1500.0461884486172,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9978670279927,
+            1500.0461884486172,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 39,
+          "accepted_pwm": [
+            1213.0,
+            1499.9981944781762,
+            1500.0390976776555,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9981944781762,
+            1500.0390976776555,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 40,
+          "accepted_pwm": [
+            1213.0,
+            1499.9984716587721,
+            1500.033095469621,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9984716587721,
+            1500.033095469621,
+            1500.0
+          ]
+        }
+      ],
+      "final_auto_expired": true,
+      "final_selected_source": "none",
+      "host_wall_roundtrip_us": {
+        "p50": 961.05,
+        "p95": 1099.5,
+        "p99": 1640.1939999999995,
+        "max": 1954.3
+      }
+    },
+    "takeover": {
+      "version": "esp32-foundation-mock-v1",
+      "hardware_tested": false,
+      "fc_attempts": 0,
+      "timing_source": "synthetic_20ms_control_clock_exact_clock_mapping",
+      "sensor_source": "synthetic_normalized",
+      "transport": "two_real_host_udp_pairs_plus_native_cpp_app_core",
+      "model_bundle": "data/edge/k306_tau025_integrated_v1",
+      "wire_sizes": {
+        "sensor": 733,
+        "command": 69,
+        "receipt": 130,
+        "challenge": 40,
+        "manual": 67
+      },
+      "accepted_count": 10,
+      "accepted": [
+        {
+          "sequence": 31,
+          "accepted_pwm": [
+            1213.0,
+            1500.0,
+            1500.0,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1500.0,
+            1500.0,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 32,
+          "accepted_pwm": [
+            1213.0,
+            1499.994201980952,
+            1500.125553220561,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.994201980952,
+            1500.125553220561,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 33,
+          "accepted_pwm": [
+            1213.0,
+            1499.9950920828353,
+            1500.106278506706,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9950920828353,
+            1500.106278506706,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 34,
+          "accepted_pwm": [
+            1213.0,
+            1499.9958455378128,
+            1500.0899628136754,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9958455378128,
+            1500.0899628136754,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 35,
+          "accepted_pwm": [
+            1213.0,
+            1499.9964833236818,
+            1500.076151877696,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9964833236818,
+            1500.076151877696,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 36,
+          "accepted_pwm": [
+            1213.0,
+            1499.9970231977643,
+            1500.0644611727857,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9970231977643,
+            1500.0644611727857,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 37,
+          "accepted_pwm": [
+            1213.0,
+            1499.9974801913088,
+            1500.054565204728,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9974801913088,
+            1500.054565204728,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 38,
+          "accepted_pwm": [
+            1213.0,
+            1499.9978670279927,
+            1500.0461884486172,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9978670279927,
+            1500.0461884486172,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 39,
+          "accepted_pwm": [
+            1213.0,
+            1499.9981944781762,
+            1500.0390976776555,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9981944781762,
+            1500.0390976776555,
+            1500.0
+          ]
+        },
+        {
+          "sequence": 40,
+          "accepted_pwm": [
+            1213.0,
+            1499.9984716587721,
+            1500.033095469621,
+            1500.0
+          ],
+          "issued_pwm": [
+            1213.0,
+            1499.9984716587721,
+            1500.033095469621,
+            1500.0
+          ]
+        }
+      ],
+      "final_auto_expired": true,
+      "final_selected_source": "none",
+      "host_wall_roundtrip_us": {
+        "p50": 965.75,
+        "p95": 1111.805,
+        "p99": 1758.5539999999992,
+        "max": 2164.7
+      },
+      "takeover_source": "manual",
+      "auto_revoked_by_takeover": true,
+      "manual_fault_after_disconnect": true
+    },
+    "normal_report_sha256": "1cb6b76b2582c2f4b7f6a76a75897655c0ad47944890a8adf65a7f91f31a0b2a",
+    "takeover_report_sha256": "c3eb464c268e913565913163924eb69e62c9044ef05246360c7e24b775eb892c",
+    "note": "Both ground roles share one Python host process with separate UDP endpoints; C++ app core is a subprocess. Sensors/control clock/mapping are synthetic."
+  },
+  "default_profile": {
+    "wifi": "disabled",
+    "local_private_profile_present": false,
+    "sensors": "pending_all_invalid",
+    "fc": "disabled_no_driver",
+    "mode": "MANUAL",
+    "bench_auto_allowed": false,
+    "manual_timeout_us": 100000
+  },
+  "qualification": {
+    "target_boot_tested": false,
+    "real_wifi_tested": false,
+    "two_physical_ground_peers_tested": false,
+    "real_sensor_drivers_tested": false,
+    "fc_output_tested": false,
+    "flash_writes_this_stage": 0,
+    "efuse_writes_this_stage": 0,
+    "pi_timing_budget_closed": false
+  },
+  "protected_files_sha256": {
+    "configs/mvp_runtime_v3.json": "9a8fefffd66772566bc47875e037eef19c2dde82ced67fa7008ccf418637db61",
+    "edge/system.py": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220",
+    "edge/flight_bridge.py": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256",
+    "edge/sensors.py": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9",
+    "edge/session_receiver.py": "5454da49264ae406a7a5b17338ba6a6338453b51fab45e8799565cdbf7242dae",
+    "firmware/esp32/receiver_core.hpp": "a10d05357a29218ea127573c3c7944506cb4f26ae9e71637a3c7ceb06ff5873d"
+  },
+  "source_sha256": {
+    "edge/foundation_mock.py": "f98fc3c4d1476d529bc05a6e3c4a99fc1533e03685d117c4db1fabbcf747979d",
+    "edge/hardware_mock.py": "ea4148f5255ea1014947c7c638a558345948e29e1f791b24ec1c6c20c67e71ed",
+    "edge/manual_wire.py": "6656220f3247560b04cbed9e2095e249ca1d783d37682af21558f218d832edc4",
+    "firmware/esp32/app/CMakeLists.txt": "fd11ae0bfbd8e9b888107976c0fc3452987f5aec0a95926a0bb09347c0697c11",
+    "firmware/esp32/app/local_config.example.hpp": "9b19ad2227b590fad960cda8124a66afe3bd22a61240092226f6d73b5c661d2f",
+    "firmware/esp32/app/partitions.csv": "968a2b71c6a4161bed267c2a3b67e58529322269619b0a3a5191667ea127e4f2",
+    "firmware/esp32/app/platformio.ini": "63063acbb978c78b7e757ccd3c2fdf863d1c874dea69e940b0b0b3bcc09dcd12",
+    "firmware/esp32/app/sdkconfig.defaults": "5030cc4ee190f5b430f2593c4bb3860e052ddead763caa6feea4166a4431fed9",
+    "firmware/esp32/app/src/CMakeLists.txt": "0369f8ebe5b32e6acd0e5eb08d69dc3bbf87a270bde3b6104aee0c9574729188",
+    "firmware/esp32/app/src/main.cpp": "89086d795c55e43005f72ec6ddd6958b3002e215085d72f0864e49722628c6e0",
+    "firmware/esp32/build_host.ps1": "3faac54c134a022f2d34a376a77c138f669f195cab9ce210c2954cd4e6d57c3f",
+    "firmware/esp32/foundation/adapters.hpp": "7397af1830e08ca0e20a97c9a93389212a112845288c396ec32b292e5bf73bc0",
+    "firmware/esp32/foundation/config.hpp": "d1ca229e41cb901975f39994b29092932a182aff3539b3c635548294d467b285",
+    "firmware/esp32/foundation/manual.hpp": "c7b56a557535eb10e0ab7566bedc524a43e42cfd0429ff64b4e7ef1f0e1f80e8",
+    "firmware/esp32/foundation/runtime.hpp": "6a917bcc5efdadba7fce0c3414bd10d39a99fc159b33369d0812856d79491bce",
+    "firmware/esp32/foundation/wire.hpp": "b84bbe500a72fa5cc247867caa34a1834d6c6ed02abc17dbf0dcf70285c3faec",
+    "firmware/esp32/host/foundation_host.cpp": "e9ef605af019c4c9ea5f3bea56fd4d456dfd6b8e2019fa10fc4afa75d2486d24",
+    "tests/test_esp32_foundation.py": "b8dd23334ee6fa20650208a0658e1cca117641cb45b38ad37a4483a07e7c13e1",
+    "tests/test_foundation_loop.py": "c1cbe5eed5146a8735457f1b57f77049fe56cdc841ef97faec8ef0bf265155f0"
+  },
+  "limitations": [
+    "No physical timing qualification; host wall RTT is not ESP/Pi/Wi-Fi latency.",
+    "Real sensor drivers, normalization/calibration/pinout and capture-aligned FC attitude remain pending.",
+    "GPW70 XInput sender mapping/deadman/RF freshness not implemented.",
+    "Clock-mapping estimator, authenticated/trusted pairing and actual network profiles remain pending.",
+    "FC protocol/ARM/revocation pending; no UART FC output exists even if a candidate is selected.",
+    "New app guard enforces nominal 20ms response age during publisher stalls; pinned reference core and 40ms lease semantics unchanged."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "version": "esp32-usb-attached-observation-v1",
+  "date": "2026-10-27",
+  "recorded_utc": "2026-10-27T09:28:31.857755+00:00",
+  "port": "COM14",
+  "serial_bridge": "CH343 1a86:55d3",
+  "receiver_attached": "reported by owner; wiring/port/photo and VBUS not yet verified",
+  "firmware": "CHONG_USB_PROBE_V1; no firmware changes this observation",
+  "observations": {
+    "live_capture_seconds": 12,
+    "live_heartbeats": 6,
+    "reset_capture_seconds": 12,
+    "reset_heartbeats": 5,
+    "usb_host_ready": true,
+    "device_count": 0,
+    "reports": 0,
+    "device_descriptor_seen": false,
+    "input_packet_seen": false,
+    "panic_seen": false
+  },
+  "log": {
+    "path": "docs/hardware/esp32_usb_attached_20261027_v1.txt",
+    "sha256": "05d1d517d1bad13a43aa53eef9ff02da2cd448e8103b636d20219bcf2eca2c4e"
+  },
+  "interpretation": "No USB attachment/enumeration observed before or after ESP reset; does not establish receiver incompatibility or prove lack of VBUS.",
+  "next_required": "Verify actual connection/adapter and VBUS power; obtain current connection and multimeter photos before giving model-specific measurement steps.",
+  "fc_output_enabled": false,
+  "pi_timing_budget_closed": false
+}

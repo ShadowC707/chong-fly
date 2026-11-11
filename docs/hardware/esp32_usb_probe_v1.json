@@ -1,0 +1,98 @@
+{
+  "version": "esp32-usb-probe-v1",
+  "recorded_utc": "2026-10-26T15:44:52.827746+00:00",
+  "base_commit": "487421fa076790a60f4dc51ee1ba25abb2570ddb",
+  "tooling": {
+    "platformio": "6.2.0",
+    "platform": "espressif32@6.12.0",
+    "esp_idf": "5.5.0",
+    "xtensa": "14.2.0+20241119",
+    "flash_tool": "esptool 5.6.0"
+  },
+  "board": {
+    "chip": "ESP32-S3 rev 0.2",
+    "port_at_observation": "COM14",
+    "flash_mb": 16,
+    "flash_mode": "DIO",
+    "flash_mhz": 40,
+    "psram_used": false
+  },
+  "build": {
+    "success": true,
+    "jobs": 2,
+    "duration_seconds": 188.23,
+    "static_ram_bytes": 12748,
+    "artifacts": {
+      "bootloader.bin": {
+        "offset": "0x0",
+        "size_bytes": 21088,
+        "sha256": "3167a696f8a1658f721418d405bc5d9b65a1f3b0dadc87a2476d342e776f7fc1"
+      },
+      "partitions.bin": {
+        "offset": "0x8000",
+        "size_bytes": 3072,
+        "sha256": "7f00b6c042a89b15b0cac534f82ed988caf29278ff5700b0c511eb1b5bb7c820"
+      },
+      "firmware.bin": {
+        "offset": "0x10000",
+        "size_bytes": 246032,
+        "sha256": "61d1726997440ba8849aa253d5b668b898b713b0eb057f906516203dd2baf9c7"
+      }
+    }
+  },
+  "backup": {
+    "path": "data/hardware_backups/esp32_20261026_v1/flash_verified.bin",
+    "size_bytes": 16777216,
+    "sha256": "3a3c9c078b2777a11339b34019af7ca2d9a7e5ed5f71be0a435a9d20a7906071",
+    "full_16mb_digest_matched_device": true,
+    "chunk_retries": 11,
+    "publication_recovered_after_windows_fsync_error": true
+  },
+  "flash": {
+    "success": true,
+    "all_three_written_hashes_verified": true,
+    "erase_all": false,
+    "efuse_write": false,
+    "fc_connected": false
+  },
+  "boot": {
+    "log": "docs/hardware/esp32_usb_probe_boot_v1.txt",
+    "log_sha256": "c0d71df0c536d885ed0de4c942970d58b4804447291703ebdccb50fbe3bc5e36",
+    "usb_host_ready": true,
+    "observed_heartbeats": 5,
+    "last_heartbeat_esp_ms": 10259,
+    "panic_or_reset_in_capture": false,
+    "receiver_attached": false,
+    "receiver_presence_source": "owner explicitly confirmed not yet connected",
+    "device_count": 0,
+    "reports": 0
+  },
+  "host_tests": {
+    "targeted_passed": 43,
+    "full_suite_passed": 885,
+    "full_suite_seconds": 125.86,
+    "usb_fixtures": "synthetic, not GPW70 USB captures"
+  },
+  "source_sha256": {
+    "firmware/esp32/usb_probe_core.hpp": "2a2ea0674b4055b0a95344eb4111deaa760e533e6227a0f4e28a153f24646500",
+    "firmware/esp32/usb_probe/src/main.cpp": "c1d9d6a270b9d5374001ccc144af9e839179f571fa5131ec12b694f238227f53",
+    "firmware/esp32/usb_probe/src/CMakeLists.txt": "8743c994c7f71795ff36cffdb2199c64790fb5731d5510a9219e432fafcb84b6",
+    "firmware/esp32/usb_probe/CMakeLists.txt": "552d871c2e72e76805799b27970324d1cf1834448553ee0dbd69ab6163d85889",
+    "firmware/esp32/usb_probe/platformio.ini": "29cf0d32ba9d8d40acb2e7cd483582e5d84e349c1ad6637ed6fc1818736a403a",
+    "firmware/esp32/usb_probe/sdkconfig.defaults": "ba5c3d2d0d91de136129f39bb888ddcea7976875bbb5d43e0f3febf3a8859457",
+    "firmware/esp32/usb_probe/partitions.csv": "f25e55efe60adb32d8932a5a8d22171e018357b4b252d2a7900b875279277ad5",
+    "firmware/esp32/pio_local.py": "ee2336283f537406cf92773f595519fed388905d9adcd5d1aca87121ffbd3a64",
+    "firmware/esp32/backup_flash.py": "798fc444420fb4086dab1b48d72fdf7c2bf48431a90cbb5a54e9bf9f92b98e81",
+    "firmware/esp32/build_host.ps1": "673f7352e97cfe427f88e686704d6bd77eb6129fa9dc285e44e4c1564db20e40",
+    "firmware/esp32/host/usb_probe_host.cpp": "e730df63522e8c2c321338dc24e89a43c2da18961cc811290b86724d50554cb0",
+    "tests/test_usb_gamepad_probe.py": "694a085a3f520b0a2aa96aa4c1b93419734a2afe65c28296771d6a529f1b10a0",
+    "tests/test_esp_flash_backup.py": "35b642e638e1b1767fc8ae29fe227d817be2c973af6d52134042db141e261613"
+  },
+  "limitations": [
+    "USB Host startup is physical evidence; GPW70 enumeration and raw input on ESP are not yet verified.",
+    "VBUS routing/power and USB-OTG jumper are unmeasured.",
+    "RF freshness, RF loss and manual RC mapping are unqualified.",
+    "No FC output, AUTO or sensor/UDP firmware integration in this diagnostic.",
+    "Pi compute/network timing budget remains unresolved; lease/latest-sequence contract unchanged."
+  ]
+}

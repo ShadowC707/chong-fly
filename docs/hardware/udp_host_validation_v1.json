@@ -1,0 +1,67 @@
+{
+  "version": "esp32-udp-host-validation-v1",
+  "date": "2026-10-26",
+  "base_commit": "487421fa076790a60f4dc51ee1ba25abb2570ddb",
+  "hardware_tested": false,
+  "transport": "real IPv4 UDP loopback 127.0.0.1 only",
+  "command_clock": "synthetic_20ms_ticks",
+  "tests": {
+    "full_passed": 866,
+    "full_elapsed_s": 69.94,
+    "targeted_passed": 59,
+    "targeted_elapsed_s": 5.91,
+    "new_udp_cases": 9
+  },
+  "source_sha256": {
+    "edge/hardware_udp.py": "7f779247813c2e150566aa8c22368425eed7895b0438cf31024e07ba7fd6b366",
+    "edge/hardware_udp_probe.py": "82f92880b590947e2fcf49207b0f85c98050326c1baf4e0dd964cfaf226a6ff8",
+    "edge/pi_hardware_adapter.py": "917b166187840091328e4ad62f33505e4ef4fe779446b1dcda5b2336368729c4",
+    "edge/hardware_wire.py": "d9b22f76e46787441e56b5a6c3d7af5ab1a31f9da079fc9dfae84e68a7541540",
+    "edge/hardware_mock.py": "b646a5f74cb945eded7c08928e1817c8e393d0b4ff502f6eb5fb5ad1d8e31305",
+    "firmware/esp32/receiver_core.hpp": "a10d05357a29218ea127573c3c7944506cb4f26ae9e71637a3c7ceb06ff5873d",
+    "firmware/esp32/host/receiver_host.cpp": "d19f18b88038609c7e9566e1c42ecf5039a1c887e328e48ea61cc894b3718d65",
+    "tests/test_hardware_udp.py": "6733055470558fe8c3a08e03fd5cf9e0416dff500f293a9286c7da2840d87acf",
+    "tests/fixtures/esp32_wire_v1.json": "ee0f6a3129f022aad97398a400c22fed393a442bdb87d250b29bde5c8cfb9e36"
+  },
+  "local_report_sha256": "aacc99df1683cd56bb3c0c16f10d08bd15f809c6ee31cd9e3d6267a9f4a99e96",
+  "fc_dump_sha256": "97bb91b7d0b08d821cc4bd176695359415fad010ba651c47d77c45da58090b99",
+  "loopback": {
+    "accepted_count": 10,
+    "watchdog_tripped": true,
+    "final_reason": "watchdog_expired",
+    "host_wall_roundtrip_us": {
+      "p50": 661.5,
+      "p95": 808.4349999999998,
+      "p99": 1454.4359999999995,
+      "max": 1831.8
+    },
+    "fc_attempts": 0,
+    "counters": {
+      "pi": {
+        "receipt_without_issue": 30
+      },
+      "esp_udp": {
+        "sent": 80,
+        "examined": 40,
+        "received": 40
+      },
+      "pi_udp": {
+        "examined": 80,
+        "received": 80,
+        "sent": 40
+      }
+    },
+    "socket_receive_buffer_bytes": {
+      "esp": 8192,
+      "pi": 8192
+    }
+  },
+  "limitations": [
+    "Synthetic command timestamps: no real deadline qualification",
+    "Host wall RTT includes UDP/NumPy/native harness IPC, excludes receipt return trip",
+    "No ESP target build, live sensor filtering, clock estimator or pairing",
+    "No Pi/Wi-Fi or FC output test; Pi compute audit still unresolved",
+    "Bloody PN-01B ownership confirmed; interface/protocol compatibility unknown"
+  ],
+  "historical_evidence": "host_validation_v1.json remains the original pre-UDP evidence; pi_hardware_adapter now additionally classifies wire decode errors"
+}

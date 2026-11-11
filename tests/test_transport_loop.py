@@ -9,6 +9,68 @@ from simulation.receiver_fallback import ReceiverFallback
 from tests.test_edge_runtime import exported
 
 
+@pytest.mark.parametrize('delay', [-.001, float('nan'), float('inf')])
+def test_compute_delay_rejects_invalid_values(delay):
+    from evaluate.validate_transport_loop import PiComputeQueue
+    with pytest.raises(ValueError):
+        PiComputeQueue(delay)
+
+
+def test_compute_completion_is_quantized_and_cannot_bypass_busy_job():
+    from evaluate.validate_transport_loop import PiComputeQueue
+    worker = PiComputeQueue(.002)
+    worker.submit('first', now_s=.004)
+    worker.submit('second', now_s=.004)
+    assert worker.drain(.004) == []
+    first, = worker.drain(.008)
+    assert first['payload'] == 'first'
+    assert first['started_s'] == .004
+    assert first['due_s'] == pytest.approx(.006)
+    assert first['completed_s'] == .008
+    assert worker.drain(.008) == []
+    second, = worker.drain(.012)
+    assert second['payload'] == 'second'
+    assert second['started_s'] == .008
+    assert second['received_s'] == .004
+    assert worker.drain(.016) == []
+
+
+def test_zero_compute_delay_preserves_immediate_reply_and_session_identity():
+    from evaluate.validate_transport_loop import PiComputeQueue
+    worker = PiComputeQueue(0.)
+    worker.submit({'session_id': 'old'}, now_s=.004)
+    worker.submit({'session_id': 'new'}, now_s=.004)
+    ready = worker.drain(.004)
+    assert [r['payload']['session_id'] for r in ready] == ['old', 'new']
+    assert all(r['received_s'] == r['started_s'] == r['completed_s'] == .004 for r in ready)
+
+
+def test_twenty_ms_latency_does_not_pass_due_to_float_roundoff():
+    from evaluate.validate_transport_loop import within_roundtrip_budget
+    assert within_roundtrip_budget(.016)
+    assert not within_roundtrip_budget(.02 - 1e-13)
+    assert not within_roundtrip_budget(.024)
+
+
+def test_physical_runner_delays_issue_and_revalidates_sensor_age(exported):
+    from evaluate.validate_transport_loop import Case, physical_case
+    from tests.test_system_assembly import config
+    _, bundle = exported
+    cfg = config(bundle, sensor_mode='multi_rate_v1', handover_mode='freeze_sync_v1')
+    immediate = physical_case(cfg, Case('zero', horizon_s=.12))
+    delayed = physical_case(cfg, Case('delayed', horizon_s=.12, pi_compute_delay_s=.002))
+    a, b = immediate['traces'][0], delayed['traces'][0]
+    assert a['issue_global_s'] == .004
+    assert b['pi_received_global_s'] == .004
+    assert b['issue_global_s'] == .008
+    assert b['range_capture_age_s']-a['range_capture_age_s'] == pytest.approx(.004)
+    sent = [r for r in delayed['link_events'] if r['direction']=='downlink' and r['kind']=='scheduled']
+    assert sent[0]['sent_s'] == .008
+    stale = physical_case(cfg, Case('stale', horizon_s=.16, pi_compute_delay_s=.044))
+    assert stale['traces'][0]['issued_pwm'] is None
+    assert stale['traces'][0]['fault'] == 'Stale, future or replayed frame'
+
+
 def test_clock_mapping_keeps_capture_angles_and_held_identity():
     schedule=SampleSchedule('multi')
     a=AltitudeSample(.982,.1,-.2,0.,True)

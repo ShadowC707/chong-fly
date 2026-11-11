@@ -73,4 +73,8 @@ reports/
 /codebase_dump.txt
 /dump_simulation.txt
 
+# Local ESP build toolchain and private full-flash backups.
+/.pio-esp32/
+/data/hardware_backups/
+
 
