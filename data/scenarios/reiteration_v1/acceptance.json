@@ -1,0 +1,37 @@
+{
+  "version": "reiteration-simulation-acceptance-v1",
+  "scope": "Acceptance for the frozen simulation scenarios only",
+  "common": {
+    "complete_horizon": true,
+    "continuous_auto_after_engagement": true,
+    "require_expected_stop_and_revocation_where_scheduled": true,
+    "max_bridge_or_receiver_faults": 0,
+    "max_contacts": 0,
+    "min_body_clearance_m": 0.1,
+    "max_altitude_error_m": 0.1,
+    "max_reverse_distance_body_m": 0.25,
+    "max_continuous_wait_or_failed_s": 5,
+    "allow_navigation_blocked": false
+  },
+  "mvp_45s": {
+    "horizon_s": 45,
+    "require_expected_first_accepted_turn": true,
+    "preserve_historical_reverse_comparison": true
+  },
+  "exploration_180s": {
+    "horizon_s": 180,
+    "user_room_auto_request_s": 0,
+    "grid_cell_m": 0.25,
+    "max_no_new_cell_s": 25,
+    "min_new_cells_last_60s": 10,
+    "max_repeat_motion_windows": 0
+  },
+  "stop_reference": {
+    "max_horizontal_speed_last_second_mps": 0.03
+  },
+  "threshold_rationale": {
+    "clearance_and_height": "Existing geometric simulation margins",
+    "progress": "Initial engineering targets that separate the recorded 40.14 s and five-cell stagnation from a useful recovery. No credit for progress below the safety margin.",
+    "reverse": "Initial engineering budget of one 25 cm grid cell per flight using the existing body-axis reverse-speed definition"
+  }
+}
