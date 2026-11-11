@@ -1,0 +1,414 @@
+{
+  "date": "2026-11-04",
+  "python": "3.12.10",
+  "numpy": "2.5.2",
+  "schema": "chong-fly-demo-v1",
+  "full_suite": {
+    "passed": 1046,
+    "seconds": 163.56,
+    "log": "output/interactive_demo/contact_full_suite.log"
+  },
+  "final_targeted_demo": {
+    "passed": 77,
+    "seconds": 58.43,
+    "files": [
+      "tests/test_demo_contacts.py",
+      "tests/test_interactive_demo.py",
+      "tests/test_demo_scenes.py",
+      "tests/test_demo_body.py",
+      "tests/test_demo_density.py",
+      "tests/test_demo_session_options.py"
+    ],
+    "included_in_full_suite": true,
+    "log": "output/interactive_demo/contact_tests.log"
+  },
+  "baseline": {
+    "exact_match": true,
+    "changed": [],
+    "physics_sha256": "046c8714f7401c76184b1a71e69e39c1e95bf7adbf8082a48399bb7f5a9044ff"
+  },
+  "config_sha256": "9a8fefffd66772566bc47875e037eef19c2dde82ced67fa7008ccf418637db61",
+  "metadata_sha256": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+  "model_sha256": "3d9823351d745ad9e061aa87c3006682fff89999b9c6e13f7243c267a53cf8b1",
+  "checkpoint_sha256": "aa42f769aeddecbc2dc322ac2a5b10d52c9c0e8d37156e1386980f78abb9e587",
+  "mvp_admission": {
+    "passed": false,
+    "reasons": [
+      "broad_joint"
+    ],
+    "thresholds": {
+      "version": "course-mvp-navigation-v1",
+      "direction_required": 12,
+      "recovery_required": 12,
+      "recovery_max_s": 0.8,
+      "tolerance_pwm": 20.0,
+      "broad_joint_required": 4,
+      "narrow_required": 8,
+      "narrow_min_signed_yaw_pwm": 80.0,
+      "scenes_required": 7
+    },
+    "direction_passed": 12,
+    "recovery_passed": 12,
+    "broad_joint_passed": 3,
+    "narrow_amplitude_passed": 8,
+    "narrow_cases": [
+      {
+        "obstacle_side": "left",
+        "normalized_distance": 0.1,
+        "active_columns": 1,
+        "signed_yaw_pwm": 228.2598876953125,
+        "passed": true
+      },
+      {
+        "obstacle_side": "right",
+        "normalized_distance": 0.1,
+        "active_columns": 1,
+        "signed_yaw_pwm": 152.3555908203125,
+        "passed": true
+      },
+      {
+        "obstacle_side": "left",
+        "normalized_distance": 0.1,
+        "active_columns": 2,
+        "signed_yaw_pwm": 305.6810302734375,
+        "passed": true
+      },
+      {
+        "obstacle_side": "right",
+        "normalized_distance": 0.1,
+        "active_columns": 2,
+        "signed_yaw_pwm": 268.8140869140625,
+        "passed": true
+      },
+      {
+        "obstacle_side": "left",
+        "normalized_distance": 0.2,
+        "active_columns": 1,
+        "signed_yaw_pwm": 119.8253173828125,
+        "passed": true
+      },
+      {
+        "obstacle_side": "right",
+        "normalized_distance": 0.2,
+        "active_columns": 1,
+        "signed_yaw_pwm": 107.3974609375,
+        "passed": true
+      },
+      {
+        "obstacle_side": "left",
+        "normalized_distance": 0.2,
+        "active_columns": 2,
+        "signed_yaw_pwm": 202.84375,
+        "passed": true
+      },
+      {
+        "obstacle_side": "right",
+        "normalized_distance": 0.2,
+        "active_columns": 2,
+        "signed_yaw_pwm": 158.3953857421875,
+        "passed": true
+      }
+    ],
+    "scenes_passed": 7,
+    "scene_results": [
+      {
+        "scenario": "clear",
+        "passed": true
+      },
+      {
+        "scenario": "obstacle_left",
+        "passed": true
+      },
+      {
+        "scenario": "obstacle_right",
+        "passed": true
+      },
+      {
+        "scenario": "obstacle_center",
+        "passed": true
+      },
+      {
+        "scenario": "fast_center",
+        "passed": true
+      },
+      {
+        "scenario": "drift_left",
+        "passed": true
+      },
+      {
+        "scenario": "drift_right",
+        "passed": true
+      }
+    ],
+    "scope": "course_simulation_experiment_not_flight_admission"
+  },
+  "protected_modules": {
+    "system.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\edge\\system.py",
+      "sha256": "99953a1c237d1ecde6f9323d7c06f3ee83cd28b1031189a3fd35a110c18d6220"
+    },
+    "runtime.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\edge\\runtime.py",
+      "sha256": "5ec3bd9a0077b4eab4147412ec390e99c96bed9cb2bf34e37aa5f735a7a695a2"
+    },
+    "flight_bridge.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\edge\\flight_bridge.py",
+      "sha256": "06857fb22e21be718985da7f0774bfb73970a534feda6f5aae05ec498322b256"
+    },
+    "altitude_control.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\simulation\\altitude_control.py",
+      "sha256": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e"
+    },
+    "xy_coordinator.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\simulation\\xy_coordinator.py",
+      "sha256": "4ef6088779fff181b7e0d3cf10917a1472489c2570457432e2aaf916c949d96b"
+    },
+    "sensors.py": {
+      "path": "C:\\Users\\Hanabi\\Desktop\\projects\\chong-fly\\edge\\sensors.py",
+      "sha256": "d5c4d60710f4ad18a016456e0934e9810e4486407e1221db358996d37cfd5cf9"
+    }
+  },
+  "demo_source_sha256": {
+    "demo/__init__.py": "cc0c2ff3c2ca4f70142fd4869d9fed8c8ddc07d4a90b43d6940763367b717b27",
+    "demo/__main__.py": "bb21107813cb4f61ae6006399e41bb8ea43715f40f620220a8c8c5d8fda27659",
+    "demo/body.json": "23a8d93538f569e252f0002d16b009f309774e833e6970fa82ea587e0896b5e5",
+    "demo/body.py": "42b59dd9dc9e4a46ae5e19cf73d700102d510d93f1cd374e24107c1aa2ff74bf",
+    "demo/contacts.py": "3319789dbceea7ae4d911de33d3fa25d8103097e328f40086e555e057937a28f",
+    "demo/examples.py": "20ba42583f362649ec864e100dd4268c81476230a8386efb9987d6e0fae7e3ac",
+    "demo/manual_input.py": "5e329f72a2e941c0525de92d9ce4eb3eb7cb0da659f94a52ed93e1f432dab30d",
+    "demo/probe_contact.py": "89a70fa96b35ab30499bfa0197b9be5c4ff8a9ea03b50459ad06578c2a6b422a",
+    "demo/probe_drift.py": "e9abc06847378a91766e12fcb2a91d1fb6afc7331e495a1dcca168c1416cae7e",
+    "demo/probe_receiver_revocation.py": "82fb75783e0e1610d5fd7adf67bb134142017b2ef20052bfb5d8824bb3c95cb0",
+    "demo/recording.py": "d81718ab63e28b8b0f8946c22b1631da1ef2e5c9de6a73681a220f496b52e362",
+    "demo/runner.py": "36c637d4a8a31456a7eaeacd2da00c4474ce99358bcf5cafe378ac3a04f2035a",
+    "demo/scenes.py": "0283c8a49979dcf7f4446bbcf27e48f9fe25b516e334b9b00a81274e4306b256",
+    "demo/server.py": "59ba19c37a8312c968c6cfad71ed919e666af147ac13e3b312ceb0c048eaa4ee",
+    "demo/web/app.js": "8ee4f6c69c6642e95ed64dec351a27bb07b5f7e2385a563dceea25b1a1723448",
+    "demo/web/index.html": "ef1a760ad491f6ee8f853ae609891fd681fe43893454b9b21dba76b9f034b7b4",
+    "demo/web/style.css": "6a9ec7b06e7a2738f96d7196199dd80f65ea2ba85aa3efa42deb6678e60e1f19"
+  },
+  "recordings": [
+    {
+      "file": "demo/recordings/01_manual.json.gz",
+      "bytes": 223060,
+      "sha256": "a28d07c17c4d6117eb6ad21c49e310bfea4bc983df2e0c6c67f61269b82f9140",
+      "schema": "chong-fly-demo-v1",
+      "kind": "live_recording",
+      "frames": 1000,
+      "first_auto_s": null,
+      "accepted_issues": 0,
+      "collision_count": 0
+    },
+    {
+      "file": "demo/recordings/02_shadow.json.gz",
+      "bytes": 269179,
+      "sha256": "4391e114a86b113a0f15aed505ab55d6bc7f01efae6c0b1cd3cd853812a08ff5",
+      "schema": "chong-fly-demo-v1",
+      "kind": "live_recording",
+      "frames": 1000,
+      "first_auto_s": null,
+      "accepted_issues": 0,
+      "collision_count": 0
+    },
+    {
+      "file": "demo/recordings/03_auto_stop_takeover.json.gz",
+      "bytes": 518923,
+      "sha256": "1cf9e36857b524b9d3765603ab92ac005d98e7e5482468efff2fbfe8e9698156",
+      "schema": "chong-fly-demo-v1",
+      "kind": "live_recording",
+      "frames": 2250,
+      "first_auto_s": 0.6,
+      "accepted_issues": 370,
+      "collision_count": 0
+    },
+    {
+      "file": "demo/recordings/04_denied_near_obstacle.json.gz",
+      "bytes": 44695,
+      "sha256": "8324a315e81ea86b207e7833f4da192e6ab05a96d54a99d484e6529c63f6aa37",
+      "schema": "chong-fly-demo-v1",
+      "kind": "live_recording",
+      "frames": 300,
+      "first_auto_s": null,
+      "accepted_issues": 0,
+      "collision_count": 0
+    },
+    {
+      "file": "demo/recordings/05_legacy_arena.json.gz",
+      "bytes": 492126,
+      "sha256": "594f364d615fd27caccee6221cdc7d1b92d34fb3bbedee4cd9e45f88bd77f1a6",
+      "schema": "chong-fly-demo-v1",
+      "kind": "legacy_replay",
+      "frames": 10001,
+      "first_auto_s": null,
+      "accepted_issues": 0,
+      "collision_count": 0
+    }
+  ],
+  "browser_qa": {
+    "passed": [
+      "replay seek/play/pause/step/2x speed",
+      "3D/top camera",
+      "live admission to receiver-accepted AUTO",
+      "STOP and MANUAL takeover",
+      "explicit new scene/session",
+      "legacy unavailable ToF/attitude",
+      "390px layout: sensors remain visible",
+      "no browser console errors"
+    ],
+    "limitation": "Controlled IAB did not generate actual OS blur on tab creation/panel hiding. Handler and disconnect/pause contracts tested headlessly."
+  },
+  "contract_note": "docs/INTERACTIVE_DEMO_CONTRACT_NOTES_UK.md",
+  "research_checkpoint_file_sha256": "aa42f769aeddecbc2dc322ac2a5b10d52c9c0e8d37156e1386980f78abb9e587",
+  "neural_demo_update": {
+    "tests_passed": 92,
+    "log": "output/interactive_demo/fly_regression.log",
+    "features": [
+      "one-click live AUTO request with unchanged admission",
+      "306 actual signed h states, read-only",
+      "autonomous replay selected by default"
+    ],
+    "screenshot": "output/interactive_demo/screenshots/fly_neural_live.jpg"
+  },
+  "previous_full_suite": {
+    "passed": 1036,
+    "seconds": 130.39,
+    "log": "output/interactive_demo/ui_full_suite.log"
+  },
+  "room_demo_update": {
+    "scenes": [
+      "room",
+      "random_room",
+      "wall_room"
+    ],
+    "room_m": [
+      8,
+      8,
+      3
+    ],
+    "random_count_range": [
+      0,
+      18
+    ],
+    "wall_orientations_deg": [
+      0,
+      90
+    ],
+    "legacy_frames_exact": true,
+    "parity": "output/interactive_demo/room_legacy_parity.json",
+    "drift_probe": "output/interactive_demo/drift_admission_probe.json",
+    "screenshots": [
+      "output/interactive_demo/screenshots/random_room_live.jpg",
+      "output/interactive_demo/screenshots/wall_room_live.jpg"
+    ]
+  },
+  "collision_visual_update": {
+    "physical_radius_m": 0.1,
+    "previous_visual_outer_radius_m": 0.3262741699796952,
+    "shared_geometry": "demo/body.json",
+    "preserved_physics_and_controls": true,
+    "canonical_recordings_verified": true,
+    "exact_frame_parity": "output/interactive_demo/body_trace_parity.json",
+    "contact_tests": [
+      "room",
+      "box",
+      "cylinder"
+    ],
+    "browser_qa": "output/interactive_demo/body_browser_qa.json",
+    "screenshots": [
+      "output/interactive_demo/screenshots/body_wall_clearance.jpg",
+      "output/interactive_demo/screenshots/body_wall_collision.jpg",
+      "output/interactive_demo/screenshots/body_wall_collision_detail.jpg"
+    ]
+  },
+  "density_demo_update": {
+    "generator_version": "demo-room-density-v2",
+    "default_density_pct": 20,
+    "range_pct": [
+      0,
+      35
+    ],
+    "density_basis": "random obstacle XY footprint area / 64 m2 room; custom wall excluded",
+    "patterns": [
+      "clustered",
+      "uniform"
+    ],
+    "minimum_random_surface_gap_m": 0.28,
+    "minimum_spawn_xy_gap_m": 1.35,
+    "legacy_count_mode_preserved": true,
+    "physical_drone_radius_unchanged_m": 0.1,
+    "parity": "output/interactive_demo/density_trace_parity.json",
+    "browser_qa": "output/interactive_demo/density_browser_qa.json",
+    "browser_run_duration_s": 60,
+    "screenshots": [
+      "output/interactive_demo/screenshots/density_08_clustered.jpg",
+      "output/interactive_demo/screenshots/density_35_clustered.jpg",
+      "output/interactive_demo/screenshots/density_20_uniform.jpg",
+      "output/interactive_demo/screenshots/density_20_fly_live.jpg",
+      "output/interactive_demo/screenshots/density_20_demo.jpg"
+    ]
+  },
+  "simplified_ui_update": {
+    "date": "2026-11-04",
+    "radius_m": 0.2,
+    "old_recordings_radius_m": 0.1,
+    "minimum_new_density_gap_m": 0.48,
+    "new_density_generator": "demo-room-density-v3",
+    "default_duration_s": 180,
+    "duration_range_s": [
+      1,
+      600
+    ],
+    "duration_editable_during_run": true,
+    "initial_duration_recorded_in_manifest": true,
+    "duration_changes_recorded_as_input_events": true,
+    "start_default": "AUTO through existing admission and receiver",
+    "removed_controls": [
+      "startFly",
+      "flyReplay",
+      "load",
+      "orbit",
+      "top",
+      "fit"
+    ],
+    "diagnostics_collapsed_by_default": true,
+    "parity": "output/interactive_demo/ui_trace_parity.json",
+    "port": 8766,
+    "browser_qa": "output/interactive_demo/ui_browser_qa.json",
+    "screenshots": [
+      "output/interactive_demo/screenshots/ui_simplified_live.jpg",
+      "output/interactive_demo/screenshots/ui_simplified_narrow.jpg",
+      "output/interactive_demo/screenshots/ui_replay_diagnostics.jpg"
+    ],
+    "browser_qa_passed": true
+  },
+  "sphere_contact_update": {
+    "date": "2026-11-04",
+    "new_live_model": "sphere-sweep-v1",
+    "legacy_model": "expanded-primitives-v1",
+    "source": "demo/contacts.py",
+    "benchmark_files_unchanged": [
+      "simulation/drone_env.py",
+      "simulation/collisions.py"
+    ],
+    "reported_case_seed": 2209320175,
+    "previous_stop_time_s": 11.144,
+    "real_gap_at_previous_stop_m": 0.07637805582978657,
+    "true_contact_time_s": 12.324,
+    "original_recording": "output/interactive_demo/contact_before_run.json.gz",
+    "corrected_recording": "output/interactive_demo/contact_corrected_run.json.gz",
+    "reproduction": "output/interactive_demo/contact_reproduction.json",
+    "canonical_parity": "output/interactive_demo/contact_trace_parity.json",
+    "browser_qa": "output/interactive_demo/contact_browser_qa.json",
+    "screenshots": [
+      "output/interactive_demo/screenshots/contact_gap_fixed.jpg",
+      "output/interactive_demo/screenshots/contact_gap_detail.jpg",
+      "output/interactive_demo/screenshots/contact_true_hit.jpg"
+    ]
+  },
+  "export_button_update": {
+    "date": "2026-11-04",
+    "location": "run-bar, immediately after play",
+    "export_handler_unchanged": true,
+    "screenshot": "output/interactive_demo/screenshots/export_top.jpg"
+  }
+}
