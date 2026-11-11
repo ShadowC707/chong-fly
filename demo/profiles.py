@@ -11,11 +11,14 @@ PIPELINE_V1_CONFIG = _CONFIGS/'pipeline_v1.json'
 PIPELINE_CONFIGS = {'pipeline_v1': PIPELINE_V1_CONFIG,
                     'pipeline_v1_r1': _CONFIGS/'pipeline_v1_r1.json',
                     'pipeline_v1_r2': _CONFIGS/'pipeline_v1_r2.json',
-                    'pipeline_v1_r3': _CONFIGS/'pipeline_v1_r3.json'}
+                    'pipeline_v1_r3': _CONFIGS/'pipeline_v1_r3.json',
+                    'pipeline_v1_r3b': _CONFIGS/'pipeline_v1_r3b.json',
+                    'pipeline_v1_r3b2': _CONFIGS/'pipeline_v1_r3b2.json'}
 
 OVERLAY_PROFILES = ('candidate_a_brake', 'phased_v2', 'phased_smooth', 'phased_recovery',
                     'phased_escape', 'phased_side_guard', 'phased_swath', 'pipeline_v1',
-                    'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3')
+                    'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3',
+                    'pipeline_v1_r3b', 'pipeline_v1_r3b2')
 PHASED_PROFILES = tuple(p for p in OVERLAY_PROFILES if p.startswith('phased_'))
 LIVE_PROFILE_LABELS = {
     'original': 'Попередній MVP',
@@ -28,6 +31,8 @@ LIVE_PROFILE_LABELS = {
     'pipeline_v1_r1': 'Кандидат A · конвеєр v1, коло 1 (пам\'ять) · дослідний',
     'pipeline_v1_r2': 'Кандидат A · конвеєр v1, коло 2 (гальмо) · дослідний',
     'pipeline_v1_r3': 'Кандидат A · конвеєр v1, коло 3 (відступ коридором) · дослідний',
+    'pipeline_v1_r3b': 'Кандидат A · конвеєр v1, коло 3б (прогноз вибігу) · дослідний',
+    'pipeline_v1_r3b2': 'Кандидат A · конвеєр v1, коло 3б (прогноз вибігу зі знаком) · дослідний',
 }
 
 PROFILE_ROLES = {
@@ -40,6 +45,8 @@ PROFILE_ROLES = {
     'pipeline_v1_r1': 'standalone-pipeline-experiment',
     'pipeline_v1_r2': 'standalone-pipeline-experiment',
     'pipeline_v1_r3': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3b': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3b2': 'standalone-pipeline-experiment',
 }
 
 

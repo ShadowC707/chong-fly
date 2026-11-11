@@ -91,12 +91,67 @@ class RetreatConfig:
     flow_scale_mps: float = 3.88
     step_m: float = .02
     forward_min_mps: float = -.03
+    # Round 3b: 'speed' (r3, L from the lagged speed only) or 'tilt' (coast predicted from tilt and speed,
+    # the backward command limited so the predicted coast fits the free corridor length).
+    prediction: str = 'speed'
+    beta_mps2_per_deg: float = .1737
+    gamma_per_s: float = .2565
+    tilt_tau_s: float = .2595
+    tilt_gain_deg_per_pwm_tick: float = .005388
+    lag_s: float = .08
+    max_check_m: float = 2.
+    # Round 3b, second attempt: credit forward speed and forward tilt (signed linear model). The first
+    # attempt (False) ignored them and so limited the network's ordinary braking from forward motion.
+    signed: bool = False
 
     def __post_init__(self):
         values = (self.corridor_s, self.tolerance_m, self.margin_m, self.coast_s_per_mps,
-                  self.flow_scale_mps, self.step_m)
-        if type(self.enabled) is not bool or not all(math.isfinite(v) and v > 0 for v in values):
+                  self.flow_scale_mps, self.step_m, self.beta_mps2_per_deg, self.gamma_per_s, self.tilt_tau_s,
+                  self.tilt_gain_deg_per_pwm_tick, self.lag_s, self.max_check_m)
+        if (type(self.enabled) is not bool or type(self.signed) is not bool
+                or self.prediction not in ('speed', 'tilt')
+                or not all(math.isfinite(v) and v > 0 for v in values)):
             raise ValueError('Invalid retreat configuration')
+
+    def signed_coast_m(self, back_speed_mps, back_tilt_deg, next_back_tilt_deg=None):
+        """Signed linear model: net backward displacement if the backward command stops after the
+        next tick. Speed crosses zero at most once, so the final displacement is the farthest point back."""
+        s = back_speed_mps+(self.beta_mps2_per_deg*back_tilt_deg-self.gamma_per_s*back_speed_mps)*self.lag_s
+        tilt = back_tilt_deg if next_back_tilt_deg is None else next_back_tilt_deg
+        return (s+self.beta_mps2_per_deg*tilt*self.tilt_tau_s)/self.gamma_per_s
+
+    def signed_max_back_pwm(self, free_m, back_speed_mps, back_tilt_deg):
+        """Closed form of the largest backward command with signed_coast <= free_m - margin."""
+        s = back_speed_mps+(self.beta_mps2_per_deg*back_tilt_deg-self.gamma_per_s*back_speed_mps)*self.lag_s
+        tilt_max = ((free_m-self.margin_m)*self.gamma_per_s-s)/(self.beta_mps2_per_deg*self.tilt_tau_s)
+        a = math.exp(-.02/self.tilt_tau_s)
+        return max((tilt_max-a*back_tilt_deg)/self.tilt_gain_deg_per_pwm_tick, 0.)
+
+    def coast_m(self, back_speed_mps, back_tilt_deg):
+        """Distance the drone still travels backwards if the backward command is removed now.
+
+        Linear model of round 2: tilt decays with tau, accel = beta*tilt - gamma*v, so the remaining
+        displacement is (v + beta*tilt*tau)/gamma. The lagged speed is advanced by lag_s of the
+        current acceleration. Forward tilt is not credited (it would only shorten the coast)."""
+        v, tilt = max(back_speed_mps, 0.), max(back_tilt_deg, 0.)
+        v += max(self.beta_mps2_per_deg*tilt-self.gamma_per_s*v, 0.)*self.lag_s
+        return (v+self.beta_mps2_per_deg*tilt*self.tilt_tau_s)/self.gamma_per_s
+
+    def max_back_pwm(self, free_m, back_speed_mps, back_tilt_deg):
+        """Largest backward command whose tilt after one tick keeps the predicted coast within
+        free_m - margin; 0 when even removing the command now does not fit."""
+        room = free_m-self.margin_m
+        v = max(back_speed_mps, 0.)
+        a = math.exp(-.02/self.tilt_tau_s)
+        tilt_now = max(back_tilt_deg, 0.)
+        # coast(v, tilt_next) <= room, solved for tilt_next (coast is increasing in tilt)
+        lo, hi = 0., 90.
+        if self.coast_m(v, lo) > room:
+            return 0.
+        for _ in range(40):
+            mid = (lo+hi)/2
+            lo, hi = (mid, hi) if self.coast_m(v, mid) <= room else (lo, mid)
+        return max((lo-a*tilt_now)/self.tilt_gain_deg_per_pwm_tick, 0.)
 
 
 @dataclass(frozen=True)
@@ -185,6 +240,34 @@ def retreat_check(trail_local, remembered, back_speed_mps, config, r_veto_m):
             if gap.min() < r_veto_m:
                 return False, dict(info, retreat_block='remembered_threat')
     return True, info
+
+
+def retreat_room(trail_local, remembered, config, r_veto_m):
+    """Round 3b. Free straight-back length: up to the first sample outside the own corridor or
+    the first sample within r_veto + error of a remembered threat behind the drone, at most
+    max_check_m. An empty memory is never room by itself: without a corridor the room is 0."""
+    samples = np.arange(0., config.max_check_m+config.step_m/2, config.step_m)
+    if trail_local is None or not len(trail_local):
+        return 0., dict(retreat_block='no_corridor', corridor_m=0.)
+    points = np.c_[-samples, np.zeros((len(samples), 2))]
+    dist = np.min(np.linalg.norm(points[:, None, :]-trail_local[None, :, :], axis=2), axis=1)
+    outside = np.flatnonzero(dist > config.tolerance_m)
+    corridor = float(samples[outside[0]-1]) if len(outside) and outside[0] > 0 else (
+        0. if len(outside) else float(samples[-1]))
+    room, block = corridor, 'outside_corridor'
+    if remembered is not None:
+        local, error, _ = remembered
+        behind = local[:, 0] < 0.
+        if behind.any():
+            p, e = local[behind], error[behind]
+            # threat reached at the first sample whose distance to the point is below r_veto + error
+            d = np.linalg.norm(points[:, None, :]-p[None, :, :], axis=2)-e[None, :]
+            hit = np.flatnonzero((d < r_veto_m).any(axis=1))
+            if len(hit):
+                threat = float(samples[hit[0]-1]) if hit[0] > 0 else 0.
+                if threat < room:
+                    room, block = threat, 'remembered_threat'
+    return room, dict(corridor_m=corridor, room_m=room, room_limit=block)
 
 
 def brake_stage(network, filtered_flow, v_stop):
@@ -385,6 +468,7 @@ class NavigationPipeline(XYCoordinator):
                        else ThreatMemory(reference_id, c.veto))
         self.now_s = None
         self.trail = deque()
+        self.tilt_deg = None
         super().__init__(**options)
 
     def reset(self):
@@ -404,6 +488,10 @@ class NavigationPipeline(XYCoordinator):
         if heading_sample is None:
             return None
         report = self.memory.observe(snapshot, heading_sample, now_s=now_s)
+        try:
+            self.tilt_deg = math.degrees(float(snapshot.attitude.value[1]))  # +: nose down, forward
+        except (AttributeError, TypeError, IndexError):
+            self.tilt_deg = None
         r, o = self.pipeline_config.retreat, self.memory.observer
         if r.enabled:
             if self.memory.faulted:
@@ -422,6 +510,20 @@ class NavigationPipeline(XYCoordinator):
         trail = (np.array([p for _, p in self.trail]) if self.trail else None)
         local = None if trail is None else (trail-m.observer.position) @ rotation(0., 0., m.report['heading_rad'])
         back = max(-float(self.pipeline_flow), 0.)*c.retreat.flow_scale_mps
+        if c.retreat.prediction == 'tilt':
+            if getattr(self, 'tilt_deg', None) is None:
+                return 0., dict(retreat_block='no_attitude')
+            room, info = retreat_room(local, m.remembered(self.now_s), c.retreat, c.veto.r_veto_m)
+            back_tilt = -self.tilt_deg
+            if c.retreat.signed:
+                back = -float(self.pipeline_flow)*c.retreat.flow_scale_mps  # signed: forward speed credits
+                allowed = c.retreat.signed_max_back_pwm(room, back, back_tilt)
+                coast = c.retreat.signed_coast_m(back, back_tilt)
+            else:
+                allowed = c.retreat.max_back_pwm(room, back, back_tilt)
+                coast = c.retreat.coast_m(back, back_tilt)
+            return allowed, dict(info, back_speed_mps=back, back_tilt_deg=back_tilt,
+                                 predicted_coast_m=coast, allowed_back_pwm=allowed)
         return retreat_check(local, m.remembered(self.now_s), back, c.retreat, c.veto.r_veto_m)
 
     def apply(self, network_pwm, *, flow_xy, tof_m, dt, stop_requested=False):
@@ -443,7 +545,17 @@ class NavigationPipeline(XYCoordinator):
                                if c.brake.law == 'proportional'
                                else brake_stage(command, self.pipeline_flow, c.brake.v_stop))
                 info['filtered_flow'] = self.pipeline_flow
-                if c.retreat.enabled and info['active']:
+                if c.retreat.enabled and info['active'] and c.retreat.prediction == 'tilt':
+                    allowed, extra = self._retreat()
+                    info.update(extra)
+                    # the larger of the k*flow brake and the corridor retreat, never beyond the network
+                    after[PITCH] = max(command[PITCH], NEUTRAL-max(info['cap_pwm'], allowed))
+                    if after[PITCH] <= command[PITCH]+1e-9:
+                        after[PITCH] = command[PITCH]
+                        info.update(active=False, reason='retreat_along_corridor')
+                    elif allowed > info['cap_pwm']:
+                        info.update(reason='retreat_speed_limited')
+                elif c.retreat.enabled and info['active']:
                     permitted, extra = self._retreat()
                     info.update(extra)
                     if permitted:

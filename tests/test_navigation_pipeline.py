@@ -393,3 +393,83 @@ def test_reverse_outside_corridor_counts_only_new_space():
     vel[:, 0] = np.gradient(x, t)
     outside, total = reverse_outside_corridor(t, pos, vel, np.zeros_like(t), np.ones_like(t, bool))
     assert total == pytest.approx(.9, abs=.01) and outside == pytest.approx(.65, abs=.02)
+
+
+# Round 3b: the backward command is limited so the coast predicted from tilt fits the corridor.
+from simulation.navigation_pipeline import retreat_room
+
+
+def test_coast_prediction_matches_the_brake_model_and_limits_the_backward_command():
+    r = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3b.json').retreat
+    assert r.prediction == 'tilt'
+    steady_tilt = r.gamma_per_s*.1/r.beta_mps2_per_deg      # tilt that holds 0.1 m/s against drag
+    assert r.coast_m(.1, steady_tilt) == pytest.approx(.1/r.gamma_per_s+.1*r.tilt_tau_s, rel=.02)
+    assert r.coast_m(0., 14.5) > 3.  # a full backward command (1300) coasts over 3 m: round-3 failure
+    assert r.max_back_pwm(.05, 0., 0.) == 0.                 # no room beyond the margin: nothing passes
+    previous = 0.
+    for room in (.1, .3, .6, 1., 1.6):
+        allowed = r.max_back_pwm(room, 0., 0.)
+        assert allowed > previous
+        previous = allowed
+        tilt_next = r.tilt_gain_deg_per_pwm_tick*allowed
+        assert r.coast_m(0., tilt_next) <= room-r.margin_m+1e-6
+    assert r.max_back_pwm(.6, .1, steady_tilt) < r.max_back_pwm(.6, 0., 0.)  # already moving back: less
+
+
+def test_retreat_room_stops_at_the_corridor_end_and_at_a_threat_behind():
+    r = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3b.json').retreat
+    room, info = retreat_room(straight_trail(.8), None, r, .30)
+    assert .8 <= room <= .86 and info['room_limit'] == 'outside_corridor'
+    assert retreat_room(None, None, r, .30)[0] == 0.          # empty memory, no corridor: no room
+    threat = (np.array([[-.6, 0., 0.]]), np.array([.05]), np.array([0.]))
+    room, info = retreat_room(straight_trail(1.5), threat, r, .30)
+    assert .2 < room < .27 and info['room_limit'] == 'remembered_threat'
+
+
+def test_round3b_stage_limits_and_passes_only_what_the_coast_allows():
+    r3 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3.json')
+    r3b = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3b.json')
+    assert r3.retreat.prediction == 'speed'
+    assert (r3b.brake, r3b.veto, r3b.memory) == (r3.brake, r3.veto, r3.memory)
+    pipe = pipeline(pipeline_config=r3b)
+    pipe.memory = transport_memory()
+    pipe.now_s, pipe.tilt_deg = 10., 0.
+    pipe.trail.extend((10.-i*.02, np.array([-i*.005, 0., 0.])) for i in range(200))  # 1 m corridor
+    back = np.array([1500., 1500., 1300., 1500.])
+    pipe.apply(back, flow_xy=np.array([0., 0.]), tof_m=np.full(64, 3.), dt=.02)
+    stage = pipe.last_decision['stages'][0]
+    assert stage['reason'] == 'retreat_along_corridor' and stage['after'][2] == 1300.  # 200 fits 1 m at rest
+    pipe.tilt_deg = -8.  # already tilted back 8 deg: the predicted coast no longer fits, command is limited
+    pipe.apply(back, flow_xy=np.array([-.02, 0.]), tof_m=np.full(64, 3.), dt=.02)
+    stage = pipe.last_decision['stages'][0]
+    assert 1300. < stage['after'][2] <= 1500. and stage['active']
+    rng = np.random.default_rng(11)
+    for network in random_commands(1000, 12):
+        pipe.tilt_deg = rng.uniform(-10, 10)
+        pipe.apply(network, flow_xy=rng.uniform(-.05, .08, 2), tof_m=np.full(64, 3.), dt=.02)
+        assert all(within_limits(network, r['after']) for r in pipe.last_decision['stages'])
+        assert not pipe.last_decision['stage_limit_violation']
+
+
+def test_signed_coast_credits_forward_motion_and_matches_a_simulation():
+    r = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3b2.json').retreat
+    assert r.signed and r.prediction == 'tilt'
+    # Braking from 0.15 m/s forward with 2.2 deg back tilt: the net motion back is small, not 0.38 m.
+    assert r.signed_coast_m(-.15, 2.2) < .1 < r.coast_m(0., 2.2)
+    # Exact for the linear model: simulate tilt decay and drag after the command is removed.
+    for v0, tilt0 in ((-.15, 2.2), (.1, 1.), (.0, 5.), (.2, -1.)):
+        a = np.exp(-.02/r.tilt_tau_s)
+        v, tilt, x, far = v0, tilt0, 0., 0.
+        for _ in range(3000):
+            v += .02*(r.beta_mps2_per_deg*tilt-r.gamma_per_s*v)
+            tilt *= a
+            x += v*.02
+            far = max(far, x)
+        predicted = (v0+r.beta_mps2_per_deg*tilt0*r.tilt_tau_s)/r.gamma_per_s
+        # continuous tau vs the discrete sum dt/(1-a) (0.270 s vs 0.260 s): within 5 %
+        assert far == pytest.approx(max(predicted, far if predicted < 0 else predicted), rel=.05, abs=.005)
+    room = .6
+    allowed = r.signed_max_back_pwm(room, -.1, 1.)
+    tilt_next = np.exp(-.02/r.tilt_tau_s)*1.+r.tilt_gain_deg_per_pwm_tick*allowed
+    assert r.signed_coast_m(-.1, 1., tilt_next) == pytest.approx(room-r.margin_m, abs=1e-6)
+    assert r.signed_max_back_pwm(.05, .1, 3.) == 0.
