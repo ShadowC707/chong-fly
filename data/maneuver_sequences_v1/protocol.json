@@ -1,0 +1,501 @@
+{
+  "version": "xy-maneuver-sequences-v1",
+  "plans": {
+    "train": [
+      {
+        "seed": 2026110400,
+        "scene_seed": 202611040,
+        "pair_id": "train-202611040",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "offset_box_slow"
+      },
+      {
+        "seed": 2026110401,
+        "scene_seed": 202611040,
+        "pair_id": "train-202611040",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "offset_box_slow"
+      },
+      {
+        "seed": 2026110402,
+        "scene_seed": 202611041,
+        "pair_id": "train-202611041",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "offset_box_fast"
+      },
+      {
+        "seed": 2026110403,
+        "scene_seed": 202611041,
+        "pair_id": "train-202611041",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "offset_box_fast"
+      },
+      {
+        "seed": 2026110404,
+        "scene_seed": 202611042,
+        "pair_id": "train-202611042",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "offset_box_lateral"
+      },
+      {
+        "seed": 2026110405,
+        "scene_seed": 202611042,
+        "pair_id": "train-202611042",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "offset_box_lateral"
+      },
+      {
+        "seed": 2026110406,
+        "scene_seed": 202611043,
+        "pair_id": "train-202611043",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "offset_box_reverse"
+      },
+      {
+        "seed": 2026110407,
+        "scene_seed": 202611043,
+        "pair_id": "train-202611043",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "offset_box_reverse"
+      },
+      {
+        "seed": 2026110408,
+        "scene_seed": 202611044,
+        "pair_id": "train-202611044",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "oblique_wall_slow"
+      },
+      {
+        "seed": 2026110409,
+        "scene_seed": 202611044,
+        "pair_id": "train-202611044",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "oblique_wall_slow"
+      },
+      {
+        "seed": 2026110410,
+        "scene_seed": 202611045,
+        "pair_id": "train-202611045",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "oblique_wall_fast"
+      },
+      {
+        "seed": 2026110411,
+        "scene_seed": 202611045,
+        "pair_id": "train-202611045",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "oblique_wall_fast"
+      },
+      {
+        "seed": 2026110412,
+        "scene_seed": 202611046,
+        "pair_id": "train-202611046",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "oblique_wall_lateral"
+      },
+      {
+        "seed": 2026110413,
+        "scene_seed": 202611046,
+        "pair_id": "train-202611046",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "oblique_wall_lateral"
+      },
+      {
+        "seed": 2026110414,
+        "scene_seed": 202611047,
+        "pair_id": "train-202611047",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "oblique_wall_reverse"
+      },
+      {
+        "seed": 2026110415,
+        "scene_seed": 202611047,
+        "pair_id": "train-202611047",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "oblique_wall_reverse"
+      },
+      {
+        "seed": 2026110416,
+        "scene_seed": 202611048,
+        "pair_id": "train-202611048",
+        "split": "train",
+        "family": "staggered",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "staggered_slow"
+      },
+      {
+        "seed": 2026110417,
+        "scene_seed": 202611048,
+        "pair_id": "train-202611048",
+        "split": "train",
+        "family": "staggered",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "staggered_slow"
+      },
+      {
+        "seed": 2026110418,
+        "scene_seed": 202611049,
+        "pair_id": "train-202611049",
+        "split": "train",
+        "family": "staggered",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "staggered_fast"
+      },
+      {
+        "seed": 2026110419,
+        "scene_seed": 202611049,
+        "pair_id": "train-202611049",
+        "split": "train",
+        "family": "staggered",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "staggered_fast"
+      },
+      {
+        "seed": 2026110420,
+        "scene_seed": 202611050,
+        "pair_id": "train-202611050",
+        "split": "train",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "staggered_lateral"
+      },
+      {
+        "seed": 2026110421,
+        "scene_seed": 202611050,
+        "pair_id": "train-202611050",
+        "split": "train",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "staggered_lateral"
+      },
+      {
+        "seed": 2026110422,
+        "scene_seed": 202611051,
+        "pair_id": "train-202611051",
+        "split": "train",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "staggered_reverse"
+      },
+      {
+        "seed": 2026110423,
+        "scene_seed": 202611051,
+        "pair_id": "train-202611051",
+        "split": "train",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "staggered_reverse"
+      },
+      {
+        "seed": 2026110424,
+        "scene_seed": 202611052,
+        "pair_id": "train-202611052",
+        "split": "train",
+        "family": "corner",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "corner_slow"
+      },
+      {
+        "seed": 2026110425,
+        "scene_seed": 202611052,
+        "pair_id": "train-202611052",
+        "split": "train",
+        "family": "corner",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "corner_slow"
+      },
+      {
+        "seed": 2026110426,
+        "scene_seed": 202611053,
+        "pair_id": "train-202611053",
+        "split": "train",
+        "family": "corner",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "corner_fast"
+      },
+      {
+        "seed": 2026110427,
+        "scene_seed": 202611053,
+        "pair_id": "train-202611053",
+        "split": "train",
+        "family": "corner",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "corner_fast"
+      },
+      {
+        "seed": 2026110428,
+        "scene_seed": 202611054,
+        "pair_id": "train-202611054",
+        "split": "train",
+        "family": "corner",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "corner_lateral"
+      },
+      {
+        "seed": 2026110429,
+        "scene_seed": 202611054,
+        "pair_id": "train-202611054",
+        "split": "train",
+        "family": "corner",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "corner_lateral"
+      },
+      {
+        "seed": 2026110430,
+        "scene_seed": 202611055,
+        "pair_id": "train-202611055",
+        "split": "train",
+        "family": "corner",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "corner_reverse"
+      },
+      {
+        "seed": 2026110431,
+        "scene_seed": 202611055,
+        "pair_id": "train-202611055",
+        "split": "train",
+        "family": "corner",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "corner_reverse"
+      }
+    ],
+    "evaluation": [
+      {
+        "seed": 2026111400,
+        "scene_seed": 202611140,
+        "pair_id": "evaluation-202611140",
+        "split": "evaluation",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "offset_box_fast"
+      },
+      {
+        "seed": 2026111401,
+        "scene_seed": 202611140,
+        "pair_id": "evaluation-202611140",
+        "split": "evaluation",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "offset_box_fast"
+      },
+      {
+        "seed": 2026111402,
+        "scene_seed": 202611141,
+        "pair_id": "evaluation-202611141",
+        "split": "evaluation",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "offset_box_lateral"
+      },
+      {
+        "seed": 2026111403,
+        "scene_seed": 202611141,
+        "pair_id": "evaluation-202611141",
+        "split": "evaluation",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "offset_box_lateral"
+      },
+      {
+        "seed": 2026111404,
+        "scene_seed": 202611142,
+        "pair_id": "evaluation-202611142",
+        "split": "evaluation",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "oblique_wall_fast"
+      },
+      {
+        "seed": 2026111405,
+        "scene_seed": 202611142,
+        "pair_id": "evaluation-202611142",
+        "split": "evaluation",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "oblique_wall_fast"
+      },
+      {
+        "seed": 2026111406,
+        "scene_seed": 202611143,
+        "pair_id": "evaluation-202611143",
+        "split": "evaluation",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "oblique_wall_lateral"
+      },
+      {
+        "seed": 2026111407,
+        "scene_seed": 202611143,
+        "pair_id": "evaluation-202611143",
+        "split": "evaluation",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "oblique_wall_lateral"
+      },
+      {
+        "seed": 2026111408,
+        "scene_seed": 202611144,
+        "pair_id": "evaluation-202611144",
+        "split": "evaluation",
+        "family": "staggered",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "staggered_fast"
+      },
+      {
+        "seed": 2026111409,
+        "scene_seed": 202611144,
+        "pair_id": "evaluation-202611144",
+        "split": "evaluation",
+        "family": "staggered",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "staggered_fast"
+      },
+      {
+        "seed": 2026111410,
+        "scene_seed": 202611145,
+        "pair_id": "evaluation-202611145",
+        "split": "evaluation",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "staggered_lateral"
+      },
+      {
+        "seed": 2026111411,
+        "scene_seed": 202611145,
+        "pair_id": "evaluation-202611145",
+        "split": "evaluation",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "staggered_lateral"
+      },
+      {
+        "seed": 2026111412,
+        "scene_seed": 202611146,
+        "pair_id": "evaluation-202611146",
+        "split": "evaluation",
+        "family": "corner",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "corner_fast"
+      },
+      {
+        "seed": 2026111413,
+        "scene_seed": 202611146,
+        "pair_id": "evaluation-202611146",
+        "split": "evaluation",
+        "family": "corner",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "corner_fast"
+      },
+      {
+        "seed": 2026111414,
+        "scene_seed": 202611147,
+        "pair_id": "evaluation-202611147",
+        "split": "evaluation",
+        "family": "corner",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "corner_lateral"
+      },
+      {
+        "seed": 2026111415,
+        "scene_seed": 202611147,
+        "pair_id": "evaluation-202611147",
+        "split": "evaluation",
+        "family": "corner",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "corner_lateral"
+      }
+    ]
+  },
+  "steps": 600,
+  "source_sha256": {
+    "generator\\maneuver_sequences.py": "4128e7e6dd3f86fdd4ebc5c94f6dd3b39e6833691cc04ef834880b6ac5f3c2d0",
+    "generator\\generate_reflex_dataset.py": "47459912e1689c9bb69a5c5fe35017f890db4143f1bc5b65441d2df8decdaa45",
+    "generator\\continuous_reflex_teacher.py": "dee91c7b1e146355ac9703041404002f37e22ea42501262cf60dc9e1bd90001f",
+    "simulation\\drone_env.py": "8028b810c98e446a1b1f8dfc2e187b702c61212a1e715f83211c4ac2b490711e",
+    "demo\\contacts.py": "3319789dbceea7ae4d911de33d3fa25d8103097e328f40086e555e057937a28f",
+    "simulation\\altitude_control.py": "4c1625465c7c39f1603f3f91ad4e92d0adce4b6c8f86d3844a5bc48fea0aa68e"
+  },
+  "teacher_changed": false,
+  "automatic_training": false,
+  "purpose": "Test behavioral coverage before mixing data; no deployment or teacher safety claim."
+}
