@@ -20,7 +20,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = ROOT/'data/scenarios/reiteration_v1'
 BASELINE_PROFILES = ('candidate_a', 'phased_side_guard', 'phased_swath')
-PROFILES = BASELINE_PROFILES+('pipeline_v1',)
+PROFILES = BASELINE_PROFILES+('pipeline_v1', 'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3')
 MVP_CASES = ('9d5431c1', 'b0a9f212')
 # Section 2 thresholds, copied from the plan and acceptance.json; never edited after results.
 LIMITS = dict(network_share=.80, generated_share=.10, contacts=0, min_clearance_m=.10,
@@ -112,6 +112,12 @@ def run_case(out, profile, scenario):
         first_auto = next((i for i, v in enumerate(auto) if v == 'auto'), None)
         completed = runner.pause_reason == 'duration_limit' and abs(runner.time_s-horizon) < 1e-6
         faults = [e for e in runner.events if e['kind'] in ('bridge_fault', 'simulation_fault')]
+        # Author's redefinition (round 3): the acceptance rollback counts only outside the own corridor.
+        from simulation.navigation_metrics import reverse_outside_corridor
+        outside, _ = reverse_outside_corridor(time, [r['position_m'] for r in rows],
+            [r['velocity_mps'] for r in rows], [r['attitude_rad'][2] for r in rows],
+            [r['plant_source'] == 'auto' for r in rows])
+        metrics.update(reverse_outside_corridor_m=outside)
         metrics.update(progress_metrics(time, xy, samples, runner.time_s), pause_reason=runner.pause_reason,
             completed=completed, contacts=int(sum(r['collision'] is not None for r in rows)),
             continuous_auto=first_auto is not None and all(v == 'auto' for v in auto[first_auto:]),
@@ -146,7 +152,7 @@ def verdict(m, horizon):
              ok(m.get('generated_share'), lambda v: v <= LIMITS['generated_share'])]
     safety = [m['contacts'] == 0, m['min_clearance_m'] >= LIMITS['min_clearance_m'],
               m['max_height_error_m'] <= LIMITS['max_height_error_m'],
-              m['reverse_distance_body_m'] <= LIMITS['reverse_distance_body_m']]
+              m.get('reverse_outside_corridor_m', m['reverse_distance_body_m']) <= LIMITS['reverse_distance_body_m']]
     progress = None
     if horizon >= 180. and m['completed']:  # an interrupted flight has no valid 180 s progress
         progress = (m['longest_no_new_cell']['duration_s'] <= LIMITS['max_no_new_cell_s']

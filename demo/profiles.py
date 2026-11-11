@@ -8,9 +8,14 @@ ORIGINAL_CONFIG = _CONFIGS/'mvp_runtime_v3.json'
 CANDIDATE_A_CONFIG = _CONFIGS/'candidate_a_adaptive_tau_v1.json'
 HISTORICAL_CANDIDATE_A_CONFIG = _CONFIGS/'demo_candidate_a.json'
 PIPELINE_V1_CONFIG = _CONFIGS/'pipeline_v1.json'
+PIPELINE_CONFIGS = {'pipeline_v1': PIPELINE_V1_CONFIG,
+                    'pipeline_v1_r1': _CONFIGS/'pipeline_v1_r1.json',
+                    'pipeline_v1_r2': _CONFIGS/'pipeline_v1_r2.json',
+                    'pipeline_v1_r3': _CONFIGS/'pipeline_v1_r3.json'}
 
 OVERLAY_PROFILES = ('candidate_a_brake', 'phased_v2', 'phased_smooth', 'phased_recovery',
-                    'phased_escape', 'phased_side_guard', 'phased_swath', 'pipeline_v1')
+                    'phased_escape', 'phased_side_guard', 'phased_swath', 'pipeline_v1',
+                    'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3')
 PHASED_PROFILES = tuple(p for p in OVERLAY_PROFILES if p.startswith('phased_'))
 LIVE_PROFILE_LABELS = {
     'original': 'Попередній MVP',
@@ -20,6 +25,9 @@ LIVE_PROFILE_LABELS = {
     'phased_side_guard': 'Кандидат A · фазовий із бічним захистом',
     'phased_swath': 'Кандидат A · спостережена смуга · дослідний',
     'pipeline_v1': 'Кандидат A · конвеєр v1 · дослідний',
+    'pipeline_v1_r1': 'Кандидат A · конвеєр v1, коло 1 (пам\'ять) · дослідний',
+    'pipeline_v1_r2': 'Кандидат A · конвеєр v1, коло 2 (гальмо) · дослідний',
+    'pipeline_v1_r3': 'Кандидат A · конвеєр v1, коло 3 (відступ коридором) · дослідний',
 }
 
 PROFILE_ROLES = {
@@ -29,6 +37,9 @@ PROFILE_ROLES = {
     'candidate_a_brake': 'recorded-failure-control',
     'phased_swath': 'standalone-swath-experiment',
     'pipeline_v1': 'standalone-pipeline-experiment',
+    'pipeline_v1_r1': 'standalone-pipeline-experiment',
+    'pipeline_v1_r2': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3': 'standalone-pipeline-experiment',
 }
 
 

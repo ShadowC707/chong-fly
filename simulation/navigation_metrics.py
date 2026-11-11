@@ -118,3 +118,56 @@ def share_metrics(network, coordinated, auto, stop_requested, stage_log=None):
     return dict(network_share=network_share(network, coordinated, analyzed),
                 generated_share=None if stage_log is None else generated_share(stage_log, analyzed),
                 share_analyzed_ticks=int(analyzed.sum()), share_stop_ticks=int((auto & stop).sum()))
+
+
+def share_loss(network, coordinated, stage_log, analyzed=None, tolerance_pwm=NETWORK_TOLERANCE_PWM):
+    """Exclusive attribution of the network_share loss, as shares of the analysed ticks.
+
+    For every analysed tick outside tolerance the loss goes to the first stage (in pipeline order)
+    after which the command leaves the tolerance band around the network on roll, pitch or yaw; if
+    no stage does, to 'xy_base' (turn_latch and the rest of the XY coordinator after the stages).
+    The parts sum to 1 - network_share.
+    """
+    network, coordinated = np.asarray(network, float), np.asarray(coordinated, float)
+    mask = np.ones(len(network), bool) if analyzed is None else np.asarray(analyzed, bool)
+    if len(stage_log) != len(network) or mask.shape != (len(network),):
+        raise ValueError('one stage record list and one flag per tick are required')
+    if not mask.any():
+        return None
+    columns = list(NAVIGATION_COLUMNS)
+    counts = {}
+    for net, out, records, keep in zip(network, coordinated, stage_log, mask):
+        if not keep or np.all(np.abs(out[columns]-net[columns]) <= tolerance_pwm):
+            continue
+        owner = 'xy_base'
+        for r in records:
+            if np.any(np.abs(np.asarray(r['after'], float)[columns]-net[columns]) > tolerance_pwm):
+                owner = r['stage']
+                break
+        counts[owner] = counts.get(owner, 0)+1
+    return {k: v/int(mask.sum()) for k, v in sorted(counts.items())}
+
+
+def reverse_outside_corridor(time, position, velocity, yaw, auto, corridor_s=7., tolerance_m=.05,
+                             reverse_mps=.03):
+    """Author's redefinition (round 3): body-frame rollback counted only outside the own corridor.
+
+    A tick reverses when the forward body speed is below -reverse_mps under AUTO (as the old metric).
+    For each contiguous reverse episode starting at t0 the corridor is the set of true positions of
+    the last `corridor_s` before t0; reverse distance counts only while the body is farther than
+    `tolerance_m` from every corridor position. Returns (outside_m, total_m).
+    """
+    t, p, v = np.asarray(time, float), np.asarray(position, float), np.asarray(velocity, float)
+    yaw, auto = np.asarray(yaw, float), np.asarray(auto, bool)
+    dt = np.diff(t, append=t[-1])
+    forward = v[:, 0]*np.cos(yaw)+v[:, 1]*np.sin(yaw)
+    reverse = auto & (forward < -reverse_mps)
+    outside, start, trail = 0., None, None
+    for i in np.flatnonzero(reverse):
+        if start is None or not reverse[i-1] or i == 0:
+            start = i
+            keep = (t >= t[i]-corridor_s) & (t <= t[i])
+            trail = p[keep][::5] if keep.any() else p[i:i+1]
+        if np.min(np.linalg.norm(trail-p[i], axis=1)) > tolerance_m:
+            outside += -forward[i]*dt[i]
+    return float(outside), float((-forward[reverse]*dt[reverse]).sum())

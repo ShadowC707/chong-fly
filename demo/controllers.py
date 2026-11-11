@@ -6,7 +6,7 @@ from edge.runtime import sha256
 from simulation.phased_coordinator import PhasedCoordinator
 ROOT=Path(__file__).resolve().parents[1]
 
-from .profiles import OVERLAY_PROFILES
+from .profiles import OVERLAY_PROFILES, PIPELINE_CONFIGS
 
 
 def install(system, *, profile='phased_v2', turn_envelope=None):
@@ -18,11 +18,10 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
     navigation = None
     options = dict(anti_rollback=old.anti_rollback, turn_latch=old.turn_latch, config=old.config,
                    stop_hover=old.stop_hover, behavior_config=old.behavior_config, seed=old.seed)
-    if profile == 'pipeline_v1':
+    if profile in PIPELINE_CONFIGS:
         from simulation.navigation_pipeline import NavigationPipeline, PipelineConfig
         from .pipeline_system import PipelineSystem
-        from .profiles import PIPELINE_V1_CONFIG
-        pipeline_config = PipelineConfig.from_json(PIPELINE_V1_CONFIG)
+        pipeline_config = PipelineConfig.from_json(PIPELINE_CONFIGS[profile])
         options.update(anti_rollback=pipeline_config.anti_rollback, turn_latch=pipeline_config.turn_latch)
         new = NavigationPipeline(reference_id=system.config.session_id+'-mem', pipeline_config=pipeline_config,
                                  **options)
@@ -30,7 +29,7 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
         system_class = PipelineSystem
         overlay = 'navigation-pipeline-v1'
         sources.extend(('simulation/navigation_pipeline.py', 'demo/pipeline_system.py', 'demo/pipeline_adapter.py',
-            'configs/pipeline_v1.json', 'edge/empirical_corridor.py', 'edge/survey_heading.py',
+            'configs/'+PIPELINE_CONFIGS[profile].name, 'edge/empirical_corridor.py', 'edge/survey_heading.py',
             'edge/survey_memory.py', 'simulation/survey_heading_sensor.py'))
     elif profile == 'candidate_a_brake':
         from simulation.threat_gated_xy import ThreatGatedXYCoordinator
@@ -80,7 +79,7 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
                     'phased_smooth': 'flight-system-yaw-shaping-experiment-v1'}.get(
                         profile, 'flight-system-standalone-navigation-v1')
     m['experiment']=dict(research_only=True,profile=profile,overlay=overlay,active_bundle_unchanged=True)
-    if system_class is not FlightSystem and profile != 'pipeline_v1':
+    if system_class is not FlightSystem and profile not in PIPELINE_CONFIGS:
         m['experiment']['handover_sync'] = 'After bridge engagement: issued reference yaw'
     if envelope_contract is not None:
         m['version']='flight-system-turn-envelope-experiment-v1'
