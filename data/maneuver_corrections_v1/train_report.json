@@ -1,0 +1,2404 @@
+{
+  "metadata": {
+    "dataset_version": "reflex-v3",
+    "teacher_version": "geometry-reflex-v5",
+    "teacher_aggregation_version": "max-brake-force-weighted-direction-v1",
+    "teacher_parameters": {
+      "distance_threshold_m": 0.8,
+      "max_sensor_range_m": 3.5,
+      "noise_std_pwm": 0.0,
+      "k_repulsive": 20.0,
+      "max_pitch_brake_pwm": 280.0,
+      "repulsion_scale": 600.0,
+      "yaw_gain": 0.2,
+      "min_dist_clamp": 0.1,
+      "pwm_hover": 1213.0,
+      "pwm_level_roll": 1500.0,
+      "pwm_cruise_pitch": 1600.0,
+      "pwm_neutral_yaw": 1500.0,
+      "pwm_min": 1000.0,
+      "pwm_max": 2000.0,
+      "flow_gain_pwm": 400.0,
+      "release_margin_m": 0.15,
+      "clear_hold_s": 0.12,
+      "brake_release_flow": 0.03,
+      "brake_settle_s": 0.2,
+      "brake_flow_scale": 0.1,
+      "cruise_recovery_s": 0.2,
+      "turn_full_flow": 0.05,
+      "turn_stop_flow": 0.12
+    },
+    "coordinate_version": "flu-rc-right-v1",
+    "tof_max_range_m": 3.5,
+    "sensor_dim": 74,
+    "action_dim": 4,
+    "dt": 0.02,
+    "physics_dt": 0.004,
+    "control_contract": {
+      "version": "navigation-altitude-v1",
+      "action_order": [
+        "throttle",
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_channels": [
+        "roll",
+        "pitch",
+        "yaw"
+      ],
+      "learned_indices": [
+        1,
+        2,
+        3
+      ],
+      "altitude": {
+        "version": "range-altitude-v1",
+        "throttle_owner": "altitude_controller",
+        "navigation_channels": [
+          "roll",
+          "pitch",
+          "yaw"
+        ],
+        "config": {
+          "target_height_m": 1.0,
+          "hover_pwm": 1213.0,
+          "kp": 4.0,
+          "kd": 3.0,
+          "ki": 0.8,
+          "integral_limit": 0.5,
+          "velocity_filter_tau_s": 0.12,
+          "max_acceleration_mps2": 3.0,
+          "gravity_mps2": 9.81,
+          "min_pwm": 1100.0,
+          "max_pwm": 1400.0,
+          "slew_pwm_per_s": 150.0,
+          "min_range_m": 0.08,
+          "max_range_m": 3.5,
+          "min_tilt_cosine": 0.7,
+          "emitter_below_center_m": 0.018,
+          "max_age_s": 0.06,
+          "max_sample_gap_s": 0.1,
+          "max_vertical_speed_mps": 3.0,
+          "range_jump_slack_m": 0.03
+        }
+      }
+    },
+    "required_sensor_motor_paths": {
+      "lptc_flow": [
+        "roll",
+        "pitch"
+      ],
+      "lc_looming": [
+        "pitch",
+        "yaw"
+      ]
+    },
+    "behavior_names": [
+      "cruise",
+      "turn_right",
+      "turn_left",
+      "brake_left_drift",
+      "brake_right_drift",
+      "brake_forward"
+    ],
+    "episode_scenarios": [
+      "offset_box_slow",
+      "offset_box_slow",
+      "offset_box_fast",
+      "offset_box_fast",
+      "offset_box_lateral",
+      "offset_box_lateral",
+      "offset_box_reverse",
+      "offset_box_reverse",
+      "oblique_wall_slow",
+      "oblique_wall_slow",
+      "oblique_wall_fast",
+      "oblique_wall_fast",
+      "oblique_wall_lateral",
+      "oblique_wall_lateral",
+      "oblique_wall_reverse",
+      "oblique_wall_reverse",
+      "staggered_slow",
+      "staggered_slow",
+      "staggered_fast",
+      "staggered_fast",
+      "staggered_lateral",
+      "staggered_lateral",
+      "staggered_reverse",
+      "staggered_reverse",
+      "corner_slow",
+      "corner_slow",
+      "corner_fast",
+      "corner_fast",
+      "corner_lateral",
+      "corner_lateral",
+      "corner_reverse",
+      "corner_reverse"
+    ],
+    "scenario_counts": {
+      "offset_box_slow": 2,
+      "offset_box_fast": 2,
+      "offset_box_lateral": 2,
+      "offset_box_reverse": 2,
+      "oblique_wall_slow": 2,
+      "oblique_wall_fast": 2,
+      "oblique_wall_lateral": 2,
+      "oblique_wall_reverse": 2,
+      "staggered_slow": 2,
+      "staggered_fast": 2,
+      "staggered_lateral": 2,
+      "staggered_reverse": 2,
+      "corner_slow": 2,
+      "corner_fast": 2,
+      "corner_lateral": 2,
+      "corner_reverse": 2
+    },
+    "episodes": [
+      {
+        "seed": 2026110400,
+        "scene_seed": 202611040,
+        "pair_id": "train-202611040",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "offset_box_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.1403990169705016,
+              "x_max": 1.3903990169705016,
+              "y_min": 0.05094002438431486,
+              "y_max": 0.4310658389058669,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.25,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.726290702819824,
+          -2.1979057788848877,
+          0.9987586140632629
+        ],
+        "final_clearance_m": 0.798758614063263
+      },
+      {
+        "seed": 2026110401,
+        "scene_seed": 202611040,
+        "pair_id": "train-202611040",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "offset_box_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.1403990169705016,
+              "x_max": 1.3903990169705016,
+              "y_min": -0.4310658389058669,
+              "y_max": -0.05094002438431486,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.25,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.511561870574951,
+          2.358828544616699,
+          0.9979677200317383
+        ],
+        "final_clearance_m": 0.7979677200317383
+      },
+      {
+        "seed": 2026110402,
+        "scene_seed": 202611041,
+        "pair_id": "train-202611041",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "offset_box_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.6027194096256907,
+              "x_max": 1.8527194096256907,
+              "y_min": -0.05501326929033584,
+              "y_max": 0.49835090188773296,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.8999999761581421,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          3.800682306289673,
+          -2.767561674118042,
+          0.9980459809303284
+        ],
+        "final_clearance_m": 0.7980459809303284
+      },
+      {
+        "seed": 2026110403,
+        "scene_seed": 202611041,
+        "pair_id": "train-202611041",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "offset_box_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.6027194096256907,
+              "x_max": 1.8527194096256907,
+              "y_min": -0.49835090188773296,
+              "y_max": 0.05501326929033584,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.8999999761581421,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.264820098876953,
+          2.88189697265625,
+          0.9993391036987305
+        ],
+        "final_clearance_m": 0.7993391036987305
+      },
+      {
+        "seed": 2026110404,
+        "scene_seed": 202611042,
+        "pair_id": "train-202611042",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "offset_box_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4000104779590363,
+              "x_max": 1.6500104779590363,
+              "y_min": -0.05896095019424824,
+              "y_max": 0.40315846707123304,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.3499999940395355,
+            0.2199999988079071,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.452976942062378,
+          3.3050537109375,
+          1.0005054473876953
+        ],
+        "final_clearance_m": 0.8005054473876954
+      },
+      {
+        "seed": 2026110405,
+        "scene_seed": 202611042,
+        "pair_id": "train-202611042",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "offset_box_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4000104779590363,
+              "x_max": 1.6500104779590363,
+              "y_min": -0.40315846707123304,
+              "y_max": 0.05896095019424824,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.3499999940395355,
+            -0.2199999988079071,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.4045093059539795,
+          -1.9604356288909912,
+          0.9984443783760071
+        ],
+        "final_clearance_m": 0.7984443783760071
+      },
+      {
+        "seed": 2026110406,
+        "scene_seed": 202611043,
+        "pair_id": "train-202611043",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "offset_box_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5476370299415612,
+              "x_max": 1.7976370299415612,
+              "y_min": -0.08622884421613283,
+              "y_max": 0.37093015062888834,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            -0.25,
+            0.07999999821186066,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.949508786201477,
+          2.1962318420410156,
+          0.9989219903945923
+        ],
+        "final_clearance_m": 0.7989219903945923
+      },
+      {
+        "seed": 2026110407,
+        "scene_seed": 202611043,
+        "pair_id": "train-202611043",
+        "split": "train",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "offset_box_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5476370299415612,
+              "x_max": 1.7976370299415612,
+              "y_min": -0.37093015062888834,
+              "y_max": 0.08622884421613283,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            -0.25,
+            -0.07999999821186066,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.3831636905670166,
+          1.995959997177124,
+          0.9980700016021729
+        ],
+        "final_clearance_m": 0.7980700016021729
+      },
+      {
+        "seed": 2026110408,
+        "scene_seed": 202611044,
+        "pair_id": "train-202611044",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "oblique_wall_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.2609286539381965,
+              "x_max": 1.4609286539381965,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.24537085075076753,
+          "initial_velocity_mps": [
+            0.2425118237733841,
+            0.060729026794433594,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.7455782890319824,
+          3.794825315475464,
+          0.9997530579566956
+        ],
+        "final_clearance_m": 0.7997530579566956
+      },
+      {
+        "seed": 2026110409,
+        "scene_seed": 202611044,
+        "pair_id": "train-202611044",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "oblique_wall_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.2609286539381965,
+              "x_max": 1.4609286539381965,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.24537085075076753,
+          "initial_velocity_mps": [
+            0.2425118237733841,
+            -0.060729026794433594,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.9798643589019775,
+          -3.7602386474609375,
+          0.9989624619483948
+        ],
+        "final_clearance_m": 0.7989624619483948
+      },
+      {
+        "seed": 2026110410,
+        "scene_seed": 202611045,
+        "pair_id": "train-202611045",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "oblique_wall_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4754194656925055,
+              "x_max": 1.6754194656925054,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.15359449972558079,
+          "initial_velocity_mps": [
+            0.8894047737121582,
+            0.1376921683549881,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.4053646326065063,
+          3.734144449234009,
+          0.9988144040107727
+        ],
+        "final_clearance_m": 0.7988144040107727
+      },
+      {
+        "seed": 2026110411,
+        "scene_seed": 202611045,
+        "pair_id": "train-202611045",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "oblique_wall_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4754194656925055,
+              "x_max": 1.6754194656925054,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.15359449972558079,
+          "initial_velocity_mps": [
+            0.8894047737121582,
+            -0.1376921683549881,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.171431064605713,
+          -3.54868745803833,
+          0.9998066425323486
+        ],
+        "final_clearance_m": 0.7998066425323487
+      },
+      {
+        "seed": 2026110412,
+        "scene_seed": 202611046,
+        "pair_id": "train-202611046",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "oblique_wall_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5811382119332087,
+              "x_max": 1.7811382119332086,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.25250842031602877,
+          "initial_velocity_mps": [
+            0.2839376926422119,
+            0.30046528577804565,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.0119240283966064,
+          3.7924795150756836,
+          0.999733030796051
+        ],
+        "final_clearance_m": 0.7997330307960511
+      },
+      {
+        "seed": 2026110413,
+        "scene_seed": 202611046,
+        "pair_id": "train-202611046",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "oblique_wall_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5811382119332087,
+              "x_max": 1.7811382119332086,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.25250842031602877,
+          "initial_velocity_mps": [
+            0.2839376926422119,
+            -0.30046528577804565,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.0733344554901123,
+          -3.9554085731506348,
+          0.9989612102508545
+        ],
+        "final_clearance_m": 0.7989612102508545
+      },
+      {
+        "seed": 2026110414,
+        "scene_seed": 202611047,
+        "pair_id": "train-202611047",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "oblique_wall_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5832920997257376,
+              "x_max": 1.7832920997257375,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.2895412223724804,
+          "initial_velocity_mps": [
+            -0.2624347507953644,
+            0.005291856359690428,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.6996864080429077,
+          2.849214553833008,
+          0.9985250234603882
+        ],
+        "final_clearance_m": 0.7985250234603882
+      },
+      {
+        "seed": 2026110415,
+        "scene_seed": 202611047,
+        "pair_id": "train-202611047",
+        "split": "train",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "oblique_wall_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5832920997257376,
+              "x_max": 1.7832920997257375,
+              "y_min": -0.9,
+              "y_max": 0.9,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.2895412223724804,
+          "initial_velocity_mps": [
+            -0.2624347507953644,
+            -0.005291856359690428,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.7562689781188965,
+          -2.987691640853882,
+          0.9971187710762024
+        ],
+        "final_clearance_m": 0.7971187710762024
+      },
+      {
+        "seed": 2026110416,
+        "scene_seed": 202611048,
+        "pair_id": "train-202611048",
+        "split": "train",
+        "family": "staggered",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "staggered_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.527193540079976,
+              "center_y": 0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.327193540079976,
+              "center_y": -0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.25,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.655698776245117,
+          -2.324228048324585,
+          0.9992644786834717
+        ],
+        "final_clearance_m": 0.7992644786834717
+      },
+      {
+        "seed": 2026110417,
+        "scene_seed": 202611048,
+        "pair_id": "train-202611048",
+        "split": "train",
+        "family": "staggered",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "staggered_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.527193540079976,
+              "center_y": -0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.327193540079976,
+              "center_y": 0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.25,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.30325984954834,
+          2.4258720874786377,
+          1.0002554655075073
+        ],
+        "final_clearance_m": 0.8002554655075074
+      },
+      {
+        "seed": 2026110418,
+        "scene_seed": 202611049,
+        "pair_id": "train-202611049",
+        "split": "train",
+        "family": "staggered",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "staggered_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.2975941283909,
+              "center_y": 0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.0975941283909,
+              "center_y": -0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.8999999761581421,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.901995658874512,
+          -2.7055087089538574,
+          0.9996045827865601
+        ],
+        "final_clearance_m": 0.7996045827865601
+      },
+      {
+        "seed": 2026110419,
+        "scene_seed": 202611049,
+        "pair_id": "train-202611049",
+        "split": "train",
+        "family": "staggered",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "staggered_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.2975941283909,
+              "center_y": -0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.0975941283909,
+              "center_y": 0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.8999999761581421,
+            0.0,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          4.670466423034668,
+          2.894686698913574,
+          0.998519778251648
+        ],
+        "final_clearance_m": 0.798519778251648
+      },
+      {
+        "seed": 2026110420,
+        "scene_seed": 202611050,
+        "pair_id": "train-202611050",
+        "split": "train",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "staggered_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.5323781585622853,
+              "center_y": 0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.3323781585622854,
+              "center_y": -0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            0.3499999940395355,
+            0.2199999988079071,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          1.7775633335113525,
+          3.202237606048584,
+          0.9986061453819275
+        ],
+        "final_clearance_m": 0.7986061453819275
+      },
+      {
+        "seed": 2026110421,
+        "scene_seed": 202611050,
+        "pair_id": "train-202611050",
+        "split": "train",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "staggered_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.5323781585622853,
+              "center_y": -0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.3323781585622854,
+              "center_y": 0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            0.3499999940395355,
+            -0.2199999988079071,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          3.3413138389587402,
+          2.865068197250366,
+          0.9987949728965759
+        ],
+        "final_clearance_m": 0.798794972896576
+      },
+      {
+        "seed": 2026110422,
+        "scene_seed": 202611051,
+        "pair_id": "train-202611051",
+        "split": "train",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "staggered_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.522105599574292,
+              "center_y": 0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.322105599574292,
+              "center_y": -0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": 0.0,
+          "initial_velocity_mps": [
+            -0.25,
+            0.07999999821186066,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          2.544205665588379,
+          -2.0358798503875732,
+          0.9995151162147522
+        ],
+        "final_clearance_m": 0.7995151162147522
+      },
+      {
+        "seed": 2026110423,
+        "scene_seed": 202611051,
+        "pair_id": "train-202611051",
+        "split": "train",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "staggered_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [],
+          "cylinders": [
+            {
+              "center_x": 1.522105599574292,
+              "center_y": -0.25,
+              "radius": 0.28,
+              "height": 2.5
+            },
+            {
+              "center_x": 3.322105599574292,
+              "center_y": 0.35,
+              "radius": 0.32,
+              "height": 2.5
+            }
+          ],
+          "initial_yaw_rad": -0.0,
+          "initial_velocity_mps": [
+            -0.25,
+            -0.07999999821186066,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          3.3142030239105225,
+          2.0854785442352295,
+          0.99698406457901
+        ],
+        "final_clearance_m": 0.79698406457901
+      },
+      {
+        "seed": 2026110424,
+        "scene_seed": 202611052,
+        "pair_id": "train-202611052",
+        "split": "train",
+        "family": "corner",
+        "motion": "slow",
+        "side": 1,
+        "scenario": "corner_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4787410352879138,
+              "x_max": 1.6787410352879137,
+              "y_min": -0.65,
+              "y_max": 1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.4787410352879138,
+              "x_max": 1.6787410352879137,
+              "y_min": 1.1,
+              "y_max": 1.3,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.15348344746150075,
+          "initial_velocity_mps": [
+            0.2470611333847046,
+            0.038220394402742386,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.4323417842388153,
+          0.44215822219848633,
+          1.0019818544387817
+        ],
+        "final_clearance_m": 0.45947607622943637
+      },
+      {
+        "seed": 2026110425,
+        "scene_seed": 202611052,
+        "pair_id": "train-202611052",
+        "split": "train",
+        "family": "corner",
+        "motion": "slow",
+        "side": -1,
+        "scenario": "corner_slow",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.4787410352879138,
+              "x_max": 1.6787410352879137,
+              "y_min": -1.1,
+              "y_max": 0.65,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.4787410352879138,
+              "x_max": 1.6787410352879137,
+              "y_min": -1.3,
+              "y_max": -1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.15348344746150075,
+          "initial_velocity_mps": [
+            0.2470611333847046,
+            -0.038220394402742386,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.48089444637298584,
+          -0.19549284875392914,
+          0.9984928965568542
+        ],
+        "final_clearance_m": 0.704507151246071
+      },
+      {
+        "seed": 2026110426,
+        "scene_seed": 202611053,
+        "pair_id": "train-202611053",
+        "split": "train",
+        "family": "corner",
+        "motion": "fast",
+        "side": 1,
+        "scenario": "corner_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.107325724459013,
+              "x_max": 1.3073257244590129,
+              "y_min": -0.65,
+              "y_max": 1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.1073257244590129,
+              "x_max": 1.3073257244590129,
+              "y_min": 1.1,
+              "y_max": 1.3,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.09702235760027983,
+          "initial_velocity_mps": [
+            0.895767331123352,
+            0.08718319237232208,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.45786526799201965,
+          0.4033942222595215,
+          1.0078954696655273
+        ],
+        "final_clearance_m": 0.44946045646699323
+      },
+      {
+        "seed": 2026110427,
+        "scene_seed": 202611053,
+        "pair_id": "train-202611053",
+        "split": "train",
+        "family": "corner",
+        "motion": "fast",
+        "side": -1,
+        "scenario": "corner_fast",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.107325724459013,
+              "x_max": 1.3073257244590129,
+              "y_min": -1.1,
+              "y_max": 0.65,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.1073257244590129,
+              "x_max": 1.3073257244590129,
+              "y_min": -1.3,
+              "y_max": -1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.09702235760027983,
+          "initial_velocity_mps": [
+            0.895767331123352,
+            -0.08718319237232208,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.40671947598457336,
+          -0.16540968418121338,
+          1.0022376775741577
+        ],
+        "final_clearance_m": 0.5006062484744396
+      },
+      {
+        "seed": 2026110428,
+        "scene_seed": 202611054,
+        "pair_id": "train-202611054",
+        "split": "train",
+        "family": "corner",
+        "motion": "lateral",
+        "side": 1,
+        "scenario": "corner_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5467748074003,
+              "x_max": 1.7467748074003,
+              "y_min": -0.65,
+              "y_max": 1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.5467748074003,
+              "x_max": 1.7467748074003,
+              "y_min": 1.1,
+              "y_max": 1.3,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.1727636429155245,
+          "initial_velocity_mps": [
+            0.306970477104187,
+            0.27689188718795776,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.4893190860748291,
+          0.18120083212852478,
+          0.994204044342041
+        ],
+        "final_clearance_m": 0.7205938685404905
+      },
+      {
+        "seed": 2026110429,
+        "scene_seed": 202611054,
+        "pair_id": "train-202611054",
+        "split": "train",
+        "family": "corner",
+        "motion": "lateral",
+        "side": -1,
+        "scenario": "corner_lateral",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.5467748074003,
+              "x_max": 1.7467748074003,
+              "y_min": -1.1,
+              "y_max": 0.65,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.5467748074003,
+              "x_max": 1.7467748074003,
+              "y_min": -1.3,
+              "y_max": -1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.1727636429155245,
+          "initial_velocity_mps": [
+            0.306970477104187,
+            -0.27689188718795776,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.9936532378196716,
+          -0.4991436302661896,
+          0.9970898032188416
+        ],
+        "final_clearance_m": 0.3531215695806284
+      },
+      {
+        "seed": 2026110430,
+        "scene_seed": 202611055,
+        "pair_id": "train-202611055",
+        "split": "train",
+        "family": "corner",
+        "motion": "reverse",
+        "side": 1,
+        "scenario": "corner_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.1901922942352952,
+              "x_max": 1.3901922942352951,
+              "y_min": -0.65,
+              "y_max": 1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.19019229423529516,
+              "x_max": 1.3901922942352951,
+              "y_min": 1.1,
+              "y_max": 1.3,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": 0.09116275884548103,
+          "initial_velocity_mps": [
+            -0.25624480843544006,
+            0.05690866336226463,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.5265516638755798,
+          0.5960977673530579,
+          1.0136157274246216
+        ],
+        "final_clearance_m": 0.3039022326469422
+      },
+      {
+        "seed": 2026110431,
+        "scene_seed": 202611055,
+        "pair_id": "train-202611055",
+        "split": "train",
+        "family": "corner",
+        "motion": "reverse",
+        "side": -1,
+        "scenario": "corner_reverse",
+        "scene_parameters": {
+          "room": {
+            "x_min": -6.0,
+            "x_max": 6.0,
+            "y_min": -6.0,
+            "y_max": 6.0,
+            "z_min": 0.0,
+            "z_max": 4.0
+          },
+          "boxes": [
+            {
+              "x_min": 1.1901922942352952,
+              "x_max": 1.3901922942352951,
+              "y_min": -1.1,
+              "y_max": 0.65,
+              "z_min": 0.0,
+              "z_max": 2.5
+            },
+            {
+              "x_min": 0.19019229423529516,
+              "x_max": 1.3901922942352951,
+              "y_min": -1.3,
+              "y_max": -1.1,
+              "z_min": 0.0,
+              "z_max": 2.5
+            }
+          ],
+          "cylinders": [],
+          "initial_yaw_rad": -0.09116275884548103,
+          "initial_velocity_mps": [
+            -0.25624480843544006,
+            -0.05690866336226463,
+            0.0
+          ],
+          "collision_radius_m": 0.2
+        },
+        "valid_steps": 600,
+        "physics_ticks": 3000,
+        "duration_s": 12.0,
+        "terminated": false,
+        "crashed": false,
+        "collision_kind": null,
+        "failure_reason": null,
+        "final_position_m": [
+          0.4928150773048401,
+          -0.3522914946079254,
+          0.9984690546989441
+        ],
+        "final_clearance_m": 0.49737721693045506
+      }
+    ],
+    "behavior_counts": {
+      "cruise": 10184,
+      "turn_right": 2195,
+      "brake_forward": 4419,
+      "brake_right_drift": 305,
+      "turn_left": 1884,
+      "brake_left_drift": 213
+    },
+    "sensor_geometry_version": "point-rays-solid-v2",
+    "observation_source": "geometric_raycast",
+    "scene_profile": "xy-maneuver-sequences-v1",
+    "num_episodes": 32,
+    "seq_len": 600,
+    "label_noise_std_pwm": 0.0,
+    "execution_noise_std_pwm": 0.0,
+    "training_admitted": false,
+    "collection_contract": {
+      "contact_model": "sphere-sweep-v1",
+      "body_radius_m": 0.2,
+      "execution_actor": "provided_policy",
+      "labels": "v5 teacher on actor observation history",
+      "coordinator": false,
+      "sensor_sampling": "Fresh observation at 50 Hz; not integrated 50/30/15 Hz replay",
+      "split_rule": "Explicit train/evaluation; keep each pair_id together in any later split",
+      "failed_episodes": "Retained and marked; no automatic inclusion as successful demonstrations"
+    }
+  },
+  "audit": {
+    "episodes": [
+      {
+        "episode": 0,
+        "pair_id": "train-202611040",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 11,
+        "right_frames": 87,
+        "left_frames": 0,
+        "brake_after_clear_frames": 50,
+        "min_clearance_m": 0.08604884892702103
+      },
+      {
+        "episode": 1,
+        "pair_id": "train-202611040",
+        "family": "offset_box",
+        "motion": "slow",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 12,
+        "right_frames": 0,
+        "left_frames": 94,
+        "brake_after_clear_frames": 46,
+        "min_clearance_m": 0.11207442730665207
+      },
+      {
+        "episode": 2,
+        "pair_id": "train-202611041",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 7,
+        "right_frames": 0,
+        "left_frames": 134,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.2537133991718292
+      },
+      {
+        "episode": 3,
+        "pair_id": "train-202611041",
+        "family": "offset_box",
+        "motion": "fast",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 2,
+        "right_frames": 0,
+        "left_frames": 21,
+        "brake_after_clear_frames": 7,
+        "min_clearance_m": 0.08922357112169266
+      },
+      {
+        "episode": 4,
+        "pair_id": "train-202611042",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 1,
+        "right_frames": 0,
+        "left_frames": 79,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.304404079914093
+      },
+      {
+        "episode": 5,
+        "pair_id": "train-202611042",
+        "family": "offset_box",
+        "motion": "lateral",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 13,
+        "right_frames": 157,
+        "left_frames": 0,
+        "brake_after_clear_frames": 49,
+        "min_clearance_m": 0.11182302981615067
+      },
+      {
+        "episode": 6,
+        "pair_id": "train-202611043",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 3,
+        "right_frames": 0,
+        "left_frames": 78,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.3287521302700043
+      },
+      {
+        "episode": 7,
+        "pair_id": "train-202611043",
+        "family": "offset_box",
+        "motion": "reverse",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 1,
+        "right_frames": 82,
+        "left_frames": 0,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.2925829291343689
+      },
+      {
+        "episode": 8,
+        "pair_id": "train-202611044",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 2,
+        "right_frames": 0,
+        "left_frames": 67,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.18446819484233856
+      },
+      {
+        "episode": 9,
+        "pair_id": "train-202611044",
+        "family": "oblique_wall",
+        "motion": "slow",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 3,
+        "right_frames": 73,
+        "left_frames": 0,
+        "brake_after_clear_frames": 2,
+        "min_clearance_m": 0.25883761048316956
+      },
+      {
+        "episode": 10,
+        "pair_id": "train-202611045",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 5,
+        "right_frames": 0,
+        "left_frames": 91,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.3481075167655945
+      },
+      {
+        "episode": 11,
+        "pair_id": "train-202611045",
+        "family": "oblique_wall",
+        "motion": "fast",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 5,
+        "right_frames": 64,
+        "left_frames": 0,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.32067936658859253
+      },
+      {
+        "episode": 12,
+        "pair_id": "train-202611046",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 2,
+        "right_frames": 0,
+        "left_frames": 67,
+        "brake_after_clear_frames": 2,
+        "min_clearance_m": 0.2331434041261673
+      },
+      {
+        "episode": 13,
+        "pair_id": "train-202611046",
+        "family": "oblique_wall",
+        "motion": "lateral",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 11,
+        "right_frames": 128,
+        "left_frames": 0,
+        "brake_after_clear_frames": 12,
+        "min_clearance_m": 0.3408506512641907
+      },
+      {
+        "episode": 14,
+        "pair_id": "train-202611047",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 2,
+        "right_frames": 0,
+        "left_frames": 64,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.24564743041992188
+      },
+      {
+        "episode": 15,
+        "pair_id": "train-202611047",
+        "family": "oblique_wall",
+        "motion": "reverse",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 9,
+        "right_frames": 127,
+        "left_frames": 0,
+        "brake_after_clear_frames": 13,
+        "min_clearance_m": 0.3289308249950409
+      },
+      {
+        "episode": 16,
+        "pair_id": "train-202611048",
+        "family": "staggered",
+        "motion": "slow",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 6,
+        "right_frames": 83,
+        "left_frames": 0,
+        "brake_after_clear_frames": 50,
+        "min_clearance_m": 0.11762391775846481
+      },
+      {
+        "episode": 17,
+        "pair_id": "train-202611048",
+        "family": "staggered",
+        "motion": "slow",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 3,
+        "right_frames": 0,
+        "left_frames": 23,
+        "brake_after_clear_frames": 6,
+        "min_clearance_m": 0.1627935916185379
+      },
+      {
+        "episode": 18,
+        "pair_id": "train-202611049",
+        "family": "staggered",
+        "motion": "fast",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 7,
+        "right_frames": 82,
+        "left_frames": 0,
+        "brake_after_clear_frames": 50,
+        "min_clearance_m": 0.09663402289152145
+      },
+      {
+        "episode": 19,
+        "pair_id": "train-202611049",
+        "family": "staggered",
+        "motion": "fast",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 11,
+        "right_frames": 0,
+        "left_frames": 92,
+        "brake_after_clear_frames": 45,
+        "min_clearance_m": 0.09212204068899155
+      },
+      {
+        "episode": 20,
+        "pair_id": "train-202611050",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 10,
+        "right_frames": 75,
+        "left_frames": 0,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.38571152091026306
+      },
+      {
+        "episode": 21,
+        "pair_id": "train-202611050",
+        "family": "staggered",
+        "motion": "lateral",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 1,
+        "right_frames": 0,
+        "left_frames": 60,
+        "brake_after_clear_frames": 2,
+        "min_clearance_m": 0.23327994346618652
+      },
+      {
+        "episode": 22,
+        "pair_id": "train-202611051",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 10,
+        "right_frames": 139,
+        "left_frames": 0,
+        "brake_after_clear_frames": 4,
+        "min_clearance_m": 0.3870244324207306
+      },
+      {
+        "episode": 23,
+        "pair_id": "train-202611051",
+        "family": "staggered",
+        "motion": "reverse",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 1,
+        "right_frames": 0,
+        "left_frames": 27,
+        "brake_after_clear_frames": 3,
+        "min_clearance_m": 0.17586714029312134
+      },
+      {
+        "episode": 24,
+        "pair_id": "train-202611052",
+        "family": "corner",
+        "motion": "slow",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 22,
+        "right_frames": 53,
+        "left_frames": 236,
+        "brake_after_clear_frames": 1,
+        "min_clearance_m": 0.2861854135990143
+      },
+      {
+        "episode": 25,
+        "pair_id": "train-202611052",
+        "family": "corner",
+        "motion": "slow",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 12,
+        "right_frames": 65,
+        "left_frames": 222,
+        "brake_after_clear_frames": 18,
+        "min_clearance_m": 0.3679722249507904
+      },
+      {
+        "episode": 26,
+        "pair_id": "train-202611053",
+        "family": "corner",
+        "motion": "fast",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 16,
+        "right_frames": 268,
+        "left_frames": 73,
+        "brake_after_clear_frames": 23,
+        "min_clearance_m": 0.3288273513317108
+      },
+      {
+        "episode": 27,
+        "pair_id": "train-202611053",
+        "family": "corner",
+        "motion": "fast",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 23,
+        "right_frames": 134,
+        "left_frames": 77,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.3366568386554718
+      },
+      {
+        "episode": 28,
+        "pair_id": "train-202611054",
+        "family": "corner",
+        "motion": "lateral",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 21,
+        "right_frames": 84,
+        "left_frames": 215,
+        "brake_after_clear_frames": 9,
+        "min_clearance_m": 0.3527586758136749
+      },
+      {
+        "episode": 29,
+        "pair_id": "train-202611054",
+        "family": "corner",
+        "motion": "lateral",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 17,
+        "right_frames": 328,
+        "left_frames": 0,
+        "brake_after_clear_frames": 15,
+        "min_clearance_m": 0.3531215695806284
+      },
+      {
+        "episode": 30,
+        "pair_id": "train-202611055",
+        "family": "corner",
+        "motion": "reverse",
+        "side": 1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 19,
+        "right_frames": 102,
+        "left_frames": 84,
+        "brake_after_clear_frames": 0,
+        "min_clearance_m": 0.3034203350543976
+      },
+      {
+        "episode": 31,
+        "pair_id": "train-202611055",
+        "family": "corner",
+        "motion": "reverse",
+        "side": -1,
+        "completed": true,
+        "crashed": false,
+        "duration_s": 12.0,
+        "turn_bursts": 13,
+        "right_frames": 64,
+        "left_frames": 80,
+        "brake_after_clear_frames": 1,
+        "min_clearance_m": 0.37360450625419617
+      }
+    ],
+    "valid_frames": 19200,
+    "label_max_error_pwm": 0.0,
+    "label_mismatch_frames": 0,
+    "completed": 32,
+    "crashed": 0,
+    "training_admitted": false
+  }
+}

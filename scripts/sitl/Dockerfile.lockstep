@@ -1,0 +1,6 @@
+FROM chong-fly-sitl:79065c96b-v1
+COPY lockstep.c patch_lockstep.py /opt/harness/
+WORKDIR /opt/betaflight
+RUN python /opt/harness/patch_lockstep.py \
+    && make TARGET=SITL ARM_SDK_PREFIX= GCC_VERSION="$(gcc -dumpversion)" GCC_REQUIRED_VERSION="$(gcc -dumpversion)" -j4
+WORKDIR /results

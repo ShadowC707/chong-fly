@@ -7,7 +7,8 @@ from dataclasses import replace
 
 from .hardware_wire import decode_sensor, encode_command, to_snapshot
 from .session_receiver import CommandPacket
-from .system import RunConfig, build_system
+from .system import RunConfig
+from .pinned_system import build_pinned_system as build_system
 
 
 class SensorDecodeError(ValueError):

@@ -43,6 +43,7 @@ def pretrain_policy(
     loss_mode: str = 'behavior-v1',
     yaw_balance: float = .5,
     post_step_callback: Optional[Callable[[torch.nn.Module], None]] = None,
+    active_fast_balance: float = 0.,
 ) -> Any:
     """
     Rapidly pre-trains a policy using Behavioral Cloning on reflex demonstration sequences.
@@ -64,6 +65,8 @@ def pretrain_policy(
     yaw_balance : mix of empirical yaw frequencies and equal group mass.
     post_step_callback : optional experiment constraint, called after the native
                          topology/sign projection on every optimizer update.
+    active_fast_balance : opt-in Pitch/Yaw loss mixture for close-ToF/high-flow
+                          training frames; requires channel-v4. Zero preserves existing behavior.
 
     Returns
     -------
@@ -81,6 +84,11 @@ def pretrain_policy(
         raise ValueError('Artifact lacks training admission; use research_only=True for a bounded diagnostic')
     if loss_mode not in {'behavior-v1', 'channel-v2', 'channel-v3', 'channel-v4'}:
         raise ValueError('Unknown loss_mode')
+    if (type(active_fast_balance) not in (int,float) or not np.isfinite(active_fast_balance)
+            or not 0 <= active_fast_balance <= 1):
+        raise ValueError('active_fast_balance must be finite in [0,1]')
+    if active_fast_balance and loss_mode != 'channel-v4':
+        raise ValueError('active_fast_balance requires channel-v4')
     if not np.isfinite(yaw_balance) or not 0 <= yaw_balance <= 1:
         raise ValueError('yaw_balance must be in [0, 1]')
 
@@ -202,12 +210,17 @@ def pretrain_policy(
     class_weights[present] = counts.sum() / (present.sum()*counts[present])
     frame_weights = class_weights[labels_sub.clamp_min(0)] * valid_sub
     channel_weights = None
+    active_fast_info = None
     recovery_steps = max(1, int(round(1./dataset_dt))) if loss_mode == 'channel-v4' else None
     if loss_mode in {'channel-v2', 'channel-v3', 'channel-v4'}:
         from optimizer.navigation_loss import navigation_weights, navigation_loss
         channel_weights = navigation_weights(Y_sub, valid_sub, labels_sub, len(names),
                                              yaw_balance=yaw_balance, amplitude_bins=loss_mode in {'channel-v3', 'channel-v4'},
                                              recovery_steps=recovery_steps)
+        if active_fast_balance:
+            from optimizer.flow_balance import active_fast_weights
+            channel_weights, active_fast_info = active_fast_weights(
+                channel_weights, X_sub, valid_sub, mix=active_fast_balance)
     yaw_delta = Y_sub[..., 3]-PWM_MID
     yaw_counts = {'neutral':int(((yaw_delta.abs() <= 1) & valid_sub).sum()),
                   'right':int(((yaw_delta > 1) & valid_sub).sum()),
@@ -361,6 +374,6 @@ def pretrain_policy(
             "final_loss": loss_history[-1] if loss_history else None,
         },
     )
-
-
+    if active_fast_info is not None:
+        policy._pretrain_info['loss_contract']['active_fast_modifier'] = active_fast_info
     return policy

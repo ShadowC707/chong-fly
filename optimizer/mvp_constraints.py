@@ -55,8 +55,8 @@ class RecurrentConstraints:
         self.steps = self.projections = 0
         self.max_observed_norm = float(weight.norm())
         if freeze_core:
-            if not policy.neutral_origin or policy.sensor_layer.encoding != 'proximity-v1':
-                raise ValueError('Full-core control requires proximity-v1 and neutral_origin')
+            if not policy.neutral_origin or policy.sensor_layer.encoding not in ('proximity-v1','proximity-release-v1'):
+                raise ValueError('Full-core control requires supported proximity encoding and neutral_origin')
             self.reference_W = cell._w_macro_param.detach().clone()
             self.reference_sha256 = hashlib.sha256(self.reference_W.cpu().numpy().tobytes()).hexdigest()
             self.initial_decoder_norms = decoder_norms(policy) if metadata is None else metadata['initial_decoder_norms']

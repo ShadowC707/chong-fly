@@ -25,12 +25,14 @@ def export_policy(policy,output,*,source):
     if output.exists():
         raise FileExistsError('Export requires a new output directory')
     c=policy.cfc_network.cell
-    if (policy.sensor_layer.encoding!='proximity-v1' or c.connectivity!='structured'
+    encoding=policy.sensor_layer.encoding
+    threshold={'proximity-v1':.8,'proximity-release-v1':1.0}.get(encoding)
+    if (threshold is None or c.connectivity!='structured'
             or c.solver_type!='exponential_euler' or policy.sensor_dim not in (66,74)
             or policy.default_dt!=.02 or c.mode not in ('fixed','masked')):
-        raise ValueError('Export requires structured proximity-v1 / exponential_euler at dt=0.02')
-    if c._architecture_contract.get('sensor_encoding_parameters') != {'threshold_m':.8,'max_range_m':3.5}:
-        raise ValueError('Unsupported proximity-v1 encoding parameters')
+        raise ValueError('Export requires supported structured proximity encoding / exponential_euler at dt=0.02')
+    if c._architecture_contract.get('sensor_encoding_parameters') != {'threshold_m':threshold,'max_range_m':3.5}:
+        raise ValueError('Unsupported proximity encoding parameters')
     if any(p.dtype != torch.float32 for p in policy.parameters()):
         raise ValueError('Export supports float32 parameters only; no silent precision conversion')
     def array(t):
@@ -53,10 +55,10 @@ def export_policy(policy,output,*,source):
         shutil.copyfile(path,output/(name+'.py'))
     (output/'requirements.txt').write_text('numpy>=1.26,<3\n',encoding='utf-8')
     original=asdict(XYConfig())
-    meta=dict(format='chong-fly-numpy-v1',solver='exponential_euler',sensor_encoding='proximity-v1',
+    meta=dict(format='chong-fly-numpy-v1',solver='exponential_euler',sensor_encoding=encoding,
         matrix_orientation='source_target_h_at_W',dtype='float32',dt=.02,
         hidden_size=c.hidden_size,sensor_dim=policy.sensor_dim,
-        tof_range_m=3.5,proximity_threshold_m=.8,
+        tof_range_m=3.5,proximity_threshold_m=threshold,
         action_order=['throttle','roll','pitch','yaw'],pwm=dict(min=1000.,mid=1500.,half=500.,max=2000.),
         source=source,neural_contract=c.get_extra_state(),control_contract=control_contract(),
         xy_config=original,xy_presets=dict(original_v1=original,near_zero_v1=asdict(

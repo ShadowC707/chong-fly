@@ -48,6 +48,7 @@ wandb/
 htmlcov/
 *.log
 scratch/
+.runtime-tmp/ready-sim-conda-cache/
 .test-tmp*/
 # Immutable measured bulk responses are local; inventories and small candidates are tracked.
 data/flywire783_filtered_source_*/*.parquet
@@ -78,3 +79,12 @@ reports/
 /data/hardware_backups/
 
 
+# Local experiment outputs, recordings and scratch exports (evidence stays local;
+# selected reports can be added explicitly with git add -f).
+/output/
+/.runtime-tmp/
+/flight simulations/
+/Project_Tree.txt
+/LLM_Context.txt
+/export-context.ps1
+/scripts/export_sitl_context.ps1

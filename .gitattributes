@@ -1,5 +1,10 @@
 # Hash-verified artifacts must survive checkout without newline conversion.
 /data/edge/** -text
+/data/scenarios/reiteration_v1/sitl/** -text
+/configs/candidate_a_adaptive_tau_v1.json -text
+/configs/ready_sim_reference_v1.json -text
+/configs/sitl_virtual_v1.cli -text
+/simulation/sitl_twr.py -text
 /data/releases/** -text
 /data/selection/mvp_frozen_core_v1/trial_00003/after/** -text
 # build_system compares these executing modules with exact bundled bytes.

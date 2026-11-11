@@ -1,0 +1,30 @@
+{
+  "candidate": "bridge_role_k306",
+  "role": "Before early-turn correction; research comparator, not active deployment",
+  "archive": "archive/candidates/k306_before_early_turn_v1",
+  "original": "output/tau_continuation_v1/adaptive_tau",
+  "checksums": {
+    "model/checkpoint.pt": "0e48563304377d4136e61938612eb94dbb440523fdac222e9e98e9f55faaaea7",
+    "model/report.json": "22b52f903b10048bc6f70b29596d375908e45ade3f4da5109e9797cbd714d243",
+    "active/bundle/metadata.json": "5032c78eac785fbecda1948da160b6548f0716e35ea9e49234f8a522f8cc010c",
+    "model/numpy/metadata.json": "ebb9517a1bb7acc7eef99e1c933ece5f7387012eee30fc3a2e15c2d114937896"
+  },
+  "evidence": {
+    "known_room_completions": "4/4",
+    "temporal_direction": "12/12",
+    "temporal_recovery": "12/12",
+    "max_recovery_s": 0.5,
+    "difficult_room_clearance_m": {
+      "0deg": 0.001973721898794023,
+      "-5deg": 0.00437481622019395,
+      "+5deg": 0.004995415506174883
+    }
+  },
+  "limitations": [
+    "Millimeter body clearance in the difficult room",
+    "Known layouts and starts only",
+    "No demonstrated real-flight safety"
+  ],
+  "archive_validation": "SHA256_MANIFEST.json and VALIDATION.json in local archive",
+  "archive_git_ignored": true
+}

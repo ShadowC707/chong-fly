@@ -9,6 +9,14 @@
 repository `build_system` використовуйте v3; старі конфіги призначені для
 відповідних старих bundled implementations.
 
+Уточнення 05.11.2026: repository-runtime тепер також підтримує дослідне
+`proximity-release-v1` (межа 1.0 м); активний пакет залишається на `proximity-v1`
+(0.8 м). DemoRunner та PiHardwareAdapter використовують `edge.pinned_system`,
+щоб виконувати саме зафіксований runtime активного пакета. Прямий repository
+`build_system` залишається строгим і відхиляє пакет із іншим runtime SHA-256;
+для нього потрібен експорт поточною реалізацією. Автономний старий release
+запускається власним кодом. [Реалізація та межі сумісності](../docs/RELEASE_ENCODING_UK.md).
+
 ```powershell
 .\venv\Scripts\python.exe -I data/releases/k306_tau025_offline_v1/run.py --self-check
 ```

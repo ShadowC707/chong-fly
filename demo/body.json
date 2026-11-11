@@ -1,0 +1,11 @@
+{
+  "version": "drone-envelope-visual-v1",
+  "coordinates": "body FLU, normalized by physical collision radius",
+  "rotor_centers": [[-0.45,-0.45,0.1],[-0.45,0.45,0.1],[0.45,-0.45,0.1],[0.45,0.45,0.1]],
+  "rotor_radius": 0.24,
+  "arms": [[[-0.45,-0.45,0],[0.45,0.45,0]],[[-0.45,0.45,0],[0.45,-0.45,0]]],
+  "hull": [[-0.3,-0.22,0.08],[0.45,-0.22,0.08],[0.7,0,0.08],[0.45,0.22,0.08],[-0.3,0.22,0.08]],
+  "nose": [[0,0,0.12],[0.82,0,0.12]],
+  "stroke_width": 0.12,
+  "meaning": "Schematic visual contained by the existing conservative spherical body envelope; not a CAD model."
+}

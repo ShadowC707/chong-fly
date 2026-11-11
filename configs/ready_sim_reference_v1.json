@@ -1,0 +1,49 @@
+{
+  "purpose": "Matched rigid-body feasibility experiment, not measured hardware parameters",
+  "source_path": "output/sim_uncertainty_v1/wall_glancing__nominal/manifest.json",
+  "source_sha256": "044c181875cada9654a63394d0e31eefd2833afd841de15ae42ddb387dbc1be3",
+  "uncertainty_study": {
+    "nominal_dynamics": {
+      "mass": 0.13,
+      "payload_mass": 0.0,
+      "arm_length": 0.075,
+      "g": 9.81,
+      "ixx": 0.00035,
+      "iyy": 0.00035,
+      "izz": 0.00067,
+      "thrust_coeff": 8.9286e-09,
+      "torque_coeff": 1.6e-10,
+      "max_rpm": 28000.0,
+      "motor_tau": 0.025,
+      "drag_linear": 0.15,
+      "drag_angular": 0.002,
+      "max_angle_rad": 0.6108652381980153,
+      "max_yaw_rate_rads": 3.490658503988659
+    },
+    "fc": {
+      "angle_p_gain": 5.0,
+      "max_rate_rads": 8.72,
+      "roll": {
+        "kp": 0.08,
+        "ki": 0.15,
+        "kd": 0.003,
+        "iterm_limit": 0.3,
+        "dterm_lpf_hz": 60.0
+      },
+      "pitch": {
+        "kp": 0.08,
+        "ki": 0.15,
+        "kd": 0.003,
+        "iterm_limit": 0.3,
+        "dterm_lpf_hz": 60.0
+      },
+      "yaw": {
+        "kp": 0.12,
+        "ki": 0.2,
+        "kd": 0.001,
+        "iterm_limit": 0.3,
+        "dterm_lpf_hz": 60.0
+      }
+    }
+  }
+}

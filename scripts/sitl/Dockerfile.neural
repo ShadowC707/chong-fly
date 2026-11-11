@@ -1,0 +1,4 @@
+FROM chong-fly-sitl:lockstep-v1
+# Existing scene/sensor modules import torch; policy execution stays pinned NumPy.
+RUN pip install --no-cache-dir torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+WORKDIR /work

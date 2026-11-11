@@ -1,0 +1,735 @@
+{
+  "static_map": {
+    "rows": [
+      {
+        "rc_pwm": 1150,
+        "mean_motor": 0.15400002896785736,
+        "motor_range": [
+          0.15400001406669617,
+          0.15400001406669617
+        ]
+      },
+      {
+        "rc_pwm": 1180,
+        "mean_motor": 0.18300001323223114,
+        "motor_range": [
+          0.18300001323223114,
+          0.18300001323223114
+        ]
+      },
+      {
+        "rc_pwm": 1200,
+        "mean_motor": 0.2030000537633896,
+        "motor_range": [
+          0.203000009059906,
+          0.203000009059906
+        ]
+      },
+      {
+        "rc_pwm": 1210,
+        "mean_motor": 0.21300004422664642,
+        "motor_range": [
+          0.21300001442432404,
+          0.21300001442432404
+        ]
+      },
+      {
+        "rc_pwm": 1220,
+        "mean_motor": 0.22300003468990326,
+        "motor_range": [
+          0.22300000488758087,
+          0.22300000488758087
+        ]
+      },
+      {
+        "rc_pwm": 1250,
+        "mean_motor": 0.25300002098083496,
+        "motor_range": [
+          0.25300002098083496,
+          0.25300002098083496
+        ]
+      },
+      {
+        "rc_pwm": 1300,
+        "mean_motor": 0.30300000309944153,
+        "motor_range": [
+          0.30300000309944153,
+          0.30300000309944153
+        ]
+      }
+    ],
+    "target_normalized_rpm": 0.21341575111346292,
+    "inferred_hover_rc_pwm": 1210.4157072832659,
+    "actuator_assumption": "normalized motor output linearly maps to RPM; not hardware calibration",
+    "duplicate_ack_identical": true,
+    "conflict_and_gap_rejected": [
+      true,
+      true
+    ],
+    "armed": {
+      "armed": true,
+      "angle": true,
+      "disable_flags": 0
+    },
+    "hover_bracket": [
+      {
+        "rc_pwm": 1210,
+        "mean_motor": 0.21300004422664642
+      },
+      {
+        "rc_pwm": 1211,
+        "mean_motor": 0.21400000154972076
+      }
+    ]
+  },
+  "hover_rc_pwm": 1210,
+  "results": [
+    {
+      "case": "hover",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        0.0,
+        0.7276866729736349
+      ],
+      "final_rpy_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.2723133270263651
+    },
+    {
+      "case": "roll",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        -0.220030026858119,
+        0.7727874474920219
+      ],
+      "final_rpy_deg": [
+        -0.03682460546038828,
+        0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        1.3424922569056927,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.22721255250797812
+    },
+    {
+      "case": "pitch",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.22007503277063298,
+        1.69970998418291e-14,
+        0.7710341016126016
+      ],
+      "final_rpy_deg": [
+        -8.929920186746699e-14,
+        -0.03621491716459855,
+        1.5583787167018217e-16
+      ],
+      "max_abs_rpy_deg": [
+        8.929920186746699e-14,
+        1.342563684018541,
+        2.0068692593497685e-16
+      ],
+      "max_height_error_m": 0.22896589838739845
+    },
+    {
+      "case": "yaw",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        1.173040812167979e-15,
+        1.1410340053998112e-14,
+        0.8816484261173148
+      ],
+      "final_rpy_deg": [
+        -7.354092574604521e-14,
+        -2.057702014647791e-16,
+        -6.517121515272098
+      ],
+      "max_abs_rpy_deg": [
+        7.354092574604521e-14,
+        2.5850331428352074e-16,
+        6.943921129419601
+      ],
+      "max_height_error_m": 0.11835157388268525
+    },
+    {
+      "case": "hover",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        0.0,
+        0.7276866729736349
+      ],
+      "final_rpy_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.2723133270263651
+    },
+    {
+      "case": "roll",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        -0.220030026858119,
+        0.7727874474920219
+      ],
+      "final_rpy_deg": [
+        -0.03682460546038828,
+        0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        1.3424922569056927,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.22721255250797812
+    },
+    {
+      "case": "pitch",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.22007503277063298,
+        1.69970998418291e-14,
+        0.7710341016126016
+      ],
+      "final_rpy_deg": [
+        -8.929920186746699e-14,
+        -0.03621491716459855,
+        1.5583787167018217e-16
+      ],
+      "max_abs_rpy_deg": [
+        8.929920186746699e-14,
+        1.342563684018541,
+        2.0068692593497685e-16
+      ],
+      "max_height_error_m": 0.22896589838739845
+    },
+    {
+      "case": "yaw",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        1.173040812167979e-15,
+        1.1410340053998112e-14,
+        0.8816484261173148
+      ],
+      "final_rpy_deg": [
+        -7.354092574604521e-14,
+        -2.057702014647791e-16,
+        -6.517121515272098
+      ],
+      "max_abs_rpy_deg": [
+        7.354092574604521e-14,
+        2.5850331428352074e-16,
+        6.943921129419601
+      ],
+      "max_height_error_m": 0.11835157388268525
+    },
+    {
+      "case": "hover",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        0.0,
+        0.7276866729736349
+      ],
+      "final_rpy_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.2723133270263651
+    },
+    {
+      "case": "roll",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        -0.220030026858119,
+        0.7727874474920219
+      ],
+      "final_rpy_deg": [
+        -0.03682460546038828,
+        0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        1.3424922569056927,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.22721255250797812
+    },
+    {
+      "case": "pitch",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.22007503277063298,
+        1.69970998418291e-14,
+        0.7710341016126016
+      ],
+      "final_rpy_deg": [
+        -8.929920186746699e-14,
+        -0.03621491716459855,
+        1.5583787167018217e-16
+      ],
+      "max_abs_rpy_deg": [
+        8.929920186746699e-14,
+        1.342563684018541,
+        2.0068692593497685e-16
+      ],
+      "max_height_error_m": 0.22896589838739845
+    },
+    {
+      "case": "yaw",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": false,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": null,
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        1.173040812167979e-15,
+        1.1410340053998112e-14,
+        0.8816484261173148
+      ],
+      "final_rpy_deg": [
+        -7.354092574604521e-14,
+        -2.057702014647791e-16,
+        -6.517121515272098
+      ],
+      "max_abs_rpy_deg": [
+        7.354092574604521e-14,
+        2.5850331428352074e-16,
+        6.943921129419601
+      ],
+      "max_height_error_m": 0.11835157388268525
+    }
+  ],
+  "completed": 12,
+  "runs": 12,
+  "altitude_results": [
+    {
+      "case": "hover",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        0.0,
+        0.9988696014029088
+      ],
+      "final_rpy_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.0014924750756916128
+    },
+    {
+      "case": "roll",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        -0.22657016280539238,
+        0.9988511240693254
+      ],
+      "final_rpy_deg": [
+        -0.0383688469140365,
+        0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        1.3431560089008285,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.0012902883549157362
+    },
+    {
+      "case": "pitch",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.2272427317722669,
+        -1.8255612168422785e-14,
+        0.999368985921998
+      ],
+      "final_rpy_deg": [
+        8.639042906322585e-14,
+        -0.03894839088569119,
+        -2.4244986519752737e-16
+      ],
+      "max_abs_rpy_deg": [
+        8.639042906322585e-14,
+        1.34354236079908,
+        2.862572945581192e-16
+      ],
+      "max_height_error_m": 0.0013764813775880569
+    },
+    {
+      "case": "yaw",
+      "wall_pause": false,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        3.492172681962805e-16,
+        4.146047687855926e-15,
+        1.0014954346408225
+      ],
+      "final_rpy_deg": [
+        -4.178013669966626e-15,
+        -1.845536162103543e-16,
+        -6.5063645918003745
+      ],
+      "max_abs_rpy_deg": [
+        1.201121762861363e-14,
+        2.3109616539366886e-16,
+        6.9435016922775
+      ],
+      "max_height_error_m": 0.013499920495132045
+    },
+    {
+      "case": "hover",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        0.0,
+        0.9988696014029088
+      ],
+      "final_rpy_deg": [
+        0.0,
+        -0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.0014924750756916128
+    },
+    {
+      "case": "roll",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.0,
+        -0.22657016280539238,
+        0.9988511240693254
+      ],
+      "final_rpy_deg": [
+        -0.0383688469140365,
+        0.0,
+        0.0
+      ],
+      "max_abs_rpy_deg": [
+        1.3431560089008285,
+        0.0,
+        0.0
+      ],
+      "max_height_error_m": 0.0012902883549157362
+    },
+    {
+      "case": "pitch",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        0.2272427317722669,
+        -1.8255612168422785e-14,
+        0.999368985921998
+      ],
+      "final_rpy_deg": [
+        8.639042906322585e-14,
+        -0.03894839088569119,
+        -2.4244986519752737e-16
+      ],
+      "max_abs_rpy_deg": [
+        8.639042906322585e-14,
+        1.34354236079908,
+        2.862572945581192e-16
+      ],
+      "max_height_error_m": 0.0013764813775880569
+    },
+    {
+      "case": "yaw",
+      "wall_pause": true,
+      "hover_rc_pwm": 1210,
+      "completed": true,
+      "altitude_hold": true,
+      "network_loaded": false,
+      "physics_dt_s": 0.004,
+      "altitude_sensor": "ideal floor range and matching current attitude at 50Hz",
+      "armed": {
+        "armed": true,
+        "angle": true,
+        "disable_flags": 0
+      },
+      "firmware_elapsed_us": 4000000,
+      "final_position_m": [
+        3.492172681962805e-16,
+        4.146047687855926e-15,
+        1.0014954346408225
+      ],
+      "final_rpy_deg": [
+        -4.178013669966626e-15,
+        -1.845536162103543e-16,
+        -6.5063645918003745
+      ],
+      "max_abs_rpy_deg": [
+        1.201121762861363e-14,
+        2.3109616539366886e-16,
+        6.9435016922775
+      ],
+      "max_height_error_m": 0.013499920495132045
+    }
+  ],
+  "altitude_completed": 8,
+  "firmware_sha256": "b9b857a30179de4464acb63ccae8e497dc1349bea9699c947d8e2677b9acedbc",
+  "harness_patch_sha256": "580d4a2fa8bc6af00ab02d4d04bad1cf5796d150ecccae79cd92b054172ce7a0"
+}
