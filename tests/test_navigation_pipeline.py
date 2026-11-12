@@ -576,3 +576,11 @@ def test_round6_changes_only_the_hold_integral():
     assert (r6.brake, r6.veto, r6.memory, r6.retreat) == (r5.brake, r5.veto, r5.memory, r5.retreat)
     from dataclasses import replace
     assert replace(r6.hold, integral_gain_pwm_per_flow_s=0.) == r5.hold
+
+
+def test_round6b_changes_only_the_integral_gain():
+    r6 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r6.json')
+    r6b = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r6b.json')
+    assert r6b.hold.integral_gain_pwm_per_flow_s == 300.
+    from dataclasses import replace
+    assert replace(r6b, hold=replace(r6b.hold, integral_gain_pwm_per_flow_s=100.)) == r6
