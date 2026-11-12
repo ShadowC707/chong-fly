@@ -63,7 +63,8 @@ def loss_text(m):
     parts = m.get('share_loss')
     if not parts:
         return '—'
-    names = dict(brake_no_rollback='гальмо', side_veto='вето', velocity_hold='утрим.', xy_base='XY')
+    names = dict(brake_no_rollback='гальмо', side_veto='вето', path_limit='шлях-обм.', path_brake='шлях-гальмо',
+                 velocity_hold='утрим.', xy_base='XY')
     return ' / '.join(f"{names.get(k, k)} {v:.3f}" for k, v in parts.items())
 
 

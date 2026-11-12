@@ -584,3 +584,72 @@ def test_round6b_changes_only_the_integral_gain():
     assert r6b.hold.integral_gain_pwm_per_flow_s == 300.
     from dataclasses import replace
     assert replace(r6b, hold=replace(r6b.hold, integral_gain_pwm_per_flow_s=100.)) == r6
+
+
+# Round 7, stage 2b: remembered points against the predicted body path (synthetic checks before runs).
+from simulation.navigation_pipeline import PathConfig, path_brake_stage, path_limit_stage, path_threats
+
+PATH = PathConfig(enabled=True)
+
+
+def test_path_threats_only_ahead_on_the_braking_path():
+    v = np.array([.2, 0.])                                   # 0.2 m/s forward: L = 0.643*0.2 = 0.129 m
+    pts = np.array([[.35, .05, 0.],    # ahead, on the path            -> threat
+                    [.05, .45, 0.],    # beside, far from the segment  -> no
+                    [-.2, 0., 0.],     # behind                        -> no
+                    [1.5, 0., 0.]])    # ahead but far beyond L + r    -> no
+    mask, info = path_threats(pts, np.full(4, .05), v, PATH, .30)
+    assert mask.tolist() == [True, False, False, False] and info['path_length_m'] == pytest.approx(.1286)
+    side = np.array([[.05, .30, 0.]])  # side pass: point at ~80 deg, 0.30 m, error 0.05 -> gap 0.25 < 0.30
+    assert path_threats(side, np.array([.05]), v, PATH, .30)[0].tolist() == [True]
+    assert path_threats(pts, np.full(4, .05), np.array([.02, 0.]), PATH, .30)[0] is None   # too slow
+    assert not path_threats(np.array([[.35, .05, 0.]]), np.array([0.]), np.array([0., .2]), PATH, .30)[0].any()
+
+
+def test_path_limit_only_limits_toward_the_threat():
+    threat = np.array([[.3, -.1, 0.]])                       # ahead, slightly right
+    cmd = np.array([1500., 1560., 1580., 1440.])             # roll right, pitch forward, yaw left
+    after, info = path_limit_stage(cmd, threat)
+    assert after.tolist() == [1500., 1500., 1500., 1440.] and set(info['limited']) == {'roll', 'pitch'}
+    assert within_limits(cmd, after)
+    rng = np.random.default_rng(13)
+    for network in random_commands(2000, 14):
+        pts = rng.uniform(-1, 1, size=(3, 3))
+        assert within_limits(network, path_limit_stage(network, pts)[0])
+    assert np.array_equal(path_limit_stage(cmd, None)[0], cmd)
+
+
+def test_path_brake_opposes_motion_with_the_stage1_law_and_never_pushes():
+    threat = np.array([[.3, 0., 0.]])
+    v = np.array([.2, .04])                                   # forward and slightly left, toward the point
+    after, info = path_brake_stage(np.full(4, 1500.), v, threat, PATH)
+    assert after[2] == pytest.approx(1500.-500*.2/3.88) and after[1] == pytest.approx(1500.+500*.04/3.88)
+    assert info['active'] and info['reason'] == 'brake_toward_threat'
+    strong = np.array([1500., 1500., 1300., 1500.])          # the network already brakes harder: kept
+    assert path_brake_stage(strong, v, threat, PATH)[0][2] == 1300.
+    away = path_brake_stage(np.full(4, 1500.), np.array([-.2, 0.]), threat, PATH)
+    assert not away[1]['active'] and away[1]['reason'] == 'not_moving_toward_threat'
+
+
+def test_path_length_equals_the_identified_stop_distance():
+    from evaluate.path_check_probe import stop_table
+    speeds, stops = stop_table()
+    assert np.allclose(stops, PATH.stop_s_per_mps*speeds, atol=.002)
+
+
+def test_round7_adds_only_stage_2b():
+    r6b = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r6b.json')
+    r7 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r7.json')
+    assert r7.path.enabled and not r6b.path.enabled
+    assert (r7.brake, r7.veto, r7.memory, r7.retreat, r7.hold) == (r6b.brake, r6b.veto, r6b.memory, r6b.retreat, r6b.hold)
+    pipe = pipeline(pipeline_config=r7)
+    pipe.memory = transport_memory()
+    pipe.memory._insert(np.array([[.3, 0., 0.]]), 0.)
+    pipe.memory.observer.velocity[:] = [.2, 0.]
+    pipe.now_s, pipe.tilt_deg = 1., 0.
+    pipe.apply(np.array([1500., 1500., 1560., 1500.]), flow_xy=np.array([.05, 0.]), tof_m=np.full(64, 3.), dt=.02)
+    names = [r['stage'] for r in pipe.last_decision['stages']]
+    assert names == ['brake_no_rollback', 'side_veto', 'path_limit', 'path_brake', 'velocity_hold']
+    lim, brk = pipe.last_decision['stages'][2], pipe.last_decision['stages'][3]
+    assert lim['kind'] == 'limits' and lim['active'] and lim['after'][2] == 1500.
+    assert brk['kind'] == 'generates' and brk['active'] and brk['after'][2] < 1500.

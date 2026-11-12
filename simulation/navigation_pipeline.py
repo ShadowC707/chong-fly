@@ -211,12 +211,92 @@ def hold_stage(command, mean_flow, config, *, trigger, integral=None, dt=.02):
 
 
 @dataclass(frozen=True)
+class PathConfig:
+    """Round 7, stage 2b: all remembered points against the predicted body path at braking distance."""
+    enabled: bool = False
+    stop_s_per_mps: float = .563     # identified brake model, k*flow law: stop distance = 0.563 s * v
+    lag_s: float = .08               # flow filter + one tick
+    min_speed_mps: float = .03
+    brake_gain_pwm_per_flow: float = 500.
+    flow_scale_mps: float = 3.88
+
+    def __post_init__(self):
+        values = (self.stop_s_per_mps, self.lag_s, self.min_speed_mps, self.brake_gain_pwm_per_flow,
+                  self.flow_scale_mps)
+        if type(self.enabled) is not bool or not all(math.isfinite(v) and v > 0 for v in values):
+            raise ValueError('Invalid path check configuration')
+
+
+def path_threats(local, error, velocity, config, r_veto_m):
+    """Remembered points (yaw-frame FLU) ahead along the body velocity and within r_veto + error of
+    the segment the body covers before it can stop. Returns (mask, info)."""
+    v = np.asarray(velocity, float)
+    speed = float(np.linalg.norm(v))
+    info = dict(speed_mps=speed)
+    if local is None or speed < config.min_speed_mps:
+        return None, dict(info, reason='slow' if local is not None else 'no_memory')
+    d = v/speed
+    length = (config.stop_s_per_mps+config.lag_s)*speed
+    proj = local[:, :2] @ d
+    t = np.clip(proj, 0., length)
+    nearest = np.c_[t[:, None]*d[None, :], np.zeros(len(t))]
+    gap = np.linalg.norm(local-nearest, axis=1)-error
+    mask = (proj > 0) & (gap < r_veto_m)
+    info.update(path_length_m=length, min_gap_m=float(gap[proj > 0].min()) if (proj > 0).any() else None,
+                threats=int(mask.sum()))
+    return mask, info
+
+
+def path_limit_stage(command, threat_points):
+    """Stage 2b, part 1 (kind limits): Pitch, Roll and Yaw leading toward any threatening point are set
+    to 1500. Forward Pitch toward x > 0, back toward x < 0; Roll/Yaw above 1500 lead right (y < 0)."""
+    after = np.asarray(command, float).copy()
+    if threat_points is None or not len(threat_points):
+        return after, dict(active=False, reason='no_threat_on_path')
+    x, y = threat_points[:, 0], threat_points[:, 1]
+    limited = []
+    for channel, name, ahead, behind in ((PITCH, 'pitch', (x > 0).any(), (x < 0).any()),
+                                         (ROLL, 'roll', (y < 0).any(), (y > 0).any()),
+                                         (YAW, 'yaw', (y < 0).any(), (y > 0).any())):
+        offset = after[channel]-NEUTRAL
+        if (offset > 0 and ahead) or (offset < 0 and behind):
+            after[channel] = NEUTRAL
+            limited.append(name)
+    return after, dict(active=bool(limited), reason=('toward_threat_'+'_'.join(limited)) if limited
+                       else 'command_not_toward_threat', limited=limited)
+
+
+def path_brake_stage(command, velocity, threat_points, config):
+    """Stage 2b, part 2 (kind generates): when the body moves toward the nearest threatening point
+    and the command brakes less than the k*flow law, the stage commands that brake on Pitch and Roll
+    (Pitch -k*flow_x, Roll +k*flow_y; the stage-1 law, so braking never turns into a rollback)."""
+    after = np.asarray(command, float).copy()
+    if threat_points is None or not len(threat_points):
+        return after, dict(active=False, reason='no_threat_on_path')
+    v = np.asarray(velocity, float)
+    nearest = threat_points[np.argmin(np.linalg.norm(threat_points[:, :2], axis=1))]
+    toward = float(v @ nearest[:2])/max(float(np.linalg.norm(nearest[:2])), 1e-9)
+    if toward <= 0:
+        return after, dict(active=False, reason='not_moving_toward_threat', toward_mps=toward)
+    flow = v/config.flow_scale_mps
+    k = config.brake_gain_pwm_per_flow
+    target_pitch, target_roll = NEUTRAL-k*flow[0], NEUTRAL+k*flow[1]
+    # keep any stronger brake already in the command; never push in the direction of motion
+    after[PITCH] = min(after[PITCH], target_pitch) if flow[0] > 0 else max(after[PITCH], target_pitch)
+    after[ROLL] = max(after[ROLL], target_roll) if flow[1] > 0 else min(after[ROLL], target_roll)
+    changed = not np.allclose(after, command)
+    return after, dict(active=changed, reason='brake_toward_threat' if changed else 'command_already_brakes',
+                       toward_mps=toward, brake_target=[target_pitch, target_roll])
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     brake: BrakeConfig = field(default_factory=BrakeConfig)
     veto: VetoConfig = field(default_factory=VetoConfig)
     memory: MemoryConfig = field(default_factory=MemoryConfig)
     retreat: RetreatConfig = field(default_factory=RetreatConfig)
     hold: HoldConfig = field(default_factory=HoldConfig)
+    path: PathConfig = field(default_factory=PathConfig)
     anti_rollback: bool = False
     turn_latch: bool = True
 
@@ -228,6 +308,7 @@ class PipelineConfig:
         memory = {k: v for k, v in data.get('memory', {}).items() if k in MemoryConfig.__dataclass_fields__}
         retreat = {k: v for k, v in data.get('stage1_retreat', {}).items() if k in RetreatConfig.__dataclass_fields__}
         hold = {k: v for k, v in data.get('stage3_hold', {}).items() if k in HoldConfig.__dataclass_fields__}
+        path = {k: v for k, v in data.get('stage2b_path', {}).items() if k in PathConfig.__dataclass_fields__}
         return cls(
             brake=BrakeConfig(v_stop=brake['v_stop'], flow_filter_tau_s=brake['flow_filter_tau_s'],
                               **{k: brake[k] for k in ('law', 'gain_pwm_per_flow') if k in brake}),
@@ -239,6 +320,7 @@ class PipelineConfig:
             memory=MemoryConfig(**memory),
             retreat=RetreatConfig(**retreat),
             hold=HoldConfig(**hold),
+            path=PathConfig(**path),
             anti_rollback=data['coordinator']['anti_rollback'], turn_latch=data['coordinator']['turn_latch'])
 
 
@@ -541,7 +623,8 @@ class NavigationPipeline(XYCoordinator):
     def contract(self):
         return super().contract() | dict(pipeline_version='navigation-pipeline-v1',
             pipeline=asdict(self.pipeline_config), stage_kinds=dict(brake_no_rollback=LIMITS, side_veto=LIMITS,
-                **({'velocity_hold': GENERATES} if self.pipeline_config.hold.enabled else {})),
+                **({'velocity_hold': GENERATES} if self.pipeline_config.hold.enabled else {}),
+                **({'path_limit': LIMITS, 'path_brake': GENERATES} if self.pipeline_config.path.enabled else {})),
             order='network A -> brake_no_rollback -> side_veto -> XY base (turn_latch, STOP) -> altitude/STOP/arbiter',
             memory='flow-odometry + measured heading hit points, session-wide; veto only from remembered side hits; '
                    + ('aged by accumulated path and turn error, voxel-thinned, removed when error > r_veto'
@@ -609,6 +692,10 @@ class NavigationPipeline(XYCoordinator):
             if stop_requested:
                 for name in ('brake_no_rollback', 'side_veto'):
                     records.append(self._record(name, dict(active=False, reason='stop_requested'), network, network))
+                if c.path.enabled:
+                    records.append(self._record('path_limit', dict(active=False, reason='stop_requested'), network, network))
+                    records.append(self._record('path_brake', dict(active=False, reason='stop_requested'),
+                                                network, network, kind=GENERATES))
                 if c.hold.enabled:
                     records.append(self._record('velocity_hold', dict(active=False, reason='stop_requested'),
                                                 network, network, kind=GENERATES))
@@ -643,6 +730,8 @@ class NavigationPipeline(XYCoordinator):
                     info['memory_fault'] = self.memory.observer.fault
                 records.append(self._record('side_veto', info, command, after))
                 command = after
+                if c.path.enabled:
+                    command = self._path(records, command)
                 if c.hold.enabled:
                     command = self._hold(records, command)
         result = super().apply(command, flow_xy=flow_xy, tof_m=tof_m, dt=dt, stop_requested=stop_requested)
@@ -662,6 +751,20 @@ class NavigationPipeline(XYCoordinator):
         active, reason = bool(info.pop('active')), info.pop('reason')
         return dict(stage=stage, kind=kind, active=active, reason=reason, before=before.tolist(),
                     after=after.tolist(), **info)
+
+    def _path(self, records, command):
+        c = self.pipeline_config
+        o = self.memory.observer
+        remembered = self.memory.remembered(self.now_s) if self.now_s is not None and not self.memory.faulted else None
+        velocity = np.asarray(o.velocity, float)
+        local, error = (remembered[0], remembered[1]) if remembered is not None else (None, None)
+        mask, info = path_threats(local, error, velocity, c.path, c.veto.r_veto_m)
+        threats = local[mask] if mask is not None and mask.any() else None
+        limited, linfo = path_limit_stage(command, threats)
+        records.append(self._record('path_limit', dict(linfo, **info), command, limited))
+        braked, binfo = path_brake_stage(limited, velocity, threats, c.path)
+        records.append(self._record('path_brake', binfo, limited, braked, kind=GENERATES))
+        return braked
 
     def _hold(self, records, command):
         h, c = self.pipeline_config.hold, self.pipeline_config
