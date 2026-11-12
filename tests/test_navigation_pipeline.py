@@ -544,3 +544,35 @@ def test_round5_changes_only_the_memory_error_model():
     memory.observer.distance = 13.5   # 0.035 + 0.27 + 0.0025 > 0.30: removed
     memory._prune()
     assert len(memory.points) == 0
+
+
+# Round 6: integral term of the hold (synthetic checks before runs).
+def test_hold_integral_removes_a_steady_drift_and_respects_the_cap():
+    h = HoldConfig(enabled=True, integral_gain_pwm_per_flow_s=100.)
+    neutral = np.array([1500., 1500., 1500., 1500.])
+    integral = {}
+    drift = np.array([-.006, 0.])                      # card 26: ~0.024 m/s backwards
+    out = [hold_stage(neutral, drift, h, trigger='near_obstacle', integral=integral)[0][2] for _ in range(250)]
+    assert out[0] == pytest.approx(1500.+400*.006+100*.006*.02)
+    assert out[-1] > out[0] and out[-1] <= 1510.        # grows over 5 s, never beyond the cap
+    assert integral['pitch'] > 0
+    big = {}
+    for _ in range(1000):
+        after, _ = hold_stage(neutral, np.array([-.05, 0.]), h, trigger='near_obstacle', integral=big)
+    assert after[2] == 1510. and big.get('pitch', 0.) <= 10.  # anti-windup: integral stops at the cap
+    hold_stage(neutral, drift, h, trigger=None, integral=integral)
+    assert integral == {}                               # reset without a trigger
+    frozen = {'pitch': 3.}
+    hold_stage(np.array([1500., 1500., 1560., 1500.]), drift, h, trigger='near_obstacle', integral=frozen)
+    assert frozen['pitch'] == 3.                        # network drives Pitch: frozen
+    p_only, _ = hold_stage(neutral, drift, HoldConfig(enabled=True), trigger='near_obstacle', integral={})
+    assert p_only[2] == pytest.approx(1500.+400*.006)   # ki = 0 keeps round 4/5 exactly
+
+
+def test_round6_changes_only_the_hold_integral():
+    r5 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r5.json')
+    r6 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r6.json')
+    assert r5.hold.integral_gain_pwm_per_flow_s == 0. and r6.hold.integral_gain_pwm_per_flow_s == 100.
+    assert (r6.brake, r6.veto, r6.memory, r6.retreat) == (r5.brake, r5.veto, r5.memory, r5.retreat)
+    from dataclasses import replace
+    assert replace(r6.hold, integral_gain_pwm_per_flow_s=0.) == r5.hold

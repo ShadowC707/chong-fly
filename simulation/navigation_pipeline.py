@@ -168,33 +168,46 @@ class HoldConfig:
     neutral_pwm: float = 10.
     near_m: float = .5
     after_block_s: float = 1.
+    # Round 6: integral term against the steady drift a P-only hold leaves (PWM per flow unit per s);
+    # 0 keeps the round-4/5 behaviour. Integrates only while the total stays inside the cap.
+    integral_gain_pwm_per_flow_s: float = 0.
 
     def __post_init__(self):
         values = (self.gain_pwm_per_flow, self.window_s, self.cap_pwm, self.neutral_pwm, self.near_m,
                   self.after_block_s)
-        if type(self.enabled) is not bool or not all(math.isfinite(v) and v > 0 for v in values):
+        if (type(self.enabled) is not bool or not all(math.isfinite(v) and v > 0 for v in values)
+                or not math.isfinite(self.integral_gain_pwm_per_flow_s) or self.integral_gain_pwm_per_flow_s < 0):
             raise ValueError('Invalid hold configuration')
 
 
-def hold_stage(command, mean_flow, config, *, trigger):
+def hold_stage(command, mean_flow, config, *, trigger, integral=None, dt=.02):
     """Stage 3 (kind generates). On each of Pitch and Roll that is neutral (within neutral_pwm of
     1500) the stage adds a correction against the averaged flow, as the XY STOP law does
-    (Pitch -gain*flow_x, Roll +gain*flow_y), clipped to cap_pwm. Nothing happens without a trigger."""
+    (Pitch -gain*flow_x, Roll +gain*flow_y), plus (round 6) an integral of the same error, clipped to
+    cap_pwm. The integral (a dict pitch/roll, updated in place) grows only while the total stays inside
+    the cap, is frozen on an axis the network drives, and is reset when the trigger is gone.
+    Nothing happens without a trigger."""
     after = np.asarray(command, float).copy()
+    integral = {} if integral is None else integral
     if not trigger:
+        integral.clear()
         return after, dict(active=False, reason='no_trigger')
     if mean_flow is None:
         return after, dict(active=False, reason='flow_window_filling', trigger=trigger)
-    corrections = {}
-    for channel, name, value in ((PITCH, 'pitch', -config.gain_pwm_per_flow*mean_flow[0]),
-                                 (ROLL, 'roll', config.gain_pwm_per_flow*mean_flow[1])):
+    corrections, ki = {}, config.integral_gain_pwm_per_flow_s
+    for channel, name, error in ((PITCH, 'pitch', -mean_flow[0]), (ROLL, 'roll', mean_flow[1])):
         if abs(after[channel]-NEUTRAL) <= config.neutral_pwm:
-            delta = float(np.clip(value, -config.cap_pwm, config.cap_pwm))
+            p = config.gain_pwm_per_flow*error
+            candidate = integral.get(name, 0.)+ki*error*dt
+            if abs(p+candidate) <= config.cap_pwm:  # anti-windup
+                integral[name] = candidate
+            delta = float(np.clip(p+integral.get(name, 0.), -config.cap_pwm, config.cap_pwm))
             after[channel] += delta
             corrections[name] = delta
     active = any(abs(v) > 1e-9 for v in corrections.values())
     return after, dict(active=active, reason=('hold_'+trigger) if active else 'axes_not_neutral',
-                       trigger=trigger, corrections=corrections, mean_flow=[float(v) for v in mean_flow])
+                       trigger=trigger, corrections=corrections, mean_flow=[float(v) for v in mean_flow],
+                       integral={k: float(v) for k, v in integral.items()})
 
 
 @dataclass(frozen=True)
@@ -517,6 +530,8 @@ class NavigationPipeline(XYCoordinator):
         self.tilt_deg = None
         self.flow_window = None
         self.hold_until = None
+        self.hold_integral = {}
+        self.hold_dt = .02
         super().__init__(**options)
 
     def reset(self):
@@ -585,6 +600,7 @@ class NavigationPipeline(XYCoordinator):
             c = self.pipeline_config
             alpha = -math.expm1(-dt/c.brake.flow_filter_tau_s)
             if c.hold.enabled:
+                self.hold_dt = dt
                 if self.flow_window is None:
                     self.flow_window = deque(maxlen=max(1, round(c.hold.window_s/dt)))
                 self.flow_window.append(flow.copy())
@@ -665,7 +681,7 @@ class NavigationPipeline(XYCoordinator):
                                                and self.now_s <= self.hold_until) else None)
         full = len(self.flow_window) == self.flow_window.maxlen
         mean = np.mean(self.flow_window, axis=0) if full else None
-        after, info = hold_stage(command, mean, h, trigger=trigger)
+        after, info = hold_stage(command, mean, h, trigger=trigger, integral=self.hold_integral, dt=self.hold_dt)
         info['nearest_memory_m'] = nearest if math.isfinite(nearest) else None
         records.append(self._record('velocity_hold', info, command, after, kind=GENERATES))
         return after
