@@ -501,10 +501,12 @@ def test_generated_share_counts_only_commands_beyond_the_tolerance():
                 dict(stage='velocity_hold', kind='generates', active=hold_before != hold_after,
                      before=hold_before, after=hold_after)]
     n = [1500., 1500., 1500., 1500.]
-    small = tick(n, n, [1500., 1500., 1506., 1500.])                     # 6 PWM from the network
-    blocked = tick([1500., 1500., 1300., 1500.], n, [1500., 1500., 1504., 1500.])  # 204 PWM from the network
-    log = [small, blocked, tick(n, n, n), tick(n, n, n)]
-    assert generated_share(log) == .25 and generated_active_share(log) == .5
+    small = tick(n, n, [1500., 1500., 1506., 1500.])                     # own contribution 6 PWM
+    blocked = tick([1500., 1500., 1300., 1500.], n, [1500., 1500., 1504., 1500.])  # own 4, 204 from network
+    big = tick(n, n, [1500., 1500., 1515., 1500.])                       # own contribution 15 PWM
+    log = [small, blocked, big, tick(n, n, n)]
+    # Author's rule after round 4: only the stage's own contribution above 10 PWM counts.
+    assert generated_share(log) == .25 and generated_active_share(log) == .75
     assert generated_share([[dict(stage='x', kind='generates', active=True)]]) == 1.  # old logs
 
 
@@ -523,3 +525,22 @@ def test_round4_profile_adds_only_the_hold_stage():
     assert hold['stage'] == 'velocity_hold' and hold['kind'] == 'generates' and hold['active']
     assert hold['trigger'] == 'near_obstacle' and 1500. < hold['after'][2] <= 1510.
     assert pipe.contract()['stage_kinds']['velocity_hold'] == 'generates'
+
+
+# Round 5: calibrated memory error model, hardware turn term switched off.
+def test_round5_changes_only_the_memory_error_model():
+    r4 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r4.json')
+    r5 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r5.json')
+    assert r4.memory.turn_term and not r5.memory.turn_term
+    assert (r5.veto.base_error_m, r5.veto.distance_error_fraction) == (.035, .020)
+    assert (r5.brake, r5.retreat, r5.hold) == (r4.brake, r4.retreat, r4.hold)
+    assert r5.veto.r_veto_m == r4.veto.r_veto_m and r5.memory.voxel_m == r4.memory.voxel_m
+    memory = TransportMemory('test-ref', r5.veto, r5.memory)
+    memory.report = dict(state='PROCEED_LIMITED', heading_rad=0.)
+    memory._insert(np.array([[0., .5, 0.]]), 0.)
+    memory.turn = 50.  # many turns: no effect without the hardware term
+    memory.observer.distance = 2.
+    assert memory.transport_error(np.array([.5]))[0] == pytest.approx(.035+.020*2+.005*.5)
+    memory.observer.distance = 13.5   # 0.035 + 0.27 + 0.0025 > 0.30: removed
+    memory._prune()
+    assert len(memory.points) == 0

@@ -111,17 +111,16 @@ def generated_share(stage_log, analyzed=None):
 
 
 def _generated(record, records, tolerance_pwm=NETWORK_TOLERANCE_PWM):
-    """Author's rule (round 4): an active 'generates' stage counts only when, on a channel it
-    changed, its command differs from the network by more than the network_share tolerance.
+    """Author's rule (decision after round 4): an active 'generates' stage counts only when its OWN
+    contribution (after - before) exceeds the network_share tolerance on roll, pitch or yaw.
     Records without before/after (older logs) count whenever active."""
     if record['kind'] != GENERATES or not record['active']:
         return False
     if record.get('before') is None or record.get('after') is None or records[0].get('before') is None:
         return True
-    network = np.asarray(records[0]['before'], float)
     before, after = np.asarray(record['before'], float), np.asarray(record['after'], float)
-    columns = [c for c in NAVIGATION_COLUMNS if abs(after[c]-before[c]) > 1e-9]
-    return bool(columns) and bool(np.any(np.abs(after[columns]-network[columns]) > tolerance_pwm))
+    columns = list(NAVIGATION_COLUMNS)
+    return bool(np.any(np.abs(after[columns]-before[columns]) > tolerance_pwm))
 
 
 def generated_active_share(stage_log, analyzed=None):

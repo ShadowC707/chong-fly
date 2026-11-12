@@ -72,10 +72,14 @@ class MemoryConfig:
     max_points: int = 6000
     turn_error_rad_per_rad: float = .03
     heading_error_rad: float = .005
+    # Round 5: the heading-turn term models a gyro scale-factor error. The simulated heading does not
+    # drift, so the calibrated profile switches it off; it stays available for hardware.
+    turn_term: bool = True
 
     def __post_init__(self):
         values = (self.voxel_m, self.turn_error_rad_per_rad, self.heading_error_rad)
-        if (self.aging not in ('time', 'transport') or not all(math.isfinite(v) and v > 0 for v in values)
+        if (self.aging not in ('time', 'transport') or type(self.turn_term) is not bool
+                or not all(math.isfinite(v) and v > 0 for v in values)
                 or type(self.max_points) is not int or self.max_points < 64):
             raise ValueError('Invalid memory configuration')
 
@@ -463,7 +467,7 @@ class TransportMemory(ThreatMemory):
     def transport_error(self, ranges):
         c, m = self.config, self.memory_config
         return (c.base_error_m+c.distance_error_fraction*(self.observer.distance-self.path0)
-                +(m.turn_error_rad_per_rad*(self.turn-self.turn0)+m.heading_error_rad)*ranges)
+                +(m.turn_error_rad_per_rad*(self.turn-self.turn0)*m.turn_term+m.heading_error_rad)*ranges)
 
     def _insert(self, hits, now_s):
         n = len(hits)

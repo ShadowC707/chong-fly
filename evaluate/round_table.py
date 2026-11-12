@@ -33,10 +33,29 @@ def loss(run_dir):
     return share_loss(network, coordinated, log, analyzed)
 
 
+def recount(run_dir):
+    """generated_share under the current rule, recomputed from the saved stage log (the rule changed
+    after round 4: own contribution of the generating stage > 10 PWM)."""
+    import numpy as np
+    from simulation.navigation_metrics import generated_active_share, generated_share
+    trace, decisions = run_dir/'trace.npz', run_dir/'decisions.json'
+    if not trace.exists() or not decisions.exists():
+        return None
+    with np.load(trace) as z:
+        times, analyzed = z['control_time'], z['auto'] & ~z['stop_requested']
+    by_time = {round(d['time_s'], 3): d['decision'].get('stages') for d in
+               json.loads(decisions.read_text(encoding='utf-8'))}
+    if not any(by_time.values()):
+        return None
+    log = [by_time.get(round(float(t), 3)) or [] for t in times]
+    return dict(generated_share=generated_share(log, analyzed), generated_active_share=generated_active_share(log, analyzed))
+
+
 def rows(summary):
     out = {(m['scenario'], m['profile']): m for m in json.loads(Path(summary).read_text(encoding='utf-8'))}
     for (scenario, profile), m in out.items():
         m['share_loss'] = loss(Path(summary).parent/scenario/profile)
+        m.update(recount(Path(summary).parent/scenario/profile) or {})
     return out
 
 
