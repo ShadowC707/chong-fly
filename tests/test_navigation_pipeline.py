@@ -473,3 +473,53 @@ def test_signed_coast_credits_forward_motion_and_matches_a_simulation():
     tilt_next = np.exp(-.02/r.tilt_tau_s)*1.+r.tilt_gain_deg_per_pwm_tick*allowed
     assert r.signed_coast_m(-.1, 1., tilt_next) == pytest.approx(room-r.margin_m, abs=1e-6)
     assert r.signed_max_back_pwm(.05, .1, 3.) == 0.
+
+
+# Round 4: velocity hold (kind generates) and the author's generated_share rule.
+from simulation.navigation_metrics import generated_active_share
+from simulation.navigation_pipeline import HoldConfig, hold_stage
+
+
+def test_hold_corrects_only_neutral_axes_and_never_beyond_the_cap():
+    h = HoldConfig(enabled=True)
+    neutral = np.array([1500., 1503., 1497., 1500.])
+    after, info = hold_stage(neutral, np.array([-.005, .002]), h, trigger='near_obstacle')
+    assert after[2] == pytest.approx(1497.+2.) and after[1] == pytest.approx(1503.+.8)  # STOP-law signs
+    assert info['active'] and info['reason'] == 'hold_near_obstacle'
+    big, _ = hold_stage(neutral, np.array([-.2, .2]), h, trigger='near_obstacle')
+    assert np.allclose(np.abs(big[1:3]-neutral[1:3]), 10.)                              # cap
+    moving = np.array([1500., 1560., 1520., 1500.])
+    unchanged, info = hold_stage(moving, np.array([-.01, .01]), h, trigger='near_obstacle')
+    assert np.array_equal(unchanged, moving) and not info['active']                      # network acts
+    assert np.array_equal(hold_stage(neutral, np.array([-.01, 0.]), h, trigger=None)[0], neutral)
+    assert not hold_stage(neutral, None, h, trigger='near_obstacle')[1]['active']        # window filling
+
+
+def test_generated_share_counts_only_commands_beyond_the_tolerance():
+    def tick(network, hold_before, hold_after):
+        return [dict(stage='brake', kind='limits', active=False, before=network, after=network),
+                dict(stage='velocity_hold', kind='generates', active=hold_before != hold_after,
+                     before=hold_before, after=hold_after)]
+    n = [1500., 1500., 1500., 1500.]
+    small = tick(n, n, [1500., 1500., 1506., 1500.])                     # 6 PWM from the network
+    blocked = tick([1500., 1500., 1300., 1500.], n, [1500., 1500., 1504., 1500.])  # 204 PWM from the network
+    log = [small, blocked, tick(n, n, n), tick(n, n, n)]
+    assert generated_share(log) == .25 and generated_active_share(log) == .5
+    assert generated_share([[dict(stage='x', kind='generates', active=True)]]) == 1.  # old logs
+
+
+def test_round4_profile_adds_only_the_hold_stage():
+    r3b2 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r3b2.json')
+    r4 = PipelineConfig.from_json(ROOT/'configs/pipeline_v1_r4.json')
+    assert r4.hold.enabled and not r3b2.hold.enabled and r4.hold.window_s == 1. and r4.hold.cap_pwm == 10.
+    assert (r4.brake, r4.veto, r4.memory, r4.retreat) == (r3b2.brake, r3b2.veto, r3b2.memory, r3b2.retreat)
+    pipe = pipeline(pipeline_config=r4)
+    pipe.memory = transport_memory()
+    pipe.memory._insert(np.array([[-.35, 0., 0.]]), 0.)
+    pipe.now_s, pipe.tilt_deg = 1., 0.
+    for _ in range(60):  # fill the 1 s window with a slow backward drift
+        pipe.apply(np.array([1500., 1500., 1500., 1500.]), flow_xy=np.array([-.005, 0.]), tof_m=np.full(64, 3.), dt=.02)
+    hold = pipe.last_decision['stages'][-1]
+    assert hold['stage'] == 'velocity_hold' and hold['kind'] == 'generates' and hold['active']
+    assert hold['trigger'] == 'near_obstacle' and 1500. < hold['after'][2] <= 1510.
+    assert pipe.contract()['stage_kinds']['velocity_hold'] == 'generates'

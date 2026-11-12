@@ -3,7 +3,8 @@ import argparse
 import json
 from pathlib import Path
 
-COLUMNS = [('network_share', 'net', '{:.3f}'), ('generated_share', 'gen', '{:.3f}'), ('contacts', 'конт.', '{}'),
+COLUMNS = [('network_share', 'net', '{:.3f}'), ('generated_share', 'gen', '{:.3f}'),
+           ('generated_active_share', 'утрим. сире', '{:.3f}'), ('contacts', 'конт.', '{}'),
            ('min_clearance_m', 'зазор, м', '{:.3f}'), ('max_height_error_m', 'висота, м', '{:.3f}'),
            ('reverse_distance_body_m', 'відкат (старий), м', '{:.3f}'),
            ('reverse_outside_corridor_m', 'відкат поза коридором, м', '{:.3f}')]
@@ -43,7 +44,7 @@ def loss_text(m):
     parts = m.get('share_loss')
     if not parts:
         return '—'
-    names = dict(brake_no_rollback='гальмо', side_veto='вето', xy_base='XY')
+    names = dict(brake_no_rollback='гальмо', side_veto='вето', velocity_hold='утрим.', xy_base='XY')
     return ' / '.join(f"{names.get(k, k)} {v:.3f}" for k, v in parts.items())
 
 

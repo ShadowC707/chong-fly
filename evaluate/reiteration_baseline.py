@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCENARIOS = ROOT/'data/scenarios/reiteration_v1'
 BASELINE_PROFILES = ('candidate_a', 'phased_side_guard', 'phased_swath')
 PROFILES = BASELINE_PROFILES+('pipeline_v1', 'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3', 'pipeline_v1_r3b',
-                                     'pipeline_v1_r3b2')
+                                     'pipeline_v1_r3b2', 'pipeline_v1_r4')
 MVP_CASES = ('9d5431c1', 'b0a9f212')
 # Section 2 thresholds, copied from the plan and acceptance.json; never edited after results.
 LIMITS = dict(network_share=.80, generated_share=.10, contacts=0, min_clearance_m=.10,

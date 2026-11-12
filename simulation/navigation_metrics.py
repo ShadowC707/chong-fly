@@ -106,9 +106,31 @@ def generated_share(stage_log, analyzed=None):
         raise ValueError('analyzed must have one flag per tick')
     if not mask.any():
         return None
-    hits = [any(r['kind'] == GENERATES and r['active'] for r in records)
-            for records, keep in zip(stage_log, mask) if keep]
+    hits = [any(_generated(r, records) for r in records) for records, keep in zip(stage_log, mask) if keep]
     return float(np.mean(hits))
+
+
+def _generated(record, records, tolerance_pwm=NETWORK_TOLERANCE_PWM):
+    """Author's rule (round 4): an active 'generates' stage counts only when, on a channel it
+    changed, its command differs from the network by more than the network_share tolerance.
+    Records without before/after (older logs) count whenever active."""
+    if record['kind'] != GENERATES or not record['active']:
+        return False
+    if record.get('before') is None or record.get('after') is None or records[0].get('before') is None:
+        return True
+    network = np.asarray(records[0]['before'], float)
+    before, after = np.asarray(record['before'], float), np.asarray(record['after'], float)
+    columns = [c for c in NAVIGATION_COLUMNS if abs(after[c]-before[c]) > 1e-9]
+    return bool(columns) and bool(np.any(np.abs(after[columns]-network[columns]) > tolerance_pwm))
+
+
+def generated_active_share(stage_log, analyzed=None):
+    """Raw share of ticks with any active 'generates' stage, whatever the size of its command."""
+    mask = np.ones(len(stage_log), bool) if analyzed is None else np.asarray(analyzed, bool)
+    if not mask.any():
+        return None
+    return float(np.mean([any(r['kind'] == GENERATES and r['active'] for r in records)
+                          for records, keep in zip(stage_log, mask) if keep]))
 
 
 def share_metrics(network, coordinated, auto, stop_requested, stage_log=None):
@@ -117,6 +139,7 @@ def share_metrics(network, coordinated, auto, stop_requested, stage_log=None):
     analyzed = auto & ~stop
     return dict(network_share=network_share(network, coordinated, analyzed),
                 generated_share=None if stage_log is None else generated_share(stage_log, analyzed),
+                generated_active_share=None if stage_log is None else generated_active_share(stage_log, analyzed),
                 share_analyzed_ticks=int(analyzed.sum()), share_stop_ticks=int((auto & stop).sum()))
 
 

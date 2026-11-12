@@ -155,11 +155,51 @@ class RetreatConfig:
 
 
 @dataclass(frozen=True)
+class HoldConfig:
+    """Round 4: on a neutral axis, hold zero velocity near known obstacles or after a blocked retreat."""
+    enabled: bool = False
+    gain_pwm_per_flow: float = 400.
+    window_s: float = 1.
+    cap_pwm: float = 10.
+    neutral_pwm: float = 10.
+    near_m: float = .5
+    after_block_s: float = 1.
+
+    def __post_init__(self):
+        values = (self.gain_pwm_per_flow, self.window_s, self.cap_pwm, self.neutral_pwm, self.near_m,
+                  self.after_block_s)
+        if type(self.enabled) is not bool or not all(math.isfinite(v) and v > 0 for v in values):
+            raise ValueError('Invalid hold configuration')
+
+
+def hold_stage(command, mean_flow, config, *, trigger):
+    """Stage 3 (kind generates). On each of Pitch and Roll that is neutral (within neutral_pwm of
+    1500) the stage adds a correction against the averaged flow, as the XY STOP law does
+    (Pitch -gain*flow_x, Roll +gain*flow_y), clipped to cap_pwm. Nothing happens without a trigger."""
+    after = np.asarray(command, float).copy()
+    if not trigger:
+        return after, dict(active=False, reason='no_trigger')
+    if mean_flow is None:
+        return after, dict(active=False, reason='flow_window_filling', trigger=trigger)
+    corrections = {}
+    for channel, name, value in ((PITCH, 'pitch', -config.gain_pwm_per_flow*mean_flow[0]),
+                                 (ROLL, 'roll', config.gain_pwm_per_flow*mean_flow[1])):
+        if abs(after[channel]-NEUTRAL) <= config.neutral_pwm:
+            delta = float(np.clip(value, -config.cap_pwm, config.cap_pwm))
+            after[channel] += delta
+            corrections[name] = delta
+    active = any(abs(v) > 1e-9 for v in corrections.values())
+    return after, dict(active=active, reason=('hold_'+trigger) if active else 'axes_not_neutral',
+                       trigger=trigger, corrections=corrections, mean_flow=[float(v) for v in mean_flow])
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     brake: BrakeConfig = field(default_factory=BrakeConfig)
     veto: VetoConfig = field(default_factory=VetoConfig)
     memory: MemoryConfig = field(default_factory=MemoryConfig)
     retreat: RetreatConfig = field(default_factory=RetreatConfig)
+    hold: HoldConfig = field(default_factory=HoldConfig)
     anti_rollback: bool = False
     turn_latch: bool = True
 
@@ -170,6 +210,7 @@ class PipelineConfig:
         model = veto['error_model']
         memory = {k: v for k, v in data.get('memory', {}).items() if k in MemoryConfig.__dataclass_fields__}
         retreat = {k: v for k, v in data.get('stage1_retreat', {}).items() if k in RetreatConfig.__dataclass_fields__}
+        hold = {k: v for k, v in data.get('stage3_hold', {}).items() if k in HoldConfig.__dataclass_fields__}
         return cls(
             brake=BrakeConfig(v_stop=brake['v_stop'], flow_filter_tau_s=brake['flow_filter_tau_s'],
                               **{k: brake[k] for k in ('law', 'gain_pwm_per_flow') if k in brake}),
@@ -180,6 +221,7 @@ class PipelineConfig:
                 distance_error_fraction=model['distance_error_fraction']),
             memory=MemoryConfig(**memory),
             retreat=RetreatConfig(**retreat),
+            hold=HoldConfig(**hold),
             anti_rollback=data['coordinator']['anti_rollback'], turn_latch=data['coordinator']['turn_latch'])
 
 
@@ -469,6 +511,8 @@ class NavigationPipeline(XYCoordinator):
         self.now_s = None
         self.trail = deque()
         self.tilt_deg = None
+        self.flow_window = None
+        self.hold_until = None
         super().__init__(**options)
 
     def reset(self):
@@ -477,7 +521,8 @@ class NavigationPipeline(XYCoordinator):
 
     def contract(self):
         return super().contract() | dict(pipeline_version='navigation-pipeline-v1',
-            pipeline=asdict(self.pipeline_config), stage_kinds=dict(brake_no_rollback=LIMITS, side_veto=LIMITS),
+            pipeline=asdict(self.pipeline_config), stage_kinds=dict(brake_no_rollback=LIMITS, side_veto=LIMITS,
+                **({'velocity_hold': GENERATES} if self.pipeline_config.hold.enabled else {})),
             order='network A -> brake_no_rollback -> side_veto -> XY base (turn_latch, STOP) -> altitude/STOP/arbiter',
             memory='flow-odometry + measured heading hit points, session-wide; veto only from remembered side hits; '
                    + ('aged by accumulated path and turn error, voxel-thinned, removed when error > r_veto'
@@ -535,11 +580,18 @@ class NavigationPipeline(XYCoordinator):
         if valid:
             c = self.pipeline_config
             alpha = -math.expm1(-dt/c.brake.flow_filter_tau_s)
+            if c.hold.enabled:
+                if self.flow_window is None:
+                    self.flow_window = deque(maxlen=max(1, round(c.hold.window_s/dt)))
+                self.flow_window.append(flow.copy())
             self.pipeline_flow = float(flow[0]) if self.pipeline_flow is None else float(
                 self.pipeline_flow+alpha*(flow[0]-self.pipeline_flow))
             if stop_requested:
                 for name in ('brake_no_rollback', 'side_veto'):
                     records.append(self._record(name, dict(active=False, reason='stop_requested'), network, network))
+                if c.hold.enabled:
+                    records.append(self._record('velocity_hold', dict(active=False, reason='stop_requested'),
+                                                network, network, kind=GENERATES))
             else:
                 after, info = (proportional_brake_stage(command, self.pipeline_flow, c.brake.gain_pwm_per_flow)
                                if c.brake.law == 'proportional'
@@ -571,6 +623,8 @@ class NavigationPipeline(XYCoordinator):
                     info['memory_fault'] = self.memory.observer.fault
                 records.append(self._record('side_veto', info, command, after))
                 command = after
+                if c.hold.enabled:
+                    command = self._hold(records, command)
         result = super().apply(command, flow_xy=flow_xy, tof_m=tof_m, dt=dt, stop_requested=stop_requested)
         if valid:
             reasons = [r['stage'] for r in records if r['active']]
@@ -583,8 +637,31 @@ class NavigationPipeline(XYCoordinator):
         return result
 
     @staticmethod
-    def _record(stage, info, before, after):
+    def _record(stage, info, before, after, kind=LIMITS):
         info = dict(info)
         active, reason = bool(info.pop('active')), info.pop('reason')
-        return dict(stage=stage, kind=LIMITS, active=active, reason=reason, before=before.tolist(),
+        return dict(stage=stage, kind=kind, active=active, reason=reason, before=before.tolist(),
                     after=after.tolist(), **info)
+
+    def _hold(self, records, command):
+        h, c = self.pipeline_config.hold, self.pipeline_config
+        brake = records[0]
+        # A blocked retreat: the network asks to move back, stage 1 limits it and the drone is not
+        # braking from forward motion (filtered forward flow at or below v_stop).
+        if (brake['active'] and brake['before'][PITCH] < NEUTRAL
+                and self.pipeline_flow is not None and self.pipeline_flow <= c.brake.v_stop):
+            self.hold_until = self.now_s+h.after_block_s if self.now_s is not None else None
+        nearest = math.inf
+        if self.now_s is not None:
+            remembered = self.memory.remembered(self.now_s)
+            if remembered is not None:
+                nearest = float(np.min(np.linalg.norm(remembered[0], axis=1)))
+        trigger = ('near_obstacle' if nearest <= h.near_m else
+                   'after_blocked_retreat' if (self.hold_until is not None and self.now_s is not None
+                                               and self.now_s <= self.hold_until) else None)
+        full = len(self.flow_window) == self.flow_window.maxlen
+        mean = np.mean(self.flow_window, axis=0) if full else None
+        after, info = hold_stage(command, mean, h, trigger=trigger)
+        info['nearest_memory_m'] = nearest if math.isfinite(nearest) else None
+        records.append(self._record('velocity_hold', info, command, after, kind=GENERATES))
+        return after
