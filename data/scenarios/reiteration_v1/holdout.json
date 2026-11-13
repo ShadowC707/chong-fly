@@ -1,6 +1,6 @@
 {
   "version": "reiteration-holdout-v1",
-  "holdout_flights_run": false,
+  "holdout_flights_run": true,
   "horizon_s": 180,
   "auto_request_s": 0,
   "cases": {
