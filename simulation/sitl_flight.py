@@ -14,6 +14,33 @@ DT=.004
 HORIZON=20.
 STOP_AT=17.
 RADIUS=.2
+# Coordinator profiles reachable over the yaw-handover path (demo.yaw_experiment.install). Pipeline
+# profiles are not: they need a heading sample that the SITL loop does not provide.
+SITL_PROFILES=('phased_smooth','phased_recovery','phased_escape','phased_side_guard')
+
+
+def build_controller(runtime_config,*,session_id=None,yaw_shaping=False,integration_profile=None,
+                     controller_profile='phased_smooth'):
+    """The pinned FlightSystem with the coordinator overlay the SITL loop flies.
+
+    Default (controller_profile='phased_smooth') is exactly the historical chain: phased_v2, then the
+    yaw-handover experiment with SmoothPhasedCoordinator."""
+    from edge.system import RunConfig
+    from edge.pinned_system import build_pinned_system
+    from demo.controllers import install
+    if controller_profile not in SITL_PROFILES:
+        raise ValueError('SITL supports the coordinator profiles '+', '.join(SITL_PROFILES))
+    config=RunConfig.from_json(runtime_config)
+    if session_id is not None: config=replace(config,session_id=session_id)
+    system=install(build_pinned_system(config))
+    if type(yaw_shaping) is not bool: raise ValueError('Explicit yaw_shaping flag required')
+    if not yaw_shaping and controller_profile!='phased_smooth':
+        raise ValueError('Coordinator profiles run over the yaw-handover path (yaw_shaping=True)')
+    if yaw_shaping:
+        if integration_profile is None: raise ValueError('Yaw experiment requires authority integration')
+        from demo.yaw_experiment import install as install_yaw
+        system=install_yaw(system,profile=controller_profile)
+    return system
 
 
 def scene_spec(case):
@@ -94,12 +121,9 @@ class FlightView:
 def flight_steps(out,source,case,backend,axis_contract='native_rc',*,physics_dt_s=DT,integration_profile=None,yaw_shaping=False,
           scene_override=None,tof_probe=None,target_twr=None,calibration_rows=None,
           horizon_s=HORIZON,stop_at_s=STOP_AT,session_id=None,archive=True,
-          runtime_config='configs/demo_candidate_a.json'):
+          runtime_config='configs/demo_candidate_a.json',controller_profile='phased_smooth'):
     """Yield at control boundaries. Each send advances a complete block or to contact."""
     if backend not in ('sitl','legacy'): raise ValueError('Unknown physics backend')
-    from edge.system import RunConfig
-    from edge.pinned_system import build_pinned_system
-    from demo.controllers import install
     from demo.contacts import contact_and_clearance
     from simulation.sitl_plant import LegacyPlant,BulletPlant
     from simulation.sitl_process import Session
@@ -111,14 +135,8 @@ def flight_steps(out,source,case,backend,axis_contract='native_rc',*,physics_dt_
         raise ValueError('Neural probe supports 4/1/0.5/0.25 ms SITL and 4 ms legacy')
     rc_stride=round(.02/dt)
 
-    config=RunConfig.from_json(runtime_config)
-    if session_id is not None: config=replace(config,session_id=session_id)
-    system=install(build_pinned_system(config))
-    if type(yaw_shaping) is not bool: raise ValueError('Explicit yaw_shaping flag required')
-    if yaw_shaping:
-        if integration_profile is None: raise ValueError('Yaw experiment requires authority integration')
-        from demo.yaw_experiment import install as install_yaw
-        system=install_yaw(system)
+    system=build_controller(runtime_config,session_id=session_id,yaw_shaping=yaw_shaping,
+        integration_profile=integration_profile,controller_profile=controller_profile)
     runtime=system.runtime
     integrated=None
     if integration_profile is not None:
@@ -162,7 +180,8 @@ def flight_steps(out,source,case,backend,axis_contract='native_rc',*,physics_dt_
         contact='Existing swept sphere, radius .2 m; terminate at first contact; no impact response',
         dynamics=p,legacy_fc=fc,dt_s=dt,control_dt_s=.02,horizon_s=horizon_s,stop_at_s=stop_at_s,
         altitude_config=asdict(runtime.altitude.config),neural_weights_changed=False,
-        axis_contract=axis_contract,
+        axis_contract=axis_contract,controller_profile=controller_profile if yaw_shaping else 'phased_v2',
+        runtime_config=str(runtime_config),
         comparison='Different flight controllers AND rigid-body implementations; not an isolated network ablation')
     if integrated:
         manifest.update(authority='FlightSystem + SessionReceiver; immediate delivery; reference units until gate output',
