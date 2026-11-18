@@ -53,7 +53,7 @@ $('upload').onchange=async event=>{const epoch=++sourceEpoch;try{let bytes=event
  if(mode==='replay'&&epoch===sourceEpoch)useRecording(JSON.parse(text));}catch(e){if(epoch===sourceEpoch)error(e);}};
 function showManifest(){$('manifest').textContent=JSON.stringify(manifest,null,2);$('sceneName').textContent=manifest.scene||manifest.original?.scene||'';
  const sitl=manifest.backend==='sitl';
- $('profileLabel').textContent=sitl?'Candidate A · SmoothPhasedCoordinator · TWR 5':manifest.candidate||'';
+ $('profileLabel').textContent=sitl?`Candidate A · ${manifest.controller_mode==='candidate_a_smooth_phased'?'SmoothPhasedCoordinator':manifest.controller_mode||'phased_side_guard'} · TWR 5`:manifest.candidate||'';
  $('profileDetails').textContent=sitl?
  'Ідеальні flow і attitude 50 Гц, дальномір 30 Гц, ToF 15 Гц. Приймач підтверджує Accepted у reference PWM. SITL RC показує команду після перетворення. Сферичний контакт завершує політ.':
  'Чисельна симуляція з ідеалізованими сенсорами та програмним приймачем. Деталі моделі, сенсорів і меж перевірки наведено в маніфесті.';
@@ -68,9 +68,10 @@ $('scene').append(referenceOption);
 function roomScene(){return ['room','random_room','wall_room'].includes($('scene').value);}
 function syncBackend(){
  const sitl=$('backend').value==='sitl';
+ // SITL demo flies only phased_side_guard (pipeline profiles need a heading sample SITL lacks).
+ if(sitl)$('controllerMode').value='phased_side_guard';
  $('controllerMode').disabled=sitl;
- $('controllerMode').closest('label').hidden=sitl;
- $('backendHint').textContent=sitl?'Фіксований Candidate A · SmoothPhasedCoordinator · TWR 5':'Окрема фізика Standalone. Для SITL потрібен запуск через Docker Desktop.';
+ $('backendHint').textContent=sitl?'Betaflight SITL · Candidate A · phased_side_guard · TWR 5':'Окрема фізика Standalone. Для SITL потрібен запуск через Docker Desktop.';
  for(const option of $('scene').options){
   const room=['room','random_room','wall_room'].includes(option.value);
   option.hidden=option.disabled=!room&&(sitl!==(option.value==='long_arena'));
@@ -81,7 +82,7 @@ function syncBackend(){
 $('backend').onchange=()=>{syncBackend();sceneDirty=true;draw();};
 function restoreLiveInputs(current){const start=manifest.start,options=manifest.scene_options||{};
  $('backend').value=manifest.backend||'standalone';syncBackend();
- $('controllerMode').value=manifest.controller_mode||'original';
+ $('controllerMode').value=manifest.backend==='sitl'?'phased_side_guard':manifest.controller_mode||'phased_side_guard';
  if(manifest.scene)$('scene').value=manifest.scene;
  if(Number.isFinite(manifest.seed))$('seed').value=manifest.seed;
  if(start){$('startX').value=start.position_m[0];$('startY').value=start.position_m[1];$('startYaw').value=start.yaw_rad*180/Math.PI;}
@@ -202,6 +203,16 @@ function renderScene(frame){const [ctx,w,h]=context('sceneCanvas');const geometr
  faces.sort((a,b)=>a.reduce((s,p)=>s+project(p)[2],0)/a.length-b.reduce((s,p)=>s+project(p)[2],0)/b.length);
  for(const face of faces)line(face,'#7e8f91',1,true,'rgba(89,104,108,.57)');
  const history=frames.filter((f,i)=>f.time_s<=cursor&&i%5===0).map(f=>f.position_m);if(history.length>1)line(history,'#62d6dd',2);
+ const live=mode==='live'?state?.live:null;
+ // Remembered hazard points (only profiles with a memory: pipeline v1 / r7).
+ if(live?.memory_points?.length){ctx.fillStyle='rgba(244,176,120,.75)';for(const p of live.memory_points){const q=project(p);ctx.fillRect(q[0]-1.5,q[1]-1.5,3,3);}}
+ // Controller's estimate of its own position (flow odometry from the start), shown as a hollow ring.
+ if(live?.estimated_position){const q=project(live.estimated_position);ctx.beginPath();ctx.arc(q[0],q[1],6,0,Math.PI*2);ctx.strokeStyle='#f4b078';ctx.lineWidth=1.2;ctx.stroke();}
+ // ToF field of view: 45 degrees around the nose, at flight height; orange arc = nearest ToF return.
+ if(frame?.position_m&&frame?.attitude_rad){const fov=(live?.tof_fov_deg??45)*Math.PI/180,range=live?.tof_range_m??3.5,yw=frame.attitude_rad[2],p0=frame.position_m;
+  const arc=r=>{const pts=[];for(let i=0;i<=12;i++){const a=yw-fov/2+fov*i/12;pts.push([p0[0]+r*Math.cos(a),p0[1]+r*Math.sin(a),p0[2]]);}return pts;};
+  line([p0,...arc(range)],'rgba(104,217,215,.35)',1,true,'rgba(104,217,215,.07)');
+  if(Number.isFinite(frame.min_tof_m)&&frame.min_tof_m<range)line(arc(frame.min_tof_m),'#f4b078',1.5);}
  const start=manifest.start?.position_m||frames[0]?.position_m;if(start){const p=project(start);ctx.beginPath();ctx.arc(p[0],p[1],4,0,2*Math.PI);ctx.fillStyle='#9dcca5';ctx.fill();ctx.font='10px Segoe UI';ctx.fillText('СТАРТ',p[0]+8,p[1]-5);}
  if(frame||manifest.start){const a=frame?.attitude_rad||[0,0,manifest.start.yaw_rad];const [roll,pitch,yaw]=a.map(v=>v??0);
  const cr=Math.cos(roll),sr=Math.sin(roll),cp=Math.cos(pitch),sp=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw);
@@ -269,8 +280,16 @@ function drawNeural(f){const n=mode==='live'?state?.neural:null;
  $('neuralSample').textContent=`${values.length} станів h · t=${fmt(n.control_time_s,3)} s`;
  $('neuralScale').textContent=`Шкала індикатора ±${fmt(scale,2)}, поза нею колір насичений. Реальний h: ${fmt(Math.min(...values),3)}…${fmt(Math.max(...values),3)}. Комірки — індекси моделі, не анатомія; це rate-state, не спайки.`;
 }
+function drawControl(){const live=mode==='live'?state?.live:null,el=$('controllerNow');
+ $('memoryHint').hidden=!(live?.memory_points?.length);
+ $('memoryHint').textContent=live?.memory_frame==='true_pose_after_memory_reset'?"● Точки пам'яті — після скидання пам'яті показано за справжньою позою":"● Точки пам'яті й ○ позиція — в оцінці контролера (одометрія від старту)";
+ el.textContent=live?live.controller.label:mode==='replay'?'лише наживо':'—';
+ el.className=live?.controller?.kind==='network'?'network':['stage','phase','rule','coordinator','stop'].includes(live?.controller?.kind)?'rule':'';
+ el.title=live?.controller?.reason||'';
+ $('networkShare').textContent=live&&Number.isFinite(live.network_share)?`${fmt(live.network_share*100,1)}% · ${live.share_ticks} тактів`:'—';
+ $('networkShare').title='Частка тактів AUTO без STOP, де Roll, Pitch і Yaw після координатора відрізняються від мережі не більше ніж на 10 PWM (розділ 2 плану).';}
 function draw(){const f=findFrame(cursor);
- const sitl=manifest.backend==='sitl';
+ const sitl=manifest.backend==='sitl';drawControl();
  renderScene(mode==='live'&&state?.pose?{...f,...state.pose}:f);if($('diagnostics').open)charts();
  drawNeural(f);
  const paused=mode==='live'?(!state||state.paused):!playing;$('pausedBadge').hidden=!paused;

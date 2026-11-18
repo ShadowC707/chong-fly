@@ -25,6 +25,7 @@ from .body import visual_contract
 from .controllers import OVERLAY_PROFILES, install
 from .contacts import contact_and_clearance,step_with_contact
 from .profiles import PROFILE_ROLES, profile_config
+from .live_view import live_view
 
 ROOT = Path(__file__).resolve().parents[1]
 DT = .004
@@ -356,4 +357,4 @@ class DemoRunner:
             terminal=self.terminal,pause_reason=self.pause_reason,request=self.request,
             reset_required=self.receiver.gate.tripped,frame=self.rows[-1] if self.rows else None,
             receiver_block_reason=self.receiver.reason if self.receiver.gate.tripped else None,
-            events=self.events[-30:],yaw_bursts=self.yaw_bursts(),neural=neural))
+            events=self.events[-30:],yaw_bursts=self.yaw_bursts(),neural=neural,live=live_view(self)))

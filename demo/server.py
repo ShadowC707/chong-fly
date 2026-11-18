@@ -41,6 +41,9 @@ class Pacer:
         r.advance(steps)
 
 
+SITL_DEMO_PROFILE = 'phased_side_guard'
+
+
 class DemoService:
     def __init__(self, *, sitl_enabled=False):
         self.lock = threading.RLock()
@@ -56,9 +59,12 @@ class DemoService:
         if backend == 'sitl':
             if not self.sitl_enabled:
                 raise ValueError('Для Betaflight SITL запустіть scripts/sitl/demo.ps1 через Docker Desktop.')
-            if 'controller_mode' in options:
-                raise ValueError('Betaflight SITL має фіксований профіль Candidate A.')
-            from .sitl import SitlRunner
+            if options.pop('controller_mode', SITL_DEMO_PROFILE) != SITL_DEMO_PROFILE:
+                raise ValueError('Betaflight SITL-демо літає лише з профілем phased_side_guard.')
+            from .sitl import REITERATION_PROFILE, SitlRunner
+            # Step-7 configuration: Candidate A (adaptive tau) + phased_side_guard, reiteration SITL data
+            # (tracked in git, unlike the historical bring-up outputs).
+            options.update(controller_profile=SITL_DEMO_PROFILE, reference_profile=REITERATION_PROFILE)
             factory = SitlRunner
         elif backend == 'standalone':
             factory = DemoRunner

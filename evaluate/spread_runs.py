@@ -65,15 +65,40 @@ def build_live_perturbed(profile, scenario):
     return runner
 
 
+DUMB = 'phased_side_guard_dumb'  # step-8 control: phased_side_guard rules, constant command instead of the network
+
+
 def task(out, profile, scenario):
     import evaluate.reiteration_baseline as rb
     from evaluate.reiteration_baseline import run_case, verdict
     if not hasattr(rb, 'ORIGINAL_BUILD_RUNNER'):
         rb.ORIGINAL_BUILD_RUNNER = rb.build_runner
-    rb.build_runner = (lambda p, s: build_live_perturbed(p, s)) if scenario['kind'] == 'live' else rb.ORIGINAL_BUILD_RUNNER
+    base = (lambda p, s: build_live_perturbed(p, s)) if scenario['kind'] == 'live' else rb.ORIGINAL_BUILD_RUNNER
+    if profile == DUMB:
+        from simulation.dumb_policy import make_dumb
+        rb.build_runner = lambda p, s: make_dumb(base('phased_side_guard', s))
+    else:
+        rb.build_runner = base
     m = run_case(out, profile, scenario)
+    if profile == DUMB:
+        m = dumb_share(out, scenario, m)
     return dict(m, base_scenario=scenario['base_id'], perturbation=scenario['perturbation'],
                 verdict=verdict(m, scenario['horizon_s']))
+
+
+def dumb_share(out, scenario, m):
+    """For the constant-command control the 'network' is the constant command: share of ticks it passed."""
+    import numpy as np
+    from simulation.dumb_policy import CONSTANT_PITCH, CONSTANT_ROLL, CONSTANT_YAW
+    from simulation.navigation_metrics import share_metrics
+    with np.load(Path(out)/scenario['id']/DUMB/'trace.npz') as z:
+        network = np.array(z['network'], dtype=float)
+        network[:, 1:4] = (CONSTANT_ROLL, CONSTANT_PITCH, CONSTANT_YAW)
+        shares = share_metrics(network, z['coordinated'], z['auto'], z['stop_requested'])
+    m = dict(m, real_network_share=m.get('network_share'), network_share=shares['network_share'],
+             network_share_meaning='share of ticks where the constant command passed the rules (+-10 PWM)')
+    (Path(out)/scenario['id']/DUMB/'report.json').write_text(json.dumps(m, indent=1, default=float), encoding='utf-8')
+    return m
 
 
 METRICS = [  # key, label, worst is min (True) or max (False), format

@@ -4,18 +4,36 @@ Graph-constrained fruit-fly connectome navigation research, with a frozen k306
 rate model, standalone simulation and a verified NumPy offline runtime.
 **This repository does not yet provide a hardware flight controller or flight qualification.**
 
-## Current MVP
+## Current state (reiteration, November 2026)
+
+- **Controller:** Candidate A (`adaptive_tau`) with the phased side-guard coordinator, profile
+  `phased_side_guard`. Bundle `data/edge/k306_adaptive_tau_v1`, configuration
+  [`configs/candidate_a_adaptive_tau_v1.json`](configs/candidate_a_adaptive_tau_v1.json); network weights unchanged.
+- **What it claims:** safe *reactive* flight within the 45 degree ToF field of view and the coordinator rules,
+  not room exploration. The network is reactive (time constants 8-75 ms, internal state forgets within
+  well under a second, memory inputs 66-73 have zero weights). On the held-out set the profile had no contact in
+  6/6 starts, but the network kept control (`network_share` >= 0.80) in 0/6 and the exploration threshold was
+  met in 0/6; it can stall in a divided room (phase FAILED). The iteration did not pass its acceptance criteria.
+- **Demos:** Standalone and Betaflight SITL, see [**demo/README.md**](demo/README.md) (how to run both,
+  what each profile shows, seeds to reproduce).
+- **Results, decisions and open problems:** [**docs/REITERATION_REPORT_UK.md**](docs/REITERATION_REPORT_UK.md)
+  (plan: [docs/REITERATION_PLAN_UK.md](docs/REITERATION_PLAN_UK.md)).
+
+## Historical MVP (before the reiteration)
+
+Kept for reproducibility and comparison; no longer the current controller.
 
 - Exact research model: `data/selection/mvp_frozen_core_v1/trial_00003/after`.
 - Exact NumPy bundle: `data/edge/k306_tau025_integrated_v1`.
 - Configuration: [`configs/mvp_runtime_v3.json`](configs/mvp_runtime_v3.json).
 - Portable offline release: `data/releases/k306_tau025_offline_v1`.
 - XY anti-rollback + turn latch, STOP enabled, Levy disabled; weights unchanged.
+- In the demo it is the historical profile "Попередній MVP".
 
 Read the [project map](docs/README.md), [integration contracts and results](docs/MODULE_INTEGRATION_UK.md),
 [reasons for MVP decisions](docs/MVP_DECISIONS_UK.md), and [cleanup/recovery record](docs/REPOSITORY_CLEANUP_UK.md), and [migration history](docs/GIT_HISTORY_UK.md).
 
-## Offline self-check (NumPy only)
+## Offline self-check of the historical MVP bundle (NumPy only)
 
 Use Python 3.10+ in a dedicated environment; the current host validation uses
 Python 3.12. No Torch, simulator or repository imports are needed for this command:

@@ -6,3 +6,5 @@
 @media(max-width:580px){.run-bar #export{font-size:11px;padding:8px 10px}.run-bar>.time{margin-left:0}}
 .backend-options{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 18px;border-bottom:1px solid var(--line)}
 .backend-options small,#realTimeFactor{font-size:11px;color:var(--muted)}
+
+.memory-hint{color:var(--orange);font-size:10px}.control-now{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 18px 0}.control-now small{display:block;color:var(--muted);font-size:10px}.control-now strong{display:block;font-size:14px;font-weight:500;margin-top:3px}.control-now strong.network{color:var(--cyan)}.control-now strong.rule{color:var(--orange)}

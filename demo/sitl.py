@@ -332,7 +332,9 @@ def recompute(recording):
     runner = SitlRunner(scene=manifest['scene'], seed=manifest['seed'], start=start['position_m'],
         yaw=start['yaw_rad'], scene_options=manifest['scene_options'],
         max_duration_s=manifest['max_duration_s'], run_id=frames[0]['trace']['session_id'],
-        reference_profile=manifest.get('reference_profile', 'historical'))
+        reference_profile=manifest.get('reference_profile', 'historical'),
+        controller_profile=('phased_smooth' if manifest.get('controller_mode', 'candidate_a_smooth_phased')
+                            == 'candidate_a_smooth_phased' else manifest['controller_mode']))
     try:
         for name in ('geometry', 'geometry_spec', 'pinned_sha256', 'source_sha256'):
             if runner.manifest()[name] != manifest[name]:
