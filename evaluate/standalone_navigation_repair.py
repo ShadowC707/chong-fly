@@ -11,7 +11,7 @@ from demo.runner import DemoRunner
 from edge.runtime import sha256
 from evaluate.compare_maneuver_repair import summarize
 from evaluate.mvp_selection import write
-from simulation.navigation_metrics import progress_metrics, waiting_metrics
+from simulation.navigation_metrics import progress_metrics, share_metrics, waiting_metrics
 
 USER_ROOM = Path(__file__).resolve().parents[1]/'data/scenarios/reiteration_v1/user_room.json'
 
@@ -65,12 +65,23 @@ def run(out, profile, *, auto_at_start=False):
                                    if reason in ('threat_gated_brake', 'consistent_escape', 'side_clearance_yaw')),
             bridge_faults=[e for e in runner.events if e['kind'] == 'bridge_fault'])
         np.savez_compressed(out/'trace.npz', time=time, xy=xy,
+            auto=[r['plant_source'] == 'auto' for r in controls],
+            stop_requested=[r['stop_requested'] for r in controls],
             clearance=[r['clearance_m'] for r in rows],
             control_time=[r['time_s'] for r in controls],
             network=[r['trace']['network_pwm'] or [np.nan]*4 for r in controls],
             coordinated=[r['trace']['coordinated_pwm'] or [np.nan]*4 for r in controls],
             accepted=[r['trace']['accepted_pwm'] or [np.nan]*4 for r in controls])
         write(out/'decisions.json', decisions)
+        # No stage log exists before the pipeline (plan step 3): generated_share stays null.
+        try:
+            metrics.update(share_metrics(
+                [r['trace']['network_pwm'] or [np.nan]*4 for r in controls],
+                [r['trace']['coordinated_pwm'] or [np.nan]*4 for r in controls],
+                [r['plant_source'] == 'auto' for r in controls],
+                [r['stop_requested'] for r in controls]))
+        except ValueError as error:  # keep the rest of the report; the trace is already saved
+            metrics.update(network_share=None, generated_share=None, share_error=str(error))
         write(out/'report.json', metrics)
         print(json.dumps(metrics, indent=2), flush=True)
 

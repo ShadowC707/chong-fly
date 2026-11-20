@@ -1,7 +1,16 @@
 # Інтерактивний політ у Betaflight SITL
 
+> **Оновлено на кроці 8 реітерації (16.11.2026).** Живе SITL-демо літає з профілем
+> `phased_side_guard` поверх Candidate A (`adaptive_tau`) за даними профілю SITL реітерації
+> `data/scenarios/reiteration_v1/sitl` (у репозиторії). Розділ «Що перевірено» нижче описує
+> попередню конфігурацію (`SmoothPhasedCoordinator`, історичні артефакти `output/sitl_bringup_v1`),
+> потрібну лише для відтворення старих SITL-записів. Перевірку `phased_side_guard` у SITL
+> (5 збурень, 45 с зі STOP і 180 с у кімнаті) описано в кроці 7 зведеного звіту
+> [REITERATION_REPORT_UK](REITERATION_REPORT_UK.md).
+
 Запустіть Docker Desktop у режимі Linux-контейнерів. Потрібен локальний образ
-`chong-fly-sitl:neural-v1`, репозиторій із пакетом Candidate A та артефактами
+`chong-fly-sitl:neural-v1` і репозиторій із пакетом Candidate A. Для відтворення старих
+SITL-записів додатково потрібні артефакти
 `output/sitl_bringup_v1/{lockstep_v1,twr_sensitivity_v1_run,long_flight_v1}`.
 З кореня репозиторію виконайте одну команду в PowerShell.
 

@@ -7,9 +7,25 @@ _CONFIGS = Path(__file__).resolve().parents[1]/'configs'
 ORIGINAL_CONFIG = _CONFIGS/'mvp_runtime_v3.json'
 CANDIDATE_A_CONFIG = _CONFIGS/'candidate_a_adaptive_tau_v1.json'
 HISTORICAL_CANDIDATE_A_CONFIG = _CONFIGS/'demo_candidate_a.json'
+PIPELINE_V1_CONFIG = _CONFIGS/'pipeline_v1.json'
+PIPELINE_CONFIGS = {'pipeline_v1': PIPELINE_V1_CONFIG,
+                    'pipeline_v1_r1': _CONFIGS/'pipeline_v1_r1.json',
+                    'pipeline_v1_r2': _CONFIGS/'pipeline_v1_r2.json',
+                    'pipeline_v1_r3': _CONFIGS/'pipeline_v1_r3.json',
+                    'pipeline_v1_r3b': _CONFIGS/'pipeline_v1_r3b.json',
+                    'pipeline_v1_r3b2': _CONFIGS/'pipeline_v1_r3b2.json',
+                    'pipeline_v1_r4': _CONFIGS/'pipeline_v1_r4.json',
+                    'pipeline_v1_r5': _CONFIGS/'pipeline_v1_r5.json',
+                    'pipeline_v1_r6': _CONFIGS/'pipeline_v1_r6.json',
+                    'pipeline_v1_r6b': _CONFIGS/'pipeline_v1_r6b.json',
+                    'pipeline_v1_r7': _CONFIGS/'pipeline_v1_r7.json'}
 
 OVERLAY_PROFILES = ('candidate_a_brake', 'phased_v2', 'phased_smooth', 'phased_recovery',
-                    'phased_escape', 'phased_side_guard', 'phased_swath')
+                    'phased_escape', 'phased_side_guard', 'phased_swath', 'pipeline_v1',
+                    'pipeline_v1_r1', 'pipeline_v1_r2', 'pipeline_v1_r3',
+                    'pipeline_v1_r3b', 'pipeline_v1_r3b2', 'pipeline_v1_r4',
+                    'pipeline_v1_r5', 'pipeline_v1_r6', 'pipeline_v1_r6b',
+                    'pipeline_v1_r7')
 PHASED_PROFILES = tuple(p for p in OVERLAY_PROFILES if p.startswith('phased_'))
 LIVE_PROFILE_LABELS = {
     'original': 'Попередній MVP',
@@ -18,6 +34,17 @@ LIVE_PROFILE_LABELS = {
     'candidate_a_brake': 'Кандидат A · гальмування біля перешкоди',
     'phased_side_guard': 'Кандидат A · фазовий із бічним захистом',
     'phased_swath': 'Кандидат A · спостережена смуга · дослідний',
+    'pipeline_v1': 'Кандидат A · конвеєр v1 · дослідний',
+    'pipeline_v1_r1': 'Кандидат A · конвеєр v1, коло 1 (пам\'ять) · дослідний',
+    'pipeline_v1_r2': 'Кандидат A · конвеєр v1, коло 2 (гальмо) · дослідний',
+    'pipeline_v1_r3': 'Кандидат A · конвеєр v1, коло 3 (відступ коридором) · дослідний',
+    'pipeline_v1_r3b': 'Кандидат A · конвеєр v1, коло 3б (прогноз вибігу) · дослідний',
+    'pipeline_v1_r3b2': 'Кандидат A · конвеєр v1, коло 3б (прогноз вибігу зі знаком) · дослідний',
+    'pipeline_v1_r4': 'Кандидат A · конвеєр v1, коло 4 (утримання швидкості) · дослідний',
+    'pipeline_v1_r5': 'Кандидат A · конвеєр v1, коло 5 (калібрована пам\'ять) · дослідний',
+    'pipeline_v1_r6': 'Кандидат A · конвеєр v1, коло 6 (ПІ-утримання) · дослідний',
+    'pipeline_v1_r6b': 'Кандидат A · конвеєр v1, коло 6б (ПІ-утримання, ki 300) · дослідний',
+    'pipeline_v1_r7': 'Кандидат A · конвеєр v1, коло 7 (перевірка шляху) · дослідний',
 }
 
 PROFILE_ROLES = {
@@ -26,6 +53,17 @@ PROFILE_ROLES = {
     'phased_side_guard': 'behavioral-baseline',
     'candidate_a_brake': 'recorded-failure-control',
     'phased_swath': 'standalone-swath-experiment',
+    'pipeline_v1': 'standalone-pipeline-experiment',
+    'pipeline_v1_r1': 'standalone-pipeline-experiment',
+    'pipeline_v1_r2': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3b': 'standalone-pipeline-experiment',
+    'pipeline_v1_r3b2': 'standalone-pipeline-experiment',
+    'pipeline_v1_r4': 'standalone-pipeline-experiment',
+    'pipeline_v1_r5': 'standalone-pipeline-experiment',
+    'pipeline_v1_r6': 'standalone-pipeline-experiment',
+    'pipeline_v1_r6b': 'standalone-pipeline-experiment',
+    'pipeline_v1_r7': 'standalone-pipeline-experiment',
 }
 
 

@@ -190,8 +190,8 @@
   "recordings": [
     {
       "file": "demo/recordings/01_manual.json.gz",
-      "bytes": 223060,
-      "sha256": "a28d07c17c4d6117eb6ad21c49e310bfea4bc983df2e0c6c67f61269b82f9140",
+      "bytes": 223040,
+      "sha256": "68e1519cdce04f7e1e877c82b2fb835347e51ca3f4041b049f7b21b23dc5b1c6",
       "schema": "chong-fly-demo-v1",
       "kind": "live_recording",
       "frames": 1000,
@@ -201,8 +201,8 @@
     },
     {
       "file": "demo/recordings/02_shadow.json.gz",
-      "bytes": 269179,
-      "sha256": "4391e114a86b113a0f15aed505ab55d6bc7f01efae6c0b1cd3cd853812a08ff5",
+      "bytes": 269181,
+      "sha256": "5dfc3752377000dd311d8257d4e21c871acb8f8059144bdf426107a6737af965",
       "schema": "chong-fly-demo-v1",
       "kind": "live_recording",
       "frames": 1000,
@@ -212,8 +212,8 @@
     },
     {
       "file": "demo/recordings/03_auto_stop_takeover.json.gz",
-      "bytes": 518923,
-      "sha256": "1cf9e36857b524b9d3765603ab92ac005d98e7e5482468efff2fbfe8e9698156",
+      "bytes": 518908,
+      "sha256": "6bda7f35af7ec567be624d371d19c9b2036b6691fc8398e482dfc54c64d23127",
       "schema": "chong-fly-demo-v1",
       "kind": "live_recording",
       "frames": 2250,
@@ -223,8 +223,8 @@
     },
     {
       "file": "demo/recordings/04_denied_near_obstacle.json.gz",
-      "bytes": 44695,
-      "sha256": "8324a315e81ea86b207e7833f4da192e6ab05a96d54a99d484e6529c63f6aa37",
+      "bytes": 44703,
+      "sha256": "38627353dfe735e1bfda14c18c7fee0253d37324385d81082693fca21dc22f91",
       "schema": "chong-fly-demo-v1",
       "kind": "live_recording",
       "frames": 300,
@@ -410,5 +410,69 @@
     "location": "run-bar, immediately after play",
     "export_handler_unchanged": true,
     "screenshot": "output/interactive_demo/screenshots/export_top.jpg"
+  },
+  "reiteration_step8_rerecord": {
+    "date": "2026-11-17",
+    "reason": "Source files changed during the reiteration (pipeline profiles, SITL profile parameter, live view) changed the source/system hashes in the recording manifest, so --verify-examples failed although the flights were unchanged. The 4 canonical recordings were re-recorded with demo --record-examples.",
+    "check": "Old and new recordings compared field by field: frames (excluding only trace.manifest_sha256), the input schedule and all other top-level fields (excluding only the manifest) are identical; only the manifest provenance fields listed per file changed.",
+    "files": [
+      {
+        "file": "demo/recordings/01_manual.json.gz",
+        "old_sha256": "a28d07c17c4d6117eb6ad21c49e310bfea4bc983df2e0c6c67f61269b82f9140",
+        "new_sha256": "68e1519cdce04f7e1e877c82b2fb835347e51ca3f4041b049f7b21b23dc5b1c6",
+        "old_bytes": 223060,
+        "new_bytes": 223040,
+        "frames_identical_except_manifest_hash": true,
+        "input_schedule_identical": true,
+        "other_fields_identical_except_manifest": true,
+        "manifest_fields_changed": [
+          "source_sha256",
+          "system"
+        ]
+      },
+      {
+        "file": "demo/recordings/02_shadow.json.gz",
+        "old_sha256": "4391e114a86b113a0f15aed505ab55d6bc7f01efae6c0b1cd3cd853812a08ff5",
+        "new_sha256": "5dfc3752377000dd311d8257d4e21c871acb8f8059144bdf426107a6737af965",
+        "old_bytes": 269179,
+        "new_bytes": 269181,
+        "frames_identical_except_manifest_hash": true,
+        "input_schedule_identical": true,
+        "other_fields_identical_except_manifest": true,
+        "manifest_fields_changed": [
+          "source_sha256",
+          "system"
+        ]
+      },
+      {
+        "file": "demo/recordings/03_auto_stop_takeover.json.gz",
+        "old_sha256": "1cf9e36857b524b9d3765603ab92ac005d98e7e5482468efff2fbfe8e9698156",
+        "new_sha256": "6bda7f35af7ec567be624d371d19c9b2036b6691fc8398e482dfc54c64d23127",
+        "old_bytes": 518923,
+        "new_bytes": 518908,
+        "frames_identical_except_manifest_hash": true,
+        "input_schedule_identical": true,
+        "other_fields_identical_except_manifest": true,
+        "manifest_fields_changed": [
+          "source_sha256",
+          "system"
+        ]
+      },
+      {
+        "file": "demo/recordings/04_denied_near_obstacle.json.gz",
+        "old_sha256": "8324a315e81ea86b207e7833f4da192e6ab05a96d54a99d484e6529c63f6aa37",
+        "new_sha256": "38627353dfe735e1bfda14c18c7fee0253d37324385d81082693fca21dc22f91",
+        "old_bytes": 44695,
+        "new_bytes": 44703,
+        "frames_identical_except_manifest_hash": true,
+        "input_schedule_identical": true,
+        "other_fields_identical_except_manifest": true,
+        "manifest_fields_changed": [
+          "source_sha256",
+          "system"
+        ]
+      }
+    ],
+    "legacy_recording_unchanged": "demo/recordings/05_legacy_arena.json.gz"
   }
 }

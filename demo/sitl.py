@@ -95,7 +95,7 @@ class SitlRunner(DemoRunner):
 
     def __init__(self, *, scene='random_room', seed=20261021, start=(-.7, 0., 1.),
                  yaw=0., run_id='sitl', scene_options=None, max_duration_s=180.,
-                 archive_path=None, reference_profile='historical'):
+                 archive_path=None, reference_profile='historical', controller_profile='phased_smooth'):
         if type(seed) is not int or seed < 0:
             raise ValueError('Invalid seed')
         if len(start) != 3 or not all(math.isfinite(v) for v in (*start, yaw)) or start[2] != 1.:
@@ -126,7 +126,9 @@ class SitlRunner(DemoRunner):
         self.steps = flight_steps(out, source, scene, 'sitl', 'reference_units',
             physics_dt_s=DT, integration_profile='multi_rate', yaw_shaping=True, scene_override=spec,
             target_twr=5., calibration_rows=calibration, horizon_s=600., stop_at_s=None,
-            session_id=self.session_id, archive=archive_path is not None, **runtime)
+            session_id=self.session_id, archive=archive_path is not None, controller_profile=controller_profile,
+            **runtime)
+        self.controller_profile = controller_profile
         try:
             self.view = next(self.steps)
             self.system = self.view.system
@@ -288,7 +290,8 @@ class SitlRunner(DemoRunner):
             geometry=dict(room=spec['room'], boxes=spec['boxes'], cylinders=spec['cylinders'],
                 collision_radius_m=RADIUS, drone_visual=visual_contract(RADIUS)),
             start=dict(position_m=spec['start'], yaw_rad=spec['yaw'], velocity_mps=[0, 0, 0]),
-            contact_model='sphere-sweep-v1', controller_mode='candidate_a_smooth_phased',
+            contact_model='sphere-sweep-v1', controller_mode=('candidate_a_smooth_phased' if self.controller_profile == 'phased_smooth'
+                             else self.controller_profile),
             reference_profile=self.reference_profile,
             candidate=self.system.runtime.metadata['source']['candidate'], system=self.system.manifest,
             physics_dt_s=DT, control_dt_s=CONTROL_DT, max_duration_s=self.initial_max_duration_s,
@@ -329,7 +332,9 @@ def recompute(recording):
     runner = SitlRunner(scene=manifest['scene'], seed=manifest['seed'], start=start['position_m'],
         yaw=start['yaw_rad'], scene_options=manifest['scene_options'],
         max_duration_s=manifest['max_duration_s'], run_id=frames[0]['trace']['session_id'],
-        reference_profile=manifest.get('reference_profile', 'historical'))
+        reference_profile=manifest.get('reference_profile', 'historical'),
+        controller_profile=('phased_smooth' if manifest.get('controller_mode', 'candidate_a_smooth_phased')
+                            == 'candidate_a_smooth_phased' else manifest['controller_mode']))
     try:
         for name in ('geometry', 'geometry_spec', 'pinned_sha256', 'source_sha256'):
             if runner.manifest()[name] != manifest[name]:

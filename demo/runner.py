@@ -25,6 +25,7 @@ from .body import visual_contract
 from .controllers import OVERLAY_PROFILES, install
 from .contacts import contact_and_clearance,step_with_contact
 from .profiles import PROFILE_ROLES, profile_config
+from .live_view import live_view
 
 ROOT = Path(__file__).resolve().parents[1]
 DT = .004
@@ -294,7 +295,8 @@ class DemoRunner:
         if (hasattr(self.system, 'navigation')
                 and getattr(getattr(self, 'swath_adapter', None), 'system', None) is not self.system):
             from .swath_adapter import SwathSimulationAdapter
-            self.swath_adapter = SwathSimulationAdapter(self)
+            factory = getattr(self.system, 'adapter_class', SwathSimulationAdapter)
+            self.swath_adapter = factory(self)
 
     def _build_manifest(self):
         self.prepare_controller()
@@ -305,7 +307,7 @@ class DemoRunner:
             profile['controller_role'] = PROFILE_ROLES.get(self.controller_mode, 'historical-experiment')
             paths+=['demo/controllers.py','demo/profiles.py','simulation/phased_coordinator.py']
         if hasattr(self.system, 'navigation'):
-            profile['swath_inputs'] = self.swath_adapter.contract()
+            profile[getattr(self.system, 'manifest_key', 'swath_inputs')] = self.swath_adapter.contract()
         return dict(**profile,kind='live_recording', scene=self.scene, seed=self.seed,
             contact_model=self.contact_model,
             scene_options=self.scene_options,geometry_spec=getattr(self.env,'demo_geometry_spec',None),
@@ -355,4 +357,4 @@ class DemoRunner:
             terminal=self.terminal,pause_reason=self.pause_reason,request=self.request,
             reset_required=self.receiver.gate.tripped,frame=self.rows[-1] if self.rows else None,
             receiver_block_reason=self.receiver.reason if self.receiver.gate.tripped else None,
-            events=self.events[-30:],yaw_bursts=self.yaw_bursts(),neural=neural))
+            events=self.events[-30:],yaw_bursts=self.yaw_bursts(),neural=neural,live=live_view(self)))

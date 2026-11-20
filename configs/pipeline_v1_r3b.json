@@ -1,0 +1,71 @@
+{
+  "version": "pipeline-v1-r3b",
+  "base_config": "candidate_a_adaptive_tau_v1.json",
+  "coordinator": {
+    "anti_rollback": false,
+    "turn_latch": true,
+    "note": "RunConfig refuses stop_hover without coordinator_mode 'both' (edge/system.py is frozen), so the base config stays Candidate A and the profile replaces the coordinator, as the other overlay profiles do. turn_latch is kept as in baseline A+XY; it changes the Yaw sign and is counted against network_share."
+  },
+  "stage1_brake": {
+    "kind": "limits",
+    "v_stop": 0.0105,
+    "flow_filter_tau_s": 0.06,
+    "rationale": "Signed p99 of the filtered forward flow (XYCoordinator tau 0.06 s) over 11517 AUTO ticks of true standstill (horizontal speed < 0.02 m/s over +-0.1 s) in the 14 traces of output/reiteration_baseline_v1 is 0.01048; p95 is 0.0076 and the hover threshold in code is 0.0075, so 0.005 sits inside the noise. Below v_stop a braking Pitch is faded to 1500 with a smoothstep, at v_stop and above it passes unchanged. Survey: output/pipeline_v1_vstop_survey/vstop_survey.json.",
+    "law": "proportional",
+    "gain_pwm_per_flow": 500.0,
+    "gain_rationale": "Chosen before any round-2 run. Identified from 18000 ticks of the five round-1 r1 working-set traces (evaluate/brake_identification.py, output/pipeline_v1_round2/brake_identification.json): tilt follows Pitch with delay 1 tick, tau 0.259 s, gain 0.0726 deg/PWM (R2 0.9986); forward accel = 0.1737*tilt_deg - 0.256*v (R2 0.989); flow = v/3.88. The v1 law in this model rolls back up to 1.51 m. k = 500 PWM per flow unit (about 129 PWM per m/s) is the largest on a 100-step grid with no reverse faster than 0.03 m/s for every start 0.05..0.23 m/s (p99.5) and every constant network brake down to -233 PWM (worst min speed -0.020 m/s); k = 600 already rolls back. Cost: stopping distance from 0.23 m/s under full network brake is 0.13 m (v1 law 0.04 m, then 1.51 m of rollback). Cross-check: the frozen XY STOP law uses 400 PWM per flow unit.",
+    "v_stop_note": "v_stop is used only by law=smoothstep (v1, r1)."
+  },
+  "stage2_veto": {
+    "kind": "limits",
+    "r_veto_m": 0.3,
+    "side_min_deg": 22.5,
+    "side_max_deg": 157.5,
+    "history_s": 4.0,
+    "max_frames": 64,
+    "error_model": {
+      "base_m": 0.02,
+      "drift_m_per_s": 0.001,
+      "random_walk_m_sqrt_s": 0.01,
+      "distance_error_fraction": 0.03
+    },
+    "rationale": "r_veto = body radius 0.20 m + required clearance 0.10 m = 0.30 m, applied to the 3D distance minus a per-point memory transport error: base 0.02 + 0.001*age + 0.01*sqrt(age) + 0.03*distance travelled since capture (the SwathConfig model; about 0.05 m after 2 s at 0.2 m/s, at most about 0.07 m over the 4 s memory), so the effective veto radius is 0.32 to 0.37 m. Only side points (22.5 to 157.5 degrees from the heading, i.e. outside the ToF field of view and not behind) can veto. The veto never acts because space is unproven free.",
+    "history_s_note": "history_s / max_frames apply only to aging=time (pipeline_v1); with aging=transport the observer keeps one frame and the store owns history."
+  },
+  "round": {
+    "step": 4,
+    "round": "3b",
+    "category": "fix of round-3 implementation (coast outside the corridor)",
+    "parent": "pipeline_v1_r3",
+    "change": "Stage 1 only (kind limits): the backward command is limited so that the coast predicted from the current tilt and speed fits the free straight-back length of the own corridor (up to the first remembered threat). Replaces L = 0.05 + 4.1 * lagged speed.",
+    "author_decision": "Round 3b fixes the round-3 implementation and does not use the round budget (author, 2026-11-11)."
+  },
+  "memory": {
+    "aging": "transport",
+    "voxel_m": 0.05,
+    "max_points": 6000,
+    "turn_error_rad_per_rad": 0.03,
+    "heading_error_rad": 0.005,
+    "rationale": "Round 1 card: box6 was seen 13.98-19.28 s, held with 0.002-0.025 m true transport error, and erased at 23.3 s by history_s = 4 s while the drone hovered 0.17 m beside it; the 64-frame cap (ToF 15 Hz, 60 frames per 4 s) would erase it 0.27 s later, so both rules go. error = base 0.02 + 0.03 * path since capture (stage-2 error model, unchanged) + (0.03 rad per rad turned since capture, a gyro scale-factor error, + 0.005 rad heading noise, about 0.25 deg x2) * current range. A point is removed when its error exceeds r_veto = 0.30 m. Time is not a term: a hovering, non-turning drone keeps its points. Voxel 0.05 m keeps one point per cell, the newest wins; over max_points the largest-error points go. The simulated heading has no drift, so the turn term is conservative here and is meant for hardware."
+  },
+  "stage1_retreat": {
+    "kind": "limits",
+    "enabled": true,
+    "corridor_s": 7.0,
+    "tolerance_m": 0.05,
+    "margin_m": 0.05,
+    "coast_s_per_mps": 4.1,
+    "flow_scale_mps": 3.88,
+    "step_m": 0.02,
+    "forward_min_mps": -0.03,
+    "rationale": "Chosen before any round-3 run. corridor_s = 7 s: the corridor is stored in flow odometry, whose relative error the stage-2 model bounds by 0.03 * path; keeping it within the 0.05 m tolerance needs path <= 1.67 m, which at the observed p99.5 speed 0.23 m/s is 7.2 s (round-1/2 cards measured 0.002-0.044 m actual transport error over 19-31 s, so the bound is conservative). tolerance_m = 0.05 m: half the required 0.10 m clearance. Check length L = margin 0.05 m + 4.1 s * back speed: with the stage removing the backward command, the identified brake model (output/pipeline_v1_round2/brake_identification.json) coasts to rest in 4.07-4.12 s * v for v = 0.05-0.25 m/s (drag 0.256 1/s; the network's own forward Pitch stops it sooner, so this is the worst case). flow_scale 3.88 m/s per flow unit from the same identification. Positions are added to the corridor only while the filtered body speed is >= -0.03 m/s (the reverse threshold of the metric), so space entered while moving back never extends the corridor. Remembered threat points behind the drone (x < 0) within r_veto 0.30 m + their error of the segment block the retreat; an empty memory never grants it.",
+    "prediction": "tilt",
+    "beta_mps2_per_deg": 0.1737,
+    "gamma_per_s": 0.2565,
+    "tilt_tau_s": 0.2595,
+    "tilt_gain_deg_per_pwm_tick": 0.005388,
+    "lag_s": 0.08,
+    "max_check_m": 2.0,
+    "prediction_rationale": "Chosen before any round-3b run, all constants from output/pipeline_v1_round2/brake_identification.json. Round-3 card: the check used the lagged filtered speed only, so a full backward command (1300) built up to 14.5 deg of tilt before the speed showed it and the drone coasted 0.14-0.33 m out of the corridor at up to 0.36 m/s. Linear model: coast = (v + beta*tilt*tau)/gamma (steady tilt gives 4.16*v, the round-3 4.1*v); v is advanced by lag_s = 0.08 s (flow filter 0.06 s + 1 tick command delay) of the current acceleration; the tilt of the next tick includes the command being issued now (gain b per tick). The stage passes the largest backward Pitch whose predicted coast fits room - margin, where room is the straight-back length inside the 7 s corridor up to the first remembered threat behind (max 2 m: 7 s at p99.5 0.23 m/s is 1.6 m). It never passes more than the network asks (kind limits)."
+  }
+}

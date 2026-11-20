@@ -15,7 +15,7 @@ from edge.runtime import sha256
 from evaluate.passive_corridor import RevisitProbe, USER_ROOM
 from evaluate.compare_maneuver_repair import summarize
 from simulation import side_clearance
-from simulation.navigation_metrics import progress_metrics
+from simulation.navigation_metrics import progress_metrics, share_metrics
 from simulation.phased_yaw import YawRamp
 from simulation.survey_heading_sensor import SimulatedHeadingSensor
 
@@ -247,8 +247,22 @@ def run(case, out, duration=180., mode='legacy'):
                         heading_noise_deg=.25, heading_drift_deg_s=0., manifest=runner.manifest(),
                         source_sha256=source_hashes, controller_profile=profile,
                         speed_cap_applied=mode in ('legacy', 'speed_only'))
+        controls = [r for r in rows if r['plant_input_pwm'] is not None
+                    and abs(r['time_s']/.02-round(r['time_s']/.02)) < 1e-7]
+        nan4 = lambda r, key: r['trace'][key] or [np.nan]*4
+        network = [nan4(r, 'network_pwm') for r in controls]
+        coordinated = [nan4(r, 'coordinated_pwm') for r in controls]
+        control_auto = [r['plant_source'] == 'auto' for r in controls]
+        control_stop = [r['stop_requested'] for r in controls]
         np.savez_compressed(out / 'trace.npz', time=times, xy=xy,
-                            clearance=[r['clearance_m'] for r in rows])
+                            clearance=[r['clearance_m'] for r in rows],
+                            control_time=[r['time_s'] for r in controls], auto=control_auto,
+                            stop_requested=control_stop, network=network, coordinated=coordinated,
+                            accepted=[nan4(r, 'accepted_pwm') for r in controls])
+        try:  # no stage log in this stand: generated_share stays null
+            metrics.update(share_metrics(network, coordinated, control_auto, control_stop))
+        except ValueError as error:
+            metrics.update(network_share=None, generated_share=None, share_error=str(error))
         for name, value in (('protocol',protocol),('report',metrics),('decisions',trace)):
             (out / (name + '.json')).write_text(json.dumps(value, indent=2), encoding='utf-8')
         print(json.dumps(metrics, indent=2), flush=True)
