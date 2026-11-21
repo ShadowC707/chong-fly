@@ -18,15 +18,19 @@ def test_default_chain_is_unchanged():
     assert system.manifest['experiment']['profile'] == 'phased_smooth'
 
 
-def test_sitl_builds_phased_side_guard_like_standalone():
-    from simulation.side_clearance import SideClearanceCoordinator
+@pytest.mark.parametrize('profile, cls', [('phased_side_guard', 'simulation.side_clearance.SideClearanceCoordinator'),
+                                          ('phased_failed_exit', 'simulation.failed_exit.FailedExitCoordinator')])
+def test_sitl_builds_phased_profile_like_standalone(profile, cls):
+    import importlib
     from demo.yaw_experiment import YawHandoverSystem
     from demo.runner import DemoRunner
+    module, name = cls.rsplit('.', 1)
+    coordinator = getattr(importlib.import_module(module), name)
     system = build_controller(CANDIDATE_A_CONFIG, yaw_shaping=True, integration_profile='multi_rate',
-                              controller_profile='phased_side_guard')
-    assert type(system) is YawHandoverSystem and type(system.runtime.coordinator) is SideClearanceCoordinator
-    assert system.manifest['experiment']['profile'] == 'phased_side_guard'
-    standalone = DemoRunner(controller_mode='phased_side_guard', scene='room', seed=3, max_duration_s=1)
+                              controller_profile=profile)
+    assert type(system) is YawHandoverSystem and type(system.runtime.coordinator) is coordinator
+    assert system.manifest['experiment']['profile'] == profile
+    standalone = DemoRunner(controller_mode=profile, scene='room', seed=3, max_duration_s=1)
     try:
         ref = standalone.system
         assert type(ref) is type(system) and type(ref.runtime.coordinator) is type(system.runtime.coordinator)

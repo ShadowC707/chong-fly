@@ -53,7 +53,7 @@ $('upload').onchange=async event=>{const epoch=++sourceEpoch;try{let bytes=event
  if(mode==='replay'&&epoch===sourceEpoch)useRecording(JSON.parse(text));}catch(e){if(epoch===sourceEpoch)error(e);}};
 function showManifest(){$('manifest').textContent=JSON.stringify(manifest,null,2);$('sceneName').textContent=manifest.scene||manifest.original?.scene||'';
  const sitl=manifest.backend==='sitl';
- $('profileLabel').textContent=sitl?`Candidate A · ${manifest.controller_mode==='candidate_a_smooth_phased'?'SmoothPhasedCoordinator':manifest.controller_mode||'phased_side_guard'} · TWR 5`:manifest.candidate||'';
+ $('profileLabel').textContent=sitl?`Candidate A · ${manifest.controller_mode==='candidate_a_smooth_phased'?'SmoothPhasedCoordinator':manifest.controller_mode||'phased_failed_exit'} · TWR 5`:manifest.candidate||'';
  $('profileDetails').textContent=sitl?
  'Ідеальні flow і attitude 50 Гц, дальномір 30 Гц, ToF 15 Гц. Приймач підтверджує Accepted у reference PWM. SITL RC показує команду після перетворення. Сферичний контакт завершує політ.':
  'Чисельна симуляція з ідеалізованими сенсорами та програмним приймачем. Деталі моделі, сенсорів і меж перевірки наведено в маніфесті.';
@@ -68,10 +68,13 @@ $('scene').append(referenceOption);
 function roomScene(){return ['room','random_room','wall_room'].includes($('scene').value);}
 function syncBackend(){
  const sitl=$('backend').value==='sitl';
- // SITL demo flies only phased_side_guard (pipeline profiles need a heading sample SITL lacks).
- if(sitl)$('controllerMode').value='phased_side_guard';
+ // SITL demo flies only phased_failed_exit (pipeline profiles need a heading sample SITL lacks).
+ if(sitl)$('controllerMode').value='phased_failed_exit';
  $('controllerMode').disabled=sitl;
- $('backendHint').textContent=sitl?'Betaflight SITL · Candidate A · phased_side_guard · TWR 5':'Окрема фізика Standalone. Для SITL потрібен запуск через Docker Desktop.';
+ // Speed multiplier is Standalone-only wall pacing; SITL runs its own lockstep.
+ if(sitl)$('liveSpeed').value='1';
+ $('liveSpeed').disabled=sitl;
+ $('backendHint').textContent=sitl?'Betaflight SITL · Candidate A · phased_failed_exit · TWR 5':'Окрема фізика Standalone. Для SITL потрібен запуск через Docker Desktop.';
  for(const option of $('scene').options){
   const room=['room','random_room','wall_room'].includes(option.value);
   option.hidden=option.disabled=!room&&(sitl!==(option.value==='long_arena'));
@@ -80,9 +83,12 @@ function syncBackend(){
  $('scene').onchange();
 }
 $('backend').onchange=()=>{syncBackend();sceneDirty=true;draw();};
+async function applySpeed(){const speed=$('backend').value==='sitl'?1:Number($('liveSpeed').value);
+ try{await api('/api/speed',{speed});}catch(e){$('liveSpeed').value='1';error(e);}}
+$('liveSpeed').onchange=applySpeed;
 function restoreLiveInputs(current){const start=manifest.start,options=manifest.scene_options||{};
  $('backend').value=manifest.backend||'standalone';syncBackend();
- $('controllerMode').value=manifest.backend==='sitl'?'phased_side_guard':manifest.controller_mode||'phased_side_guard';
+ $('controllerMode').value=manifest.backend==='sitl'?'phased_failed_exit':manifest.controller_mode||'phased_failed_exit';
  if(manifest.scene)$('scene').value=manifest.scene;
  if(Number.isFinite(manifest.seed))$('seed').value=manifest.seed;
  if(start){$('startX').value=start.position_m[0];$('startY').value=start.position_m[1];$('startYaw').value=start.yaw_rad*180/Math.PI;}
@@ -90,7 +96,8 @@ function restoreLiveInputs(current){const start=manifest.start,options=manifest.
  $('wallEnabled').checked=!!options.wall_enabled;$('scene').onchange();
  $('duration').value=current.max_duration_s??manifest.max_duration_s??180;
  const fresh=current.terminal||current.time_s===0;
- $('flightMode').value=fresh||(current.paused&&manifest.backend!=='sitl')?'AUTO':current.request;sceneDirty=false;}
+ $('flightMode').value=fresh||(current.paused&&manifest.backend!=='sitl')?'AUTO':current.request;sceneDirty=false;
+ if(manifest.backend!=='sitl')applySpeed();}
 function sceneOptions(){const options={backend:$('backend').value,scene:$('scene').value,seed:Number($('seed').value),start:[Number($('startX').value),Number($('startY').value),1],yaw:Number($('startYaw').value)*Math.PI/180,max_duration_s:Number($('duration').value)};
  if(options.backend==='standalone')options.controller_mode=$('controllerMode').value;
  if(roomScene())options.scene_options={wall_enabled:$('wallEnabled').checked,wall_x:Number($('wallX').value),wall_y:Number($('wallY').value),wall_length_m:Number($('wallLength').value),wall_axis:$('wallAxis').value};
@@ -105,7 +112,7 @@ $('scene').onchange=()=>{
 syncBackend();
 $('randomizeRoom').onclick=()=>{$('scene').value='random_room';$('seed').value=crypto.getRandomValues(new Uint32Array(1))[0];$('scene').onchange();$('newRun').click();};
 function installLiveRun(result){state=result.state;manifest=result.manifest;recording=null;frames=[];received=0;liveSession=state.session_id;cursor=0;
- camera.local=!manifest.geometry?.room||manifest.geometry.room.x_max-manifest.geometry.room.x_min>10;camera.zoom=1;$('cameraFocus').value=camera.local?'local':'room';sceneDirty=false;keys.clear();error(null);showManifest();draw();}
+ camera.local=!manifest.geometry?.room||manifest.geometry.room.x_max-manifest.geometry.room.x_min>10;camera.zoom=1;$('cameraFocus').value=camera.local?'local':'room';sceneDirty=false;keys.clear();error(null);showManifest();if(manifest.backend!=='sitl')applySpeed();draw();}
 $('newRun').onclick=async()=>{try{if(loading)return;loading=true;sourceEpoch++;draw();await requestChain;
  const result=await api('/api/new',{options:sceneOptions()});
  installLiveRun(result);
@@ -181,7 +188,8 @@ function renderScene(frame){const [ctx,w,h]=context('sceneCanvas');const geometr
  for(const x of [room.x_min,room.x_max])for(const y of [room.y_min,room.y_max])for(const z of [room.z_min,room.z_max]){
  const dx=x-center[0],dy=y-center[1],dz=z-center[2];bounds.push([-Math.sin(az)*dx+Math.cos(az)*dy,Math.sin(el)*(Math.cos(az)*dx+Math.sin(az)*dy)-Math.cos(el)*dz]);}
  const xs=bounds.map(p=>p[0]),ys=bounds.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
- scale=Math.min((w-64)/(x1-x0),(h-110)/(y1-y0))*camera.zoom;anchorX=w/2-(x0+x1)/2*scale;anchorY=(h+30)/2-(y0+y1)/2*scale;}
+ // A canvas smaller than the margins (narrow window, first layout) must not flip the scale negative.
+ scale=Math.max(0,Math.min((w-64)/(x1-x0),(h-110)/(y1-y0)))*camera.zoom;anchorX=w/2-(x0+x1)/2*scale;anchorY=(h+30)/2-(y0+y1)/2*scale;}
  const project=p=>{const x=p[0]-center[0],y=p[1]-center[1],z=p[2]-center[2];const depth=Math.cos(az)*x+Math.sin(az)*y;
  return [anchorX+(-Math.sin(az)*x+Math.cos(az)*y)*scale,anchorY+(Math.sin(el)*depth-Math.cos(el)*z)*scale,Math.cos(el)*depth+Math.sin(el)*z];};
  function line(points,color,width=1,closed=false,fill=null){ctx.beginPath();points.forEach((p,i)=>{const q=project(p);i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]);});if(closed)ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill();}ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}
@@ -222,13 +230,13 @@ function renderScene(frame){const [ctx,w,h]=context('sceneCanvas');const geometr
  const transform=p=>{const x=p[0]*bodyScale,y=(cr*p[1]-sr*p[2])*bodyScale,z=(sr*p[1]+cr*p[2])*bodyScale;const xx=cp*x+sp*z,zz=-sp*x+cp*z;return [position[0]+cy*xx-sy*y,position[1]+sy*xx+cy*y,position[2]+zz];};
  line([[position[0],position[1],0],position],'#66878a',1);
  if(hasBody){
- const shadow=project([position[0],position[1],0]);ctx.beginPath();ctx.ellipse(shadow[0],shadow[1],scale*radius*.8,scale*radius*.3,0,0,Math.PI*2);ctx.fillStyle='#0a1219aa';ctx.fill();
+ const shadow=project([position[0],position[1],0]);ctx.beginPath();ctx.ellipse(shadow[0],shadow[1],Math.max(0,scale*radius*.8),Math.max(0,scale*radius*.3),0,0,Math.PI*2);ctx.fillStyle='#0a1219aa';ctx.fill();
  const stroke=body.stroke_width*radius*scale;
  for(const arm of body.arms)line(arm.map(transform),'#d4e0e4',stroke);
  for(const [x,y,z] of body.rotor_centers){const pts=[];for(let i=0;i<=24;i++){const angle=i*Math.PI/12;pts.push(transform([x+body.rotor_radius*Math.cos(angle),y+body.rotor_radius*Math.sin(angle),z]));}line(pts,x>0?'#f5ac68':'#8ca7b7',stroke,true,'#172731aa');}
  line(body.hull.map(transform),'#d6f0f1',stroke,true,'#39717d');
  line(body.nose.map(transform),'#f5ac68',stroke);
- if(showCollision){const c=project(position);ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=frame?.collision?'#ec7c68':'#62d6dd';ctx.lineWidth=.8;ctx.beginPath();ctx.arc(c[0],c[1],radius*scale,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.font='10px Segoe UI';ctx.fillText(`Контакт: R=${fmt(radius,2)} м`,c[0]+radius*scale+6,c[1]-6);ctx.restore();}
+ if(showCollision){const c=project(position);ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=frame?.collision?'#ec7c68':'#62d6dd';ctx.lineWidth=.8;ctx.beginPath();ctx.arc(c[0],c[1],Math.max(0,radius*scale),0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle=ctx.strokeStyle;ctx.font='10px Segoe UI';ctx.fillText(`Контакт: R=${fmt(radius,2)} м`,c[0]+radius*scale+6,c[1]-6);ctx.restore();}
  }else{const c=project(position);ctx.fillStyle='#62d6dd';ctx.beginPath();ctx.arc(c[0],c[1],2,0,Math.PI*2);ctx.fill();ctx.font='10px Segoe UI';ctx.fillText('Позиція · габарити недоступні',c[0]+7,c[1]);}
  if(a[0]===null||a[1]===null){ctx.font='10px Segoe UI';ctx.fillStyle='#91a5b2';ctx.fillText('Roll/pitch недоступні · показано лише yaw',18,h-38);}}
  const origin=[center[0]-span*.28,center[1]-span*.22,0];for(const [delta,color,label]of [[[.5,0,0],'#f5ac68','X / уперед'],[[0,.5,0],'#9dcca5','Y / ліворуч'],[[0,0,.5],'#62d6dd','Z']]){

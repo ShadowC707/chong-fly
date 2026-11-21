@@ -41,6 +41,12 @@ def controller_of(frame, decision):
         return dict(kind='manual', label='Ручний канал' if frame.get('request') != 'AUTO' else 'Очікування допуску AUTO')
     if frame.get('stop_requested'):
         return dict(kind='stop', label='STOP')
+    if (decision or {}).get('failed_exhausted') and (decision or {}).get('phased_phase') == 'FAILED':
+        return dict(kind='phase', label='Утримання: повтори вичерпано — потрібен оператор', phase='FAILED',
+                    reason='failed_retry_budget_exhausted')
+    if (decision or {}).get('navigation_blocked'):  # retry budget spent: hover until the operator acts
+        return dict(kind='stop', label='STOP: повтори вичерпано — потрібен оператор',
+                    reason=(decision or {}).get('operator_event') or 'retry_budget_exhausted')
     trace = frame.get('trace') or {}
     network, coordinated = trace.get('network_pwm'), trace.get('coordinated_pwm')
     if network is None or coordinated is None:

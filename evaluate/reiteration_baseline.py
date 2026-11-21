@@ -95,8 +95,11 @@ def run_case(out, profile, scenario):
     with closing(build_runner(profile, scenario)) as runner:
         out.mkdir(parents=True, exist_ok=False)
         write(out/'protocol.json', dict(profile=profile, scenario=scenario['id'], horizon_s=horizon,
-            auto_request_s=0., stop_scheduled=False, limits=LIMITS, manifest=runner.manifest()))
+            auto_request_s=float(scenario.get('auto_request_s', 0.)), stop_scheduled=False, limits=LIMITS,
+            manifest=runner.manifest()))
         runner.resume()
+        while runner.time_s+1e-9 < scenario.get('auto_request_s', 0.):  # step 9: AUTO later than 0 s
+            runner.advance(5)
         runner.event(dict(type='mode', mode='AUTO'))
         decisions = []
         while not runner.terminal:

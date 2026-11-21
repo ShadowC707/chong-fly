@@ -69,7 +69,7 @@ def test_snapshot_carries_the_live_view(profile, memory):
         assert live['estimated_position'] is None and live['memory_frame'] is None
 
 
-def test_sitl_demo_session_flies_phased_side_guard(monkeypatch):
+def test_sitl_demo_session_flies_phased_failed_exit(monkeypatch):
     import demo.sitl
     from demo.server import DemoService, SITL_DEMO_PROFILE
     captured = {}
@@ -86,9 +86,11 @@ def test_sitl_demo_session_flies_phased_side_guard(monkeypatch):
     monkeypatch.setattr(demo.sitl, 'SitlRunner', Fake)
     service = DemoService(sitl_enabled=True)
     service.new_run(backend='sitl', scene='random_room', seed=1)
-    assert SITL_DEMO_PROFILE == 'phased_side_guard'
-    assert captured['controller_profile'] == 'phased_side_guard'
+    assert SITL_DEMO_PROFILE == 'phased_failed_exit'
+    assert captured['controller_profile'] == 'phased_failed_exit'
     assert captured['reference_profile'] == demo.sitl.REITERATION_PROFILE
-    service.new_run(backend='sitl', scene='random_room', seed=1, controller_mode='phased_side_guard')
+    service.new_run(backend='sitl', scene='random_room', seed=1, controller_mode='phased_failed_exit')
+    with pytest.raises(ValueError):
+        service.new_run(backend='sitl', scene='random_room', seed=1, controller_mode='phased_side_guard')
     with pytest.raises(ValueError):
         service.new_run(backend='sitl', scene='random_room', seed=1, controller_mode='pipeline_v1')

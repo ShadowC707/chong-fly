@@ -11,6 +11,10 @@ Modes:
   sitl        one SITL flight (run inside the chong-fly-sitl container, which has the firmware);
   standalone  one Standalone flight on the stop45 scene (room180 Standalone runs come from the spread);
   table       section-2 metrics, phase shares (FAILED separately) and the comparison table.
+
+--profile (default phased_side_guard, the original step 7) selects the coordinator profile; step 9 item 4
+flies phased_failed_exit with the same scenes, perturbations and metrics. Its room180 Standalone reference
+is the step-9 spread (output/pipeline_v1_step9/spread_v2), same geometry and perturbations.
 """
 import os
 os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
@@ -27,8 +31,9 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-PROFILE = 'phased_side_guard'
-SPREAD_ROOM = ROOT/'output/pipeline_v1_spread/runs'
+PROFILE = 'phased_side_guard'  # set by --profile
+SPREAD_ROOMS = {'phased_side_guard': ROOT/'output/pipeline_v1_spread/runs',
+                'phased_failed_exit': ROOT/'output/pipeline_v1_step9/spread_v2'}
 
 
 def scene(name, k):
@@ -68,7 +73,7 @@ def fly_sitl(out, name, k):
                 steps.send({})
         except StopIteration as end:
             result = end.value
-    (out/'step7.json').write_text(json.dumps(dict(scene=name, perturbation=k+1, horizon_s=horizon, stop_at_s=stop_at,
+    (out/'step7.json').write_text(json.dumps(dict(scene=name, perturbation=k+1, horizon_s=horizon, stop_at_s=stop_at, profile=PROFILE,
         input_hashes=hashes, result=result), indent=1, default=float), encoding='utf-8')
     return result
 
@@ -177,7 +182,7 @@ def standalone_metrics(folder, name, k):
 
 
 def room_standalone(k):
-    folder = SPREAD_ROOM/f'live_room_p{k+1}'/PROFILE
+    folder = SPREAD_ROOMS[PROFILE]/f'live_room_p{k+1}'/PROFILE
     r = json.loads((folder/'report.json').read_text())
     d = json.loads((folder/'decisions.json').read_text())
     c = Counter(x['decision'].get('phased_phase') for x in d)
@@ -197,7 +202,9 @@ if __name__ == '__main__':
     p.add_argument('--scene', choices=['stop45', 'room180'])
     p.add_argument('--k', type=int, help='perturbation index 0..4')
     p.add_argument('--out', type=Path, required=True)
+    p.add_argument('--profile', choices=['phased_side_guard', 'phased_failed_exit'], default=PROFILE)
     a = p.parse_args()
+    PROFILE = a.profile
     if a.mode == 'sitl':
         print(json.dumps(fly_sitl(a.out, a.scene, a.k), default=float)[:2000])
     elif a.mode == 'standalone':

@@ -18,10 +18,26 @@ RECORDINGS = Path(__file__).parent/'recordings'
 SCENE_OPTIONS = {'backend','scene','seed','start','yaw','scene_options','max_duration_s','controller_mode'}
 
 
+SPEEDS = (1, 2, 4)
+
+
 class Pacer:
-    """Wall time schedules bounded fixed steps; it never becomes physics dt."""
-    def __init__(self, runner):
+    """Wall time schedules bounded fixed steps; it never becomes physics dt.
+
+    `speed` (Standalone only) scales the number of fixed steps per wall second and the per-poll
+    step limit together; physics dt and the step sequence are unchanged, so the trajectory is the
+    same at every speed.
+    """
+    def __init__(self, runner, speed=1):
         self.runner, self.last, self.revision, self.credit = runner, None, None, 0.
+        self.speed = 1
+        self.set_speed(speed)
+
+    def set_speed(self, speed):
+        if isinstance(speed, bool) or speed not in SPEEDS:
+            raise ValueError('Множник швидкості: 1, 2 або 4')
+        if speed != self.speed:
+            self.speed, self.credit = speed, 0.
 
     def poll(self, now):
         r = self.runner
@@ -33,15 +49,15 @@ class Pacer:
             r.pause('invalid_wall_clock'); self.credit=0.; return
         if elapsed > .25:
             self.credit=0.; return
-        self.credit += elapsed
-        steps = min(round(.02/r.step_dt), int((self.credit+1e-9)/r.step_dt))
+        self.credit += elapsed*self.speed
+        steps = min(round(.02*self.speed/r.step_dt), int((self.credit+1e-9)/r.step_dt))
         self.credit -= steps*r.step_dt
         # Slow machines run slower; no long catch-up batches.
-        self.credit = min(self.credit, .02)
+        self.credit = min(self.credit, .02*self.speed)
         r.advance(steps)
 
 
-SITL_DEMO_PROFILE = 'phased_side_guard'
+SITL_DEMO_PROFILE = 'phased_failed_exit'
 
 
 class DemoService:
@@ -52,17 +68,29 @@ class DemoService:
         self.client_id = None
         self.last_heartbeat = None
         self.pacer = None
+        self.speed = 1
+        self.backend = 'standalone'
         self.stopping = threading.Event()
         self.sitl_enabled = sitl_enabled
+
+    def set_speed(self, speed):
+        """Live Standalone speed multiplier (wall pacing only). SITL keeps its own lockstep pace."""
+        if isinstance(speed, bool) or speed not in SPEEDS:
+            raise ValueError('Множник швидкості: 1, 2 або 4')
+        if self.backend == 'sitl' and speed != 1:
+            raise ValueError('Множник швидкості доступний лише для Standalone.')
+        self.speed = speed
+        if self.pacer: self.pacer.set_speed(speed)
+        return speed
 
     def new_run(self, *, backend='standalone', **options):
         if backend == 'sitl':
             if not self.sitl_enabled:
                 raise ValueError('Для Betaflight SITL запустіть scripts/sitl/demo.ps1 через Docker Desktop.')
             if options.pop('controller_mode', SITL_DEMO_PROFILE) != SITL_DEMO_PROFILE:
-                raise ValueError('Betaflight SITL-демо літає лише з профілем phased_side_guard.')
+                raise ValueError(f'Betaflight SITL-демо літає лише з профілем {SITL_DEMO_PROFILE}.')
             from .sitl import REITERATION_PROFILE, SitlRunner
-            # Step-7 configuration: Candidate A (adaptive tau) + phased_side_guard, reiteration SITL data
+            # Step-7 configuration: Candidate A (adaptive tau) + phased_failed_exit (step 9), reiteration SITL data
             # (tracked in git, unlike the historical bring-up outputs).
             options.update(controller_profile=SITL_DEMO_PROFILE, reference_profile=REITERATION_PROFILE)
             factory = SitlRunner
@@ -74,7 +102,9 @@ class DemoService:
             self.runner.pause('new_scene_requested')
         new = factory(run_id=uuid.uuid4().hex, **options)
         if self.runner: self.runner.close()
-        self.runner, self.pacer, self.error = new, Pacer(new), None
+        self.backend = backend
+        if backend == 'sitl': self.speed = 1
+        self.runner, self.pacer, self.error = new, Pacer(new, self.speed), None
         return new
 
     def start_fly(self, **options):
@@ -184,6 +214,8 @@ def serve(port=8765, *, container_sitl=False):
                 with service.lock:
                     service.heartbeat(client,time.monotonic())
                     if self.path == '/api/heartbeat': return self.send(200,dict(ok=True))
+                    if self.path == '/api/speed':
+                        return self.send(200,dict(speed=service.set_speed(data.get('speed'))))
                     if self.path == '/api/start-fly':
                         opts=data.get('options',{})
                         if set(opts)-SCENE_OPTIONS: raise ValueError('Unknown scene option')

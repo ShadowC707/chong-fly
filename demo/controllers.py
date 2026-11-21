@@ -47,20 +47,25 @@ def install(system, *, profile='phased_v2', turn_envelope=None):
             from simulation.phased_yaw import SmoothPhasedCoordinator
             from simulation.phased_recovery import RecoveryPhasedCoordinator, PocketEscapeCoordinator
             from simulation.side_clearance import SideClearanceCoordinator
+            from simulation.failed_exit import FailedExitCoordinator
             cls = {'phased_smooth': SmoothPhasedCoordinator, 'phased_recovery': RecoveryPhasedCoordinator,
                    'phased_escape': PocketEscapeCoordinator, 'phased_side_guard': SideClearanceCoordinator,
+                   'phased_failed_exit': FailedExitCoordinator,
                    'phased_swath': SideClearanceCoordinator}[profile]
             new = cls(**options)
             overlay = {'phased_smooth': 'cosine-bounded-v1', 'phased_recovery': 'bounded-wait-retry-v1',
                        'phased_escape': 'consistent-direction-v1',
                        'phased_side_guard': 'recent-edge-yaw-restraint-v2',
+                       'phased_failed_exit': 'bounded-failed-retry-v2',
                        'phased_swath': 'observed-expansion-v1'}[profile]
             system_class = YawHandoverSystem
             sources.extend(('simulation/phased_yaw.py', 'demo/yaw_experiment.py'))
             if profile != 'phased_smooth':
                 sources.append('simulation/phased_recovery.py')
-            if profile in ('phased_side_guard', 'phased_swath'):
+            if profile in ('phased_side_guard', 'phased_failed_exit', 'phased_swath'):
                 sources.append('simulation/side_clearance.py')
+            if profile == 'phased_failed_exit':
+                sources.append('simulation/failed_exit.py')
             if profile == 'phased_swath':
                 from simulation.swath_navigation import SwathNavigation
                 from .swath_system import SwathSystem

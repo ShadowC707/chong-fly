@@ -16,7 +16,7 @@ STOP_AT=17.
 RADIUS=.2
 # Coordinator profiles reachable over the yaw-handover path (demo.yaw_experiment.install). Pipeline
 # profiles are not: they need a heading sample that the SITL loop does not provide.
-SITL_PROFILES=('phased_smooth','phased_recovery','phased_escape','phased_side_guard')
+SITL_PROFILES=('phased_smooth','phased_recovery','phased_escape','phased_side_guard','phased_failed_exit')
 
 
 def build_controller(runtime_config,*,session_id=None,yaw_shaping=False,integration_profile=None,
